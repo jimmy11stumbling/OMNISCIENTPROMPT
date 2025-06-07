@@ -7,6 +7,31 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-xl font-bold">DeepSeek AI Platform</h1>
+                <div class="flex space-x-6">
+                    <a href="/" class="text-blue-400 font-medium">Generator</a>
+                    <a href="/dashboard.html" class="text-gray-300 hover:text-white">Dashboard</a>
+                    <a href="/analytics.html" class="text-gray-300 hover:text-white">Analytics</a>
+                    <a href="/rag-database.html" class="text-gray-300 hover:text-white">RAG Database</a>
+                    <a href="/chat.html" class="text-gray-300 hover:text-white">Chat</a>
+                    <a href="/docs.html" class="text-gray-300 hover:text-white">Docs</a>
+                    <a href="/admin.html" class="text-gray-300 hover:text-white">Admin</a>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div id="connectionStatus" class="flex items-center space-x-2">
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span class="text-sm">Connected</span>
+                </div>
+                <button class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">Settings</button>
+            </div>
+        </div>
+    </nav>
+
     <div class="container mx-auto px-4 py-8 max-w-4xl">
         <header class="text-center mb-8">
             <h1 class="text-4xl font-bold mb-2">DeepSeek AI Prompt Generator</h1>

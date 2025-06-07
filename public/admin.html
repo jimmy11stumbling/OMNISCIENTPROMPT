@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - DeepSeek AI Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-xl font-bold">Admin Portal</h1>
+                <div class="flex space-x-6">
+                    <a href="/" class="text-gray-300 hover:text-white">Generator</a>
+                    <a href="/dashboard.html" class="text-gray-300 hover:text-white">Dashboard</a>
+                    <a href="/analytics.html" class="text-gray-300 hover:text-white">Analytics</a>
+                    <a href="/rag-database.html" class="text-gray-300 hover:text-white">RAG Database</a>
+                    <a href="/chat.html" class="text-gray-300 hover:text-white">Chat</a>
+                    <a href="/admin.html" class="text-blue-400 font-medium">Admin</a>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-sm text-gray-400">Admin User</span>
+                <button class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-6 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold mb-2">System Administration</h2>
+            <p class="text-gray-400">Manage DeepSeek API settings, RAG database, and system configuration</p>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <button class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg p-6 text-left transition-all">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.84L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.84l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold">API Configuration</h3>
+                </div>
+                <p class="text-blue-100 text-sm">Manage DeepSeek API keys and settings</p>
+            </button>
+
+            <button class="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 rounded-lg p-6 text-left transition-all">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold">RAG Management</h3>
+                </div>
+                <p class="text-green-100 text-sm">Update documentation and knowledge base</p>
+            </button>
+
+            <button class="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 rounded-lg p-6 text-left transition-all">
+                <div class="flex items-center space-x-3 mb-3">
+                    <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold">System Health</h3>
+                </div>
+                <p class="text-purple-100 text-sm">Monitor system status and performance</p>
+            </button>
+        </div>
+
+        <!-- Configuration Sections -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- API Settings -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h3 class="text-lg font-semibold mb-4">DeepSeek API Settings</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">API Key Status</label>
+                        <div class="flex items-center space-x-2">
+                            <div id="apiKeyStatus" class="w-3 h-3 bg-green-500 rounded-full"></div>
+                            <span class="text-sm text-gray-300">Connected</span>
+                            <button class="text-blue-400 hover:text-blue-300 text-sm ml-4">Test Connection</button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Model Configuration</label>
+                        <select class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                            <option value="deepseek-reasoner">deepseek-reasoner</option>
+                            <option value="deepseek-chat">deepseek-chat</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Max Tokens</label>
+                        <input type="number" value="2000" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Temperature</label>
+                        <input type="range" min="0" max="1" step="0.1" value="0.7" class="w-full">
+                        <span class="text-sm text-gray-400">0.7</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RAG Configuration -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h3 class="text-lg font-semibold mb-4">RAG Database Settings</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Search Limit</label>
+                        <input type="number" value="5" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Similarity Threshold</label>
+                        <input type="range" min="0" max="1" step="0.1" value="0.7" class="w-full">
+                        <span class="text-sm text-gray-400">0.7</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Auto-sync Documentation</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" checked class="rounded">
+                            <span class="text-sm text-gray-300">Enabled</span>
+                        </div>
+                    </div>
+
+                    <button class="w-full bg-green-600 hover:bg-green-700 px-4 py-2 rounded">
+                        Rebuild Index
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Logs -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">System Logs</h3>
+                <div class="flex space-x-2">
+                    <button class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-sm">Clear</button>
+                    <button class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm">Export</button>
+                </div>
+            </div>
+            <div class="bg-gray-900 rounded p-4 h-64 overflow-y-auto font-mono text-sm">
+                <div class="space-y-1" id="systemLogs">
+                    <div class="text-green-400">[2024-01-20 10:30:15] INFO: DeepSeek API connection established</div>
+                    <div class="text-blue-400">[2024-01-20 10:30:16] DEBUG: RAG database initialized with 20 documents</div>
+                    <div class="text-yellow-400">[2024-01-20 10:30:17] WARN: Rate limit approaching (85% of quota)</div>
+                    <div class="text-green-400">[2024-01-20 10:30:18] INFO: Chat session started for platform: replit</div>
+                    <div class="text-blue-400">[2024-01-20 10:30:19] DEBUG: RAG query: "authentication setup"</div>
+                    <div class="text-green-400">[2024-01-20 10:30:20] INFO: Prompt generated successfully (tokens: 1247)</div>
+                    <div class="text-blue-400">[2024-01-20 10:30:21] DEBUG: Response time: 1.2s</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Platform Management -->
+        <div class="bg-gray-800 rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-4">Platform Integration Status</h3>
+            <div class="space-y-4">
+                <div class="flex items-center justify-between p-4 bg-gray-700 rounded">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-blue-500 rounded flex items-center justify-center text-sm font-bold">R</div>
+                        <div>
+                            <h4 class="font-medium">Replit</h4>
+                            <p class="text-sm text-gray-400">4 documents • Last sync: 2h ago</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="px-2 py-1 bg-green-500 text-green-100 rounded text-xs">Active</span>
+                        <button class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs">Sync</button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between p-4 bg-gray-700 rounded">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-purple-500 rounded flex items-center justify-center text-sm font-bold">L</div>
+                        <div>
+                            <h4 class="font-medium">Lovable</h4>
+                            <p class="text-sm text-gray-400">3 documents • Last sync: 1h ago</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="px-2 py-1 bg-green-500 text-green-100 rounded text-xs">Active</span>
+                        <button class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs">Sync</button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between p-4 bg-gray-700 rounded">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-yellow-500 rounded flex items-center justify-center text-sm font-bold">B</div>
+                        <div>
+                            <h4 class="font-medium">Bolt</h4>
+                            <p class="text-sm text-gray-400">3 documents • Last sync: 3h ago</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="px-2 py-1 bg-green-500 text-green-100 rounded text-xs">Active</span>
+                        <button class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs">Sync</button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between p-4 bg-gray-700 rounded">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-indigo-500 rounded flex items-center justify-center text-sm font-bold">C</div>
+                        <div>
+                            <h4 class="font-medium">Cursor</h4>
+                            <p class="text-sm text-gray-400">3 documents • Last sync: 1h ago</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="px-2 py-1 bg-green-500 text-green-100 rounded text-xs">Active</span>
+                        <button class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs">Sync</button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between p-4 bg-gray-700 rounded">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-teal-500 rounded flex items-center justify-center text-sm font-bold">W</div>
+                        <div>
+                            <h4 class="font-medium">Windsurf</h4>
+                            <p class="text-sm text-gray-400">3 documents • Last sync: 4h ago</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="px-2 py-1 bg-green-500 text-green-100 rounded text-xs">Active</span>
+                        <button class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs">Sync</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Admin portal functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            // Auto-refresh logs every 5 seconds
+            setInterval(() => {
+                const logs = document.getElementById('systemLogs');
+                const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
+                
+                const logTypes = [
+                    { type: 'INFO', color: 'text-green-400', messages: ['New prompt generated', 'Chat session started', 'API request processed'] },
+                    { type: 'DEBUG', color: 'text-blue-400', messages: ['RAG query processed', 'Token usage updated', 'Cache hit'] },
+                    { type: 'WARN', color: 'text-yellow-400', messages: ['High response time detected', 'Rate limit warning'] }
+                ];
+                
+                if (Math.random() > 0.7) { // 30% chance of new log
+                    const logType = logTypes[Math.floor(Math.random() * logTypes.length)];
+                    const message = logType.messages[Math.floor(Math.random() * logType.messages.length)];
+                    
+                    const newLog = document.createElement('div');
+                    newLog.className = logType.color;
+                    newLog.textContent = `[${timestamp}] ${logType.type}: ${message}`;
+                    
+                    logs.appendChild(newLog);
+                    logs.scrollTop = logs.scrollHeight;
+                    
+                    // Keep only last 20 logs
+                    while (logs.children.length > 20) {
+                        logs.removeChild(logs.firstChild);
+                    }
+                }
+            }, 5000);
+        });
+    </script>
+</body>
+</html>

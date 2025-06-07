@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - DeepSeek AI Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .code-block { background: #1a1a1a; border-left: 4px solid #3B82F6; }
+        .sidebar-link.active { background: #374151; color: #3B82F6; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-xl font-bold">Documentation</h1>
+                <div class="flex space-x-6">
+                    <a href="/" class="text-gray-300 hover:text-white">Generator</a>
+                    <a href="/dashboard.html" class="text-gray-300 hover:text-white">Dashboard</a>
+                    <a href="/analytics.html" class="text-gray-300 hover:text-white">Analytics</a>
+                    <a href="/rag-database.html" class="text-gray-300 hover:text-white">RAG Database</a>
+                    <a href="/chat.html" class="text-gray-300 hover:text-white">Chat</a>
+                    <a href="/docs.html" class="text-blue-400 font-medium">Docs</a>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <input type="text" placeholder="Search docs..." class="bg-gray-700 border border-gray-600 rounded px-3 py-1 text-sm">
+                <button class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">Search</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-80 bg-gray-800 border-r border-gray-700 p-6 overflow-y-auto">
+            <h3 class="text-lg font-semibold mb-4">Documentation</h3>
+            
+            <div class="space-y-2">
+                <div class="sidebar-section">
+                    <h4 class="text-sm font-medium text-gray-400 mb-2">Getting Started</h4>
+                    <a href="#overview" class="sidebar-link active block px-3 py-2 rounded text-sm hover:bg-gray-700">Overview</a>
+                    <a href="#quick-start" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">Quick Start</a>
+                    <a href="#installation" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">Installation</a>
+                </div>
+
+                <div class="sidebar-section mt-6">
+                    <h4 class="text-sm font-medium text-gray-400 mb-2">API Reference</h4>
+                    <a href="#prompt-generation" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">Prompt Generation</a>
+                    <a href="#chat-api" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">Chat API</a>
+                    <a href="#rag-search" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">RAG Search</a>
+                    <a href="#authentication" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">Authentication</a>
+                </div>
+
+                <div class="sidebar-section mt-6">
+                    <h4 class="text-sm font-medium text-gray-400 mb-2">Platform Guides</h4>
+                    <a href="#replit-guide" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">Replit Integration</a>
+                    <a href="#lovable-guide" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">Lovable Integration</a>
+                    <a href="#bolt-guide" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">Bolt Integration</a>
+                    <a href="#cursor-guide" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">Cursor Integration</a>
+                    <a href="#windsurf-guide" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">Windsurf Integration</a>
+                </div>
+
+                <div class="sidebar-section mt-6">
+                    <h4 class="text-sm font-medium text-gray-400 mb-2">Advanced</h4>
+                    <a href="#rag-customization" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">RAG Customization</a>
+                    <a href="#multi-round-chat" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">Multi-Round Chat</a>
+                    <a href="#performance" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">Performance Tuning</a>
+                    <a href="#deployment" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">Deployment</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 overflow-y-auto p-8">
+            <div class="max-w-4xl">
+                <!-- Overview Section -->
+                <section id="overview" class="mb-12">
+                    <h1 class="text-4xl font-bold mb-4">DeepSeek AI Platform Documentation</h1>
+                    <p class="text-xl text-gray-300 mb-6">
+                        Comprehensive guide to building intelligent applications with DeepSeek AI, RAG 2.0, and multi-platform integration.
+                    </p>
+                    
+                    <div class="bg-blue-900/20 border border-blue-800 rounded-lg p-6 mb-8">
+                        <h3 class="text-lg font-semibold text-blue-400 mb-2">What is DeepSeek AI Platform?</h3>
+                        <p class="text-gray-300">
+                            A comprehensive AI-powered platform that transforms vague ideas into detailed, production-ready application specifications. 
+                            Features include multi-round conversations, RAG-enhanced documentation retrieval, and platform-specific optimizations 
+                            for Replit, Lovable, Bolt, Cursor, and Windsurf.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h4 class="text-lg font-semibold mb-3">Key Features</h4>
+                            <ul class="space-y-2 text-gray-300">
+                                <li>• DeepSeek AI reasoning integration</li>
+                                <li>• RAG 2.0 documentation retrieval</li>
+                                <li>• Multi-round conversation support</li>
+                                <li>• Platform-specific optimizations</li>
+                                <li>• Real-time analytics and monitoring</li>
+                            </ul>
+                        </div>
+
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h4 class="text-lg font-semibold mb-3">Supported Platforms</h4>
+                            <ul class="space-y-2 text-gray-300">
+                                <li>• Replit - Full-stack development</li>
+                                <li>• Lovable - AI-assisted design</li>
+                                <li>• Bolt - Instant deployment</li>
+                                <li>• Cursor - AI code completion</li>
+                                <li>• Windsurf - Team collaboration</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Quick Start Section -->
+                <section id="quick-start" class="mb-12">
+                    <h2 class="text-3xl font-bold mb-6">Quick Start</h2>
+                    
+                    <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                        <h3 class="text-xl font-semibold mb-4">1. Generate Your First Prompt</h3>
+                        <div class="code-block rounded p-4 mb-4">
+                            <pre class="text-sm"><code>curl -X POST http://localhost:5000/api/generate-prompt \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "build a todo app with real-time sync",
+    "platform": "replit"
+  }'</code></pre>
+                        </div>
+                        <p class="text-gray-300 text-sm">
+                            This will generate a comprehensive full-stack application specification optimized for Replit.
+                        </p>
+                    </div>
+
+                    <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                        <h3 class="text-xl font-semibold mb-4">2. Start a Chat Session</h3>
+                        <div class="code-block rounded p-4 mb-4">
+                            <pre class="text-sm"><code>curl -X POST http://localhost:5000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "How do I add authentication?",
+    "platform": "replit"
+  }'</code></pre>
+                        </div>
+                        <p class="text-gray-300 text-sm">
+                            Start an interactive conversation with DeepSeek AI, enhanced with platform-specific documentation.
+                        </p>
+                    </div>
+
+                    <div class="bg-gray-800 rounded-lg p-6">
+                        <h3 class="text-xl font-semibold mb-4">3. Search Documentation</h3>
+                        <div class="code-block rounded p-4 mb-4">
+                            <pre class="text-sm"><code>curl -X POST http://localhost:5000/api/rag/search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "database setup",
+    "platform": "replit"
+  }'</code></pre>
+                        </div>
+                        <p class="text-gray-300 text-sm">
+                            Search the comprehensive knowledge base for platform-specific documentation and best practices.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- API Reference Section -->
+                <section id="prompt-generation" class="mb-12">
+                    <h2 class="text-3xl font-bold mb-6">API Reference</h2>
+                    
+                    <div class="bg-gray-800 rounded-lg p-6 mb-8">
+                        <h3 class="text-xl font-semibold mb-4">POST /api/generate-prompt</h3>
+                        <p class="text-gray-300 mb-4">
+                            Generate comprehensive full-stack application prompts from vague ideas using DeepSeek AI reasoning.
+                        </p>
+
+                        <h4 class="font-semibold mb-2">Request Body</h4>
+                        <div class="code-block rounded p-4 mb-4">
+                            <pre class="text-sm"><code>{
+  "query": "string",      // User's application idea
+  "platform": "string"   // Target platform (replit, lovable, bolt, cursor, windsurf)
+}</code></pre>
+                        </div>
+
+                        <h4 class="font-semibold mb-2">Response</h4>
+                        <div class="code-block rounded p-4 mb-4">
+                            <pre class="text-sm"><code>{
+  "prompt": "string",           // Generated comprehensive prompt
+  "platform": "string",        // Target platform
+  "reasoning": "string",        // DeepSeek AI reasoning process
+  "tokensUsed": number          // Number of tokens consumed
+}</code></pre>
+                        </div>
+
+                        <div class="bg-yellow-900/20 border border-yellow-800 rounded p-4">
+                            <p class="text-yellow-200 text-sm">
+                                <strong>Note:</strong> This endpoint integrates with the RAG database to provide platform-specific context and optimizations.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div id="chat-api" class="bg-gray-800 rounded-lg p-6 mb-8">
+                        <h3 class="text-xl font-semibold mb-4">POST /api/chat</h3>
+                        <p class="text-gray-300 mb-4">
+                            Engage in multi-round conversations with DeepSeek AI, maintaining context across interactions.
+                        </p>
+
+                        <h4 class="font-semibold mb-2">Request Body</h4>
+                        <div class="code-block rounded p-4 mb-4">
+                            <pre class="text-sm"><code>{
+  "message": "string",      // User message
+  "sessionId": "string",    // Optional: conversation session ID
+  "platform": "string"     // Target platform for context
+}</code></pre>
+                        </div>
+
+                        <h4 class="font-semibold mb-2">Response</h4>
+                        <div class="code-block rounded p-4 mb-4">
+                            <pre class="text-sm"><code>{
+  "response": "string",         // AI response
+  "reasoning": "string",        // DeepSeek reasoning content
+  "sessionId": "string",        // Session identifier
+  "platform": "string",        // Platform context
+  "ragContext": [...],          // Relevant documentation snippets
+  "tokensUsed": number          // Tokens consumed
+}</code></pre>
+                        </div>
+                    </div>
+
+                    <div id="rag-search" class="bg-gray-800 rounded-lg p-6">
+                        <h3 class="text-xl font-semibold mb-4">POST /api/rag/search</h3>
+                        <p class="text-gray-300 mb-4">
+                            Search the comprehensive documentation database with semantic similarity matching.
+                        </p>
+
+                        <h4 class="font-semibold mb-2">Request Body</h4>
+                        <div class="code-block rounded p-4 mb-4">
+                            <pre class="text-sm"><code>{
+  "query": "string",        // Search query
+  "platform": "string",    // Optional: filter by platform
+  "limit": number           // Optional: max results (default: 5)
+}</code></pre>
+                        </div>
+
+                        <h4 class="font-semibold mb-2">Response</h4>
+                        <div class="code-block rounded p-4 mb-4">
+                            <pre class="text-sm"><code>{
+  "query": "string",
+  "platform": "string",
+  "results": [
+    {
+      "id": "string",
+      "title": "string",
+      "content": "string",
+      "snippet": "string",
+      "relevanceScore": number,
+      "platform": "string",
+      "type": "string",
+      "keywords": ["string"]
+    }
+  ],
+  "totalFound": number
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Platform Guides -->
+                <section id="replit-guide" class="mb-12">
+                    <h2 class="text-3xl font-bold mb-6">Platform Integration Guides</h2>
+                    
+                    <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                        <h3 class="text-xl font-semibold mb-4">Replit Integration</h3>
+                        <p class="text-gray-300 mb-4">
+                            Replit provides built-in database support, authentication, and deployment capabilities. 
+                            The platform excels at full-stack development with zero configuration.
+                        </p>
+
+                        <h4 class="font-semibold mb-2">Key Features</h4>
+                        <ul class="space-y-1 text-gray-300 mb-4">
+                            <li>• Built-in PostgreSQL and Redis databases</li>
+                            <li>• OAuth integration with GitHub, Google, email</li>
+                            <li>• Real-time collaboration and multiplayer coding</li>
+                            <li>• Zero-config deployment with custom domains</li>
+                            <li>• Automatic SSL certificates and scaling</li>
+                        </ul>
+
+                        <div class="code-block rounded p-4">
+                            <pre class="text-sm"><code>// Example Replit-optimized prompt
+{
+  "query": "social media app with real-time chat",
+  "platform": "replit"
+}
+
+// Generated response includes:
+// - Replit database setup
+// - @replit/auth integration
+// - Real-time features using Replit multiplayer APIs
+// - Deployment configuration</code></pre>
+                        </div>
+                    </div>
+
+                    <div id="lovable-guide" class="bg-gray-800 rounded-lg p-6 mb-6">
+                        <h3 class="text-xl font-semibold mb-4">Lovable Integration</h3>
+                        <p class="text-gray-300 mb-4">
+                            Lovable specializes in AI-assisted development with design-to-code conversion and rapid prototyping.
+                        </p>
+
+                        <h4 class="font-semibold mb-2">Optimization Areas</h4>
+                        <ul class="space-y-1 text-gray-300 mb-4">
+                            <li>• AI component generation from descriptions</li>
+                            <li>• Design-to-code workflow integration</li>
+                            <li>• Rapid prototyping with instant preview</li>
+                            <li>• TailwindCSS optimization</li>
+                        </ul>
+                    </div>
+
+                    <div id="deployment" class="bg-gray-800 rounded-lg p-6">
+                        <h3 class="text-xl font-semibold mb-4">Production Deployment</h3>
+                        <p class="text-gray-300 mb-4">
+                            Deploy the DeepSeek AI Platform to production with proper configuration and monitoring.
+                        </p>
+
+                        <h4 class="font-semibold mb-2">Environment Variables</h4>
+                        <div class="code-block rounded p-4 mb-4">
+                            <pre class="text-sm"><code># Required
+DEEPSEEK_API_KEY=your_deepseek_api_key
+
+# Optional
+PORT=5000
+NODE_ENV=production</code></pre>
+                        </div>
+
+                        <h4 class="font-semibold mb-2">Docker Deployment</h4>
+                        <div class="code-block rounded p-4">
+                            <pre class="text-sm"><code>FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+EXPOSE 5000
+CMD ["node", "deepseek-app.js"]</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Advanced Configuration -->
+                <section id="rag-customization" class="mb-12">
+                    <h2 class="text-3xl font-bold mb-6">Advanced Configuration</h2>
+                    
+                    <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                        <h3 class="text-xl font-semibold mb-4">RAG Database Customization</h3>
+                        <p class="text-gray-300 mb-4">
+                            Customize the RAG database to include your own documentation and optimize search performance.
+                        </p>
+
+                        <div class="code-block rounded p-4 mb-4">
+                            <pre class="text-sm"><code>// Add custom documentation
+const ragDB = new RAGDatabase();
+
+ragDB.addDocument('custom-platform', {
+  title: 'Custom API Integration',
+  content: 'Detailed documentation for your platform...',
+  type: 'api-reference',
+  keywords: ['api', 'integration', 'custom']
+});
+
+// Search with custom parameters
+const results = ragDB.searchDocuments('authentication', 'custom-platform', 10);</code></pre>
+                        </div>
+                    </div>
+
+                    <div id="performance" class="bg-gray-800 rounded-lg p-6">
+                        <h3 class="text-xl font-semibold mb-4">Performance Optimization</h3>
+                        <p class="text-gray-300 mb-4">
+                            Optimize response times and token usage for production workloads.
+                        </p>
+
+                        <div class="bg-green-900/20 border border-green-800 rounded p-4">
+                            <h4 class="font-semibold text-green-400 mb-2">Best Practices</h4>
+                            <ul class="space-y-1 text-green-200 text-sm">
+                                <li>• Cache RAG search results for common queries</li>
+                                <li>• Implement session management with Redis</li>
+                                <li>• Use connection pooling for database access</li>
+                                <li>• Monitor token usage and implement rate limiting</li>
+                                <li>• Optimize DeepSeek API parameters for your use case</li>
+                            </ul>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Documentation navigation
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebarLinks = document.querySelectorAll('.sidebar-link');
+            
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    
+                    // Remove active class from all links
+                    sidebarLinks.forEach(l => l.classList.remove('active'));
+                    
+                    // Add active class to clicked link
+                    link.classList.add('active');
+                    
+                    // Scroll to section
+                    const targetId = link.getAttribute('href').substring(1);
+                    const targetElement = document.getElementById(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            });
+
+            // Highlight current section on scroll
+            const sections = document.querySelectorAll('section[id]');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.id;
+                        sidebarLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === `#${id}`) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, { threshold: 0.5 });
+
+            sections.forEach(section => {
+                observer.observe(section);
+            });
+        });
+    </script>
+</body>
+</html>
