@@ -688,7 +688,9 @@ export default function Documentation() {
                   <div className="flex items-center space-x-3">
                     {systemDocs[selectedSystemDoc as keyof typeof systemDocs] && (
                       <>
-                        <systemDocs[selectedSystemDoc as keyof typeof systemDocs].icon className="w-6 h-6" />
+                        {React.createElement(systemDocs[selectedSystemDoc as keyof typeof systemDocs].icon, {
+                          className: "w-6 h-6"
+                        })}
                         <CardTitle className="text-white">
                           {systemDocs[selectedSystemDoc as keyof typeof systemDocs].title}
                         </CardTitle>
@@ -815,7 +817,7 @@ export default function Documentation() {
                     Example webhook handler for real-time updates.
                   </p>
                   <div className="bg-gray-900 rounded p-3 font-mono text-xs text-gray-300">
-                    <div>app.post('/webhook', (req, res) => {'{'}</div>
+                    <div>app.post('/webhook', (req, res) =&gt; {'{'}</div>
                     <div>  const event = req.body;</div>
                     <div>  // Handle prompt generation events</div>
                     <div>  res.status(200).send('OK');</div>
