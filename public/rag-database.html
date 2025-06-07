@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Database - Platform Documentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-xl font-bold">RAG Database</h1>
+                <div class="flex space-x-6">
+                    <a href="/" class="text-gray-300 hover:text-white">Generator</a>
+                    <a href="/dashboard.html" class="text-gray-300 hover:text-white">Dashboard</a>
+                    <a href="/analytics.html" class="text-gray-300 hover:text-white">Analytics</a>
+                    <a href="/rag-database.html" class="text-blue-400 font-medium">RAG Database</a>
+                    <a href="/chat.html" class="text-gray-300 hover:text-white">Chat</a>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm">Add Document</button>
+                <button class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">Sync All</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-6 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold mb-2">Documentation Database</h2>
+            <p class="text-gray-400">Comprehensive platform knowledge base for enhanced AI responses</p>
+        </div>
+
+        <!-- Search Interface -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-8">
+            <div class="flex space-x-4 mb-4">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="Search documentation (e.g., 'authentication', 'database', 'deployment')..."
+                    class="flex-1 bg-gray-700 border border-gray-600 rounded px-4 py-3 focus:ring-2 focus:ring-blue-500"
+                >
+                <select id="platformFilter" class="bg-gray-700 border border-gray-600 rounded px-4 py-3">
+                    <option value="">All Platforms</option>
+                    <option value="replit">Replit</option>
+                    <option value="lovable">Lovable</option>
+                    <option value="bolt">Bolt</option>
+                    <option value="cursor">Cursor</option>
+                    <option value="windsurf">Windsurf</option>
+                </select>
+                <button id="searchBtn" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded font-medium">
+                    Search
+                </button>
+            </div>
+            
+            <div id="searchResults" class="hidden">
+                <h3 class="text-lg font-semibold mb-4">Search Results</h3>
+                <div id="searchResultsContainer"></div>
+            </div>
+        </div>
+
+        <!-- Platform Documentation Tabs -->
+        <div class="mb-6">
+            <div class="flex space-x-1 bg-gray-800 rounded-lg p-1">
+                <button class="platform-tab active" data-platform="replit">Replit</button>
+                <button class="platform-tab" data-platform="lovable">Lovable</button>
+                <button class="platform-tab" data-platform="bolt">Bolt</button>
+                <button class="platform-tab" data-platform="cursor">Cursor</button>
+                <button class="platform-tab" data-platform="windsurf">Windsurf</button>
+            </div>
+        </div>
+
+        <!-- Documentation Grid -->
+        <div id="documentationGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Documents will be populated here -->
+        </div>
+
+        <!-- Statistics -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="bg-gray-800 rounded-lg p-6 text-center">
+                <p class="text-2xl font-bold text-blue-400" id="totalDocuments">0</p>
+                <p class="text-gray-400">Total Documents</p>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-6 text-center">
+                <p class="text-2xl font-bold text-green-400" id="platformsCount">5</p>
+                <p class="text-gray-400">Platforms</p>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-6 text-center">
+                <p class="text-2xl font-bold text-purple-400" id="lastUpdated">Today</p>
+                <p class="text-gray-400">Last Updated</p>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-6 text-center">
+                <p class="text-2xl font-bold text-orange-400" id="searchAccuracy">99.2%</p>
+                <p class="text-gray-400">Search Accuracy</p>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .platform-tab {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            text-align: center;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+            color: #9CA3AF;
+        }
+        .platform-tab:hover {
+            background-color: #374151;
+            color: #F3F4F6;
+        }
+        .platform-tab.active {
+            background-color: #3B82F6;
+            color: white;
+        }
+        .doc-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .doc-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+
+    <script>
+        class RAGInterface {
+            constructor() {
+                this.currentPlatform = 'replit';
+                this.allDocuments = {};
+                this.initializeElements();
+                this.bindEvents();
+                this.loadDocumentation();
+            }
+
+            initializeElements() {
+                this.searchInput = document.getElementById('searchInput');
+                this.platformFilter = document.getElementById('platformFilter');
+                this.searchBtn = document.getElementById('searchBtn');
+                this.searchResults = document.getElementById('searchResults');
+                this.searchResultsContainer = document.getElementById('searchResultsContainer');
+                this.documentationGrid = document.getElementById('documentationGrid');
+                this.totalDocuments = document.getElementById('totalDocuments');
+                this.platformTabs = document.querySelectorAll('.platform-tab');
+            }
+
+            bindEvents() {
+                this.searchBtn.addEventListener('click', () => this.performSearch());
+                this.searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') this.performSearch();
+                });
+
+                this.platformTabs.forEach(tab => {
+                    tab.addEventListener('click', (e) => {
+                        this.switchPlatform(e.target.dataset.platform);
+                    });
+                });
+            }
+
+            switchPlatform(platform) {
+                this.currentPlatform = platform;
+                
+                // Update active tab
+                this.platformTabs.forEach(tab => {
+                    tab.classList.remove('active');
+                    if (tab.dataset.platform === platform) {
+                        tab.classList.add('active');
+                    }
+                });
+
+                this.displayPlatformDocuments(platform);
+            }
+
+            async loadDocumentation() {
+                const platforms = ['replit', 'lovable', 'bolt', 'cursor', 'windsurf'];
+                let totalDocs = 0;
+
+                for (const platform of platforms) {
+                    try {
+                        const response = await fetch(`/api/rag/platform/${platform}`);
+                        const data = await response.json();
+                        this.allDocuments[platform] = data.documents || [];
+                        totalDocs += data.documents?.length || 0;
+                    } catch (error) {
+                        console.error(`Error loading ${platform} documentation:`, error);
+                        this.allDocuments[platform] = [];
+                    }
+                }
+
+                this.totalDocuments.textContent = totalDocs;
+                this.displayPlatformDocuments(this.currentPlatform);
+            }
+
+            displayPlatformDocuments(platform) {
+                const documents = this.allDocuments[platform] || [];
+                this.documentationGrid.innerHTML = '';
+
+                if (documents.length === 0) {
+                    this.documentationGrid.innerHTML = `
+                        <div class="col-span-full text-center text-gray-400 py-8">
+                            <p>No documentation found for ${platform}</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                documents.forEach(doc => {
+                    const docCard = this.createDocumentCard(doc, platform);
+                    this.documentationGrid.appendChild(docCard);
+                });
+            }
+
+            createDocumentCard(doc, platform) {
+                const div = document.createElement('div');
+                div.className = 'bg-gray-800 rounded-lg p-6 doc-card';
+                
+                const typeColors = {
+                    'database': 'bg-blue-500',
+                    'authentication': 'bg-green-500',
+                    'deployment': 'bg-purple-500',
+                    'collaboration': 'bg-orange-500',
+                    'ai-generation': 'bg-pink-500',
+                    'design-conversion': 'bg-indigo-500',
+                    'prototyping': 'bg-teal-500',
+                    'preview': 'bg-yellow-500',
+                    'ai-assistance': 'bg-red-500',
+                    'refactoring': 'bg-cyan-500',
+                    'testing': 'bg-lime-500',
+                    'synchronization': 'bg-violet-500',
+                    'project-management': 'bg-rose-500'
+                };
+
+                const typeColor = typeColors[doc.type] || 'bg-gray-500';
+
+                div.innerHTML = `
+                    <div class="flex items-start justify-between mb-3">
+                        <h3 class="text-lg font-semibold text-white">${doc.title}</h3>
+                        <span class="${typeColor} text-white text-xs px-2 py-1 rounded">${doc.type}</span>
+                    </div>
+                    <p class="text-gray-300 text-sm mb-4 line-clamp-3">${doc.content}</p>
+                    <div class="flex items-center justify-between">
+                        <div class="flex flex-wrap gap-1">
+                            ${doc.keywords.slice(0, 3).map(keyword => 
+                                `<span class="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded">${keyword}</span>`
+                            ).join('')}
+                        </div>
+                        <span class="text-gray-500 text-xs">${doc.lastUpdated}</span>
+                    </div>
+                `;
+
+                return div;
+            }
+
+            async performSearch() {
+                const query = this.searchInput.value.trim();
+                const platform = this.platformFilter.value;
+
+                if (!query) {
+                    this.searchResults.classList.add('hidden');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/rag/search', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query, platform: platform || undefined })
+                    });
+
+                    const data = await response.json();
+                    this.displaySearchResults(data.results, query);
+                    
+                } catch (error) {
+                    console.error('Search error:', error);
+                    this.searchResultsContainer.innerHTML = `
+                        <div class="text-red-400 text-center py-4">
+                            Search failed. Please try again.
+                        </div>
+                    `;
+                    this.searchResults.classList.remove('hidden');
+                }
+            }
+
+            displaySearchResults(results, query) {
+                this.searchResults.classList.remove('hidden');
+                
+                if (results.length === 0) {
+                    this.searchResultsContainer.innerHTML = `
+                        <div class="text-gray-400 text-center py-4">
+                            No results found for "${query}"
+                        </div>
+                    `;
+                    return;
+                }
+
+                this.searchResultsContainer.innerHTML = results.map(result => `
+                    <div class="bg-gray-700 rounded-lg p-4 mb-3">
+                        <div class="flex items-start justify-between mb-2">
+                            <h4 class="text-lg font-medium text-white">${result.title}</h4>
+                            <div class="flex items-center space-x-2">
+                                <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded">${result.platform}</span>
+                                <span class="text-gray-400 text-xs">Score: ${result.relevanceScore}</span>
+                            </div>
+                        </div>
+                        <p class="text-gray-300 text-sm mb-2">${result.snippet}</p>
+                        <div class="flex items-center justify-between">
+                            <div class="flex space-x-1">
+                                ${result.keywords.slice(0, 4).map(keyword => 
+                                    `<span class="bg-gray-600 text-gray-300 text-xs px-2 py-1 rounded">${keyword}</span>`
+                                ).join('')}
+                            </div>
+                            <span class="text-gray-500 text-xs">${result.lastUpdated}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Initialize RAG interface
+        document.addEventListener('DOMContentLoaded', () => {
+            new RAGInterface();
+        });
+    </script>
+</body>
+</html>

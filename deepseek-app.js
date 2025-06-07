@@ -1,9 +1,16 @@
 const express = require('express');
 const path = require('path');
+const { RAGDatabase } = require('./rag-database');
 
 const app = express();
 app.use(express.json());
 app.use(express.static('public'));
+
+// Initialize RAG database
+const ragDB = new RAGDatabase();
+
+// Store conversation sessions in memory (in production, use Redis or database)
+const conversationSessions = new Map();
 
 // Root route serves the HTML page
 app.get('/', (req, res) => {
@@ -18,6 +25,172 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     apiConfigured: !!process.env.DEEPSEEK_API_KEY
   });
+});
+
+// RAG Search endpoint
+app.post('/api/rag/search', (req, res) => {
+  const { query, platform, limit = 5 } = req.body;
+  
+  if (!query) {
+    return res.status(400).json({ error: 'Query is required' });
+  }
+
+  try {
+    const results = ragDB.searchDocuments(query, platform, limit);
+    res.json({
+      query,
+      platform: platform || 'all',
+      results,
+      totalFound: results.length
+    });
+  } catch (error) {
+    console.error('RAG search error:', error);
+    res.status(500).json({ error: 'Search failed' });
+  }
+});
+
+// Get platform documentation
+app.get('/api/rag/platform/:platform', (req, res) => {
+  const { platform } = req.params;
+  
+  try {
+    const docs = ragDB.getPlatformDocs(platform);
+    res.json({
+      platform,
+      documents: docs,
+      count: docs.length
+    });
+  } catch (error) {
+    console.error('Platform docs error:', error);
+    res.status(500).json({ error: 'Failed to retrieve platform documentation' });
+  }
+});
+
+// Get contextual recommendations
+app.post('/api/rag/recommendations', (req, res) => {
+  const { query, platform } = req.body;
+  
+  if (!query || !platform) {
+    return res.status(400).json({ error: 'Query and platform are required' });
+  }
+
+  try {
+    const recommendations = ragDB.getContextualRecommendations(query, platform);
+    res.json(recommendations);
+  } catch (error) {
+    console.error('Recommendations error:', error);
+    res.status(500).json({ error: 'Failed to get recommendations' });
+  }
+});
+
+// Multi-round conversation endpoint for DeepSeek chat with RAG integration
+app.post('/api/chat', async (req, res) => {
+  const { message, sessionId, platform } = req.body;
+  
+  if (!message || !platform) {
+    return res.status(400).json({ 
+      error: 'Message and platform are required' 
+    });
+  }
+
+  try {
+    // Get relevant documentation from RAG database
+    const ragResults = ragDB.searchDocuments(message, platform, 3);
+    const contextualInfo = ragResults.map(doc => 
+      `${doc.title}: ${doc.snippet}`
+    ).join('\n');
+
+    // Get or create conversation session
+    const session = sessionId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    let messages = conversationSessions.get(session) || [];
+
+    // Add user message to conversation
+    messages.push({ role: 'user', content: message });
+
+    if (process.env.DEEPSEEK_API_KEY) {
+      try {
+        const fetch = (await import('node-fetch')).default;
+        
+        // Enhanced system prompt with RAG context
+        const systemPrompt = `You are an expert full-stack application developer specializing in ${platform}. 
+
+PLATFORM-SPECIFIC CONTEXT:
+${contextualInfo}
+
+Use this context to provide accurate, platform-specific guidance. Reference specific ${platform} features, APIs, and best practices from the context when relevant.
+
+Help users build comprehensive applications with detailed technical guidance based on ${platform}'s capabilities.`;
+
+        const response = await fetch('https://api.deepseek.com/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'deepseek-reasoner',
+            messages: [
+              {
+                role: 'system',
+                content: systemPrompt
+              },
+              ...messages
+            ],
+            max_tokens: 2000
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const assistantMessage = {
+            role: 'assistant',
+            content: data.choices[0]?.message?.content || 'No response generated'
+          };
+          
+          // Add assistant response to conversation (without reasoning_content)
+          messages.push(assistantMessage);
+          conversationSessions.set(session, messages);
+
+          res.json({
+            response: assistantMessage.content,
+            reasoning: data.choices[0]?.message?.reasoning_content,
+            sessionId: session,
+            platform,
+            ragContext: ragResults,
+            tokensUsed: data.usage?.total_tokens || 0
+          });
+          return;
+        }
+      } catch (apiError) {
+        console.error('DeepSeek API error:', apiError);
+      }
+    }
+
+    // Enhanced fallback response with RAG context
+    const contextSummary = ragResults.length > 0 
+      ? `Based on ${platform} documentation, here are some relevant points:\n${ragResults.map(doc => `• ${doc.title}: ${doc.snippet}`).join('\n')}\n\n`
+      : '';
+
+    const fallbackResponse = `${contextSummary}I understand you want to work on "${message}" for ${platform}. Let me help you create a comprehensive solution. This appears to be a ${platform} development question. What specific aspect would you like to focus on first?`;
+    
+    messages.push({ role: 'assistant', content: fallbackResponse });
+    conversationSessions.set(session, messages);
+
+    res.json({
+      response: fallbackResponse,
+      reasoning: 'Enhanced demo mode with RAG context - add DEEPSEEK_API_KEY for full AI reasoning',
+      sessionId: session,
+      platform,
+      ragContext: ragResults,
+      tokensUsed: 0
+    });
+
+  } catch (error) {
+    console.error('Chat error:', error);
+    res.status(500).json({ 
+      error: 'Failed to process chat message' 
+    });
+  }
 });
 
 // Main prompt generation endpoint with advanced DeepSeek integration
@@ -35,10 +208,19 @@ app.post('/api/generate-prompt', async (req, res) => {
     let reasoning;
     let tokensUsed = 0;
 
-    // Advanced system prompt for full-stack application generation
+    // Get RAG context for enhanced prompt generation
+    const ragResults = ragDB.searchDocuments(query, platform, 5);
+    const ragContext = ragResults.map(doc => 
+      `${doc.title}: ${doc.content}`
+    ).join('\n\n');
+
+    // Advanced system prompt with RAG integration
     const systemPrompt = `### Role: Expert Full-Stack Application Developer & Prompt Engineer
 **Operating Mode:** Administrative & Omniscient
 **Mission:** Transform vague user ideas into comprehensive, production-ready application prompts with complete technical specifications.
+
+### PLATFORM-SPECIFIC KNOWLEDGE BASE:
+${ragContext}
 
 ### CORE CAPABILITIES:
 1. **Application Architecture Analysis**
@@ -47,9 +229,10 @@ app.post('/api/generate-prompt', async (req, res) => {
    - Specify technology stacks optimized for ${platform}
 
 2. **${platform.toUpperCase()} Platform Optimization**
-   - Leverage ${platform}'s specific capabilities and conventions
+   - Leverage ${platform}'s specific capabilities and conventions from the knowledge base
    - Implement platform-native patterns and best practices
    - Ensure seamless deployment and scaling on ${platform}
+   - Reference specific ${platform} features, APIs, and tools
 
 3. **Comprehensive Prompt Generation**
    - Frontend: UI/UX specifications, component architecture, responsive design
@@ -60,24 +243,25 @@ app.post('/api/generate-prompt', async (req, res) => {
 ### EXECUTION RULES:
 - Transform ANY vague idea into a detailed, actionable development prompt
 - Include specific technical requirements, file structures, and implementation steps
-- Provide platform-specific optimization recommendations
+- Provide platform-specific optimization recommendations using knowledge base
 - Ensure enterprise-grade reliability and scalability considerations
 - Generate production-ready specifications from minimal input
+- Reference specific ${platform} features and capabilities from the knowledge base
 
 ### OUTPUT FORMAT:
 Provide a comprehensive development prompt that includes:
 1. Application overview and core features
 2. Technical architecture and technology stack
 3. Detailed implementation roadmap
-4. Platform-specific optimizations for ${platform}
+4. Platform-specific optimizations for ${platform} (use knowledge base)
 5. Security, performance, and scalability considerations
 
-Transform the user's input into a complete full-stack application specification.`;
+Transform the user's input into a complete full-stack application specification using ${platform}-specific knowledge.`;
 
     if (process.env.DEEPSEEK_API_KEY) {
       try {
         // Real DeepSeek API integration with advanced reasoning
-        const fetch = require('node-fetch');
+        const fetch = (await import('node-fetch')).default;
         const response = await fetch('https://api.deepseek.com/chat/completions', {
           method: 'POST',
           headers: {
@@ -117,8 +301,16 @@ Make this into a production-ready development prompt.`
           optimizedPrompt = data.choices[0]?.message?.content;
           reasoning = data.choices[0]?.message?.reasoning_content || 'Generated using DeepSeek AI reasoning';
           tokensUsed = data.usage?.total_tokens || 0;
+          
+          console.log('DeepSeek API Response:', {
+            hasContent: !!optimizedPrompt,
+            hasReasoning: !!reasoning,
+            tokensUsed
+          });
         } else {
-          throw new Error(`DeepSeek API error: ${response.status}`);
+          const errorText = await response.text();
+          console.error('DeepSeek API error response:', errorText);
+          throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
         }
       } catch (apiError) {
         console.error('DeepSeek API error:', apiError);

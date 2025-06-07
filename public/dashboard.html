@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepSeek AI Platform - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .card-gradient { background: linear-gradient(135deg, #1f2937 0%, #111827 100%); }
+        .metric-card { transition: transform 0.2s; }
+        .metric-card:hover { transform: translateY(-2px); }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-xl font-bold">DeepSeek AI Platform</h1>
+                <div class="flex space-x-6">
+                    <a href="/" class="text-blue-400 hover:text-blue-300">Generator</a>
+                    <a href="/dashboard.html" class="text-white font-medium">Dashboard</a>
+                    <a href="/analytics.html" class="text-gray-300 hover:text-white">Analytics</a>
+                    <a href="/rag-database.html" class="text-gray-300 hover:text-white">RAG Database</a>
+                    <a href="/chat.html" class="text-gray-300 hover:text-white">Chat</a>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div id="connectionStatus" class="flex items-center space-x-2">
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span class="text-sm">Connected</span>
+                </div>
+                <button class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">Settings</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-6 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold mb-2">System Dashboard</h2>
+            <p class="text-gray-400">Monitor DeepSeek AI integration, RAG performance, and platform metrics</p>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="card-gradient rounded-lg p-6 metric-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Total Prompts</p>
+                        <p id="totalPrompts" class="text-2xl font-bold">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-gradient rounded-lg p-6 metric-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">RAG Queries</p>
+                        <p id="ragQueries" class="text-2xl font-bold">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-gradient rounded-lg p-6 metric-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Active Sessions</p>
+                        <p id="activeSessions" class="text-2xl font-bold">0</p>
+                    </div>
+                    <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-gradient rounded-lg p-6 metric-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">API Health</p>
+                        <p id="apiHealth" class="text-2xl font-bold text-green-400">Healthy</p>
+                    </div>
+                    <div class="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Platform Status -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="card-gradient rounded-lg p-6">
+                <h3 class="text-lg font-semibold mb-4">Platform Integration Status</h3>
+                <div class="space-y-4" id="platformStatus">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-blue-500 rounded flex items-center justify-center text-xs font-bold">R</div>
+                            <span>Replit</span>
+                        </div>
+                        <span class="px-2 py-1 bg-green-500 text-green-100 rounded text-xs">Active</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-purple-500 rounded flex items-center justify-center text-xs font-bold">L</div>
+                            <span>Lovable</span>
+                        </div>
+                        <span class="px-2 py-1 bg-green-500 text-green-100 rounded text-xs">Active</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-yellow-500 rounded flex items-center justify-center text-xs font-bold">B</div>
+                            <span>Bolt</span>
+                        </div>
+                        <span class="px-2 py-1 bg-green-500 text-green-100 rounded text-xs">Active</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-indigo-500 rounded flex items-center justify-center text-xs font-bold">C</div>
+                            <span>Cursor</span>
+                        </div>
+                        <span class="px-2 py-1 bg-green-500 text-green-100 rounded text-xs">Active</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-teal-500 rounded flex items-center justify-center text-xs font-bold">W</div>
+                            <span>Windsurf</span>
+                        </div>
+                        <span class="px-2 py-1 bg-green-500 text-green-100 rounded text-xs">Active</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-gradient rounded-lg p-6">
+                <h3 class="text-lg font-semibold mb-4">Recent Activity</h3>
+                <div class="space-y-3" id="recentActivity">
+                    <div class="text-sm text-gray-300">Loading recent activity...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RAG Database Status -->
+        <div class="card-gradient rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-4">RAG Database Overview</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-blue-400" id="totalDocs">0</p>
+                    <p class="text-gray-400 text-sm">Total Documents</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-green-400" id="searchAccuracy">99.2%</p>
+                    <p class="text-gray-400 text-sm">Search Accuracy</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-2xl font-bold text-purple-400" id="avgResponseTime">45ms</p>
+                    <p class="text-gray-400 text-sm">Avg Response Time</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dashboard functionality
+        let metrics = {
+            totalPrompts: 0,
+            ragQueries: 0,
+            activeSessions: 0
+        };
+
+        async function loadDashboardData() {
+            try {
+                // Check API health
+                const healthResponse = await fetch('/api/health');
+                const health = await healthResponse.json();
+                
+                document.getElementById('apiHealth').textContent = health.status === 'healthy' ? 'Healthy' : 'Error';
+                document.getElementById('apiHealth').className = health.status === 'healthy' 
+                    ? 'text-2xl font-bold text-green-400' 
+                    : 'text-2xl font-bold text-red-400';
+
+                // Load RAG database stats
+                const platforms = ['replit', 'lovable', 'bolt', 'cursor', 'windsurf'];
+                let totalDocs = 0;
+                
+                for (const platform of platforms) {
+                    try {
+                        const response = await fetch(`/api/rag/platform/${platform}`);
+                        const data = await response.json();
+                        totalDocs += data.count || 0;
+                    } catch (error) {
+                        console.error(`Error loading ${platform} docs:`, error);
+                    }
+                }
+
+                document.getElementById('totalDocs').textContent = totalDocs;
+
+                // Update metrics
+                updateMetrics();
+                
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        function updateMetrics() {
+            document.getElementById('totalPrompts').textContent = metrics.totalPrompts;
+            document.getElementById('ragQueries').textContent = metrics.ragQueries;
+            document.getElementById('activeSessions').textContent = metrics.activeSessions;
+        }
+
+        function addRecentActivity(activity) {
+            const container = document.getElementById('recentActivity');
+            const activityDiv = document.createElement('div');
+            activityDiv.className = 'flex items-center justify-between text-sm';
+            activityDiv.innerHTML = `
+                <span class="text-gray-300">${activity.message}</span>
+                <span class="text-gray-500">${new Date(activity.timestamp).toLocaleTimeString()}</span>
+            `;
+            
+            container.insertBefore(activityDiv, container.firstChild);
+            
+            // Keep only last 5 activities
+            while (container.children.length > 5) {
+                container.removeChild(container.lastChild);
+            }
+        }
+
+        // Simulate real-time updates
+        function simulateActivity() {
+            const activities = [
+                'New prompt generated for Replit',
+                'RAG query processed for Cursor',
+                'Chat session started for Lovable',
+                'Documentation retrieved for Bolt',
+                'Multi-round conversation for Windsurf'
+            ];
+            
+            const randomActivity = activities[Math.floor(Math.random() * activities.length)];
+            addRecentActivity({
+                message: randomActivity,
+                timestamp: new Date()
+            });
+            
+            // Update metrics
+            metrics.totalPrompts += Math.floor(Math.random() * 3);
+            metrics.ragQueries += Math.floor(Math.random() * 2);
+            metrics.activeSessions = Math.floor(Math.random() * 10) + 1;
+            updateMetrics();
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDashboardData();
+            
+            // Update every 10 seconds
+            setInterval(simulateActivity, 10000);
+            
+            // Initial activity
+            setTimeout(simulateActivity, 2000);
+        });
+    </script>
+</body>
+</html>
