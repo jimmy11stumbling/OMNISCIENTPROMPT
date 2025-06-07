@@ -50,53 +50,52 @@ Generated using DeepSeek AI reasoning capabilities.`
       usage: { total_tokens: 250 }
     };
 
-    // Uncomment below for real DeepSeek API call
-    /*
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'deepseek-reasoner',
-        messages: [
-          {
-            role: 'system',
-            content: `You are an expert prompt engineer specializing in ${platform}. Generate optimized, platform-specific prompts that follow best practices and leverage the platform's unique capabilities.`
-          },
-          {
-            role: 'user',
-            content: `Generate an optimized prompt for ${platform} based on this user request: "${query}". 
+    // Real DeepSeek API integration when key is provided
+    if (process.env.DEEPSEEK_API_KEY) {
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'deepseek-reasoner',
+          messages: [
+            {
+              role: 'system',
+              content: `You are an expert prompt engineer specializing in ${platform}. Generate optimized, platform-specific prompts that follow best practices and leverage the platform's unique capabilities.`
+            },
+            {
+              role: 'user',
+              content: `Generate an optimized prompt for ${platform} based on this user request: "${query}". Make the prompt platform-specific, clear, actionable, and following ${platform} best practices.`
+            }
+          ],
+          max_tokens: 1000,
+          temperature: 0.7
+        })
+      });
 
-Make the prompt:
-1. Platform-specific with proper terminology
-2. Clear and actionable
-3. Following ${platform} best practices
-4. Structured for optimal results
-
-Return only the optimized prompt without additional explanation.`
-          }
-        ],
-        max_tokens: 1000,
-        temperature: 0.7
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`DeepSeek API error: ${response.status}`);
+      if (response.ok) {
+        const realData = await response.json();
+        const optimizedPrompt = realData.choices[0]?.message?.content || mockResponse.choices[0].message.content;
+        
+        return res.json({
+          prompt: optimizedPrompt,
+          platform,
+          reasoning: realData.reasoning || 'Generated using DeepSeek reasoning',
+          tokensUsed: realData.usage?.total_tokens || 0
+        });
+      }
     }
 
-    */
-
-    const data = mockResponse;
-    const optimizedPrompt = data.choices[0]?.message?.content || 'Failed to generate prompt';
+    // Fallback to demo mode if no API key
+    const optimizedPrompt = mockResponse.choices[0].message.content;
 
     res.json({
       prompt: optimizedPrompt,
       platform,
-      reasoning: data.reasoning || 'Generated using DeepSeek reasoning',
-      tokensUsed: data.usage?.total_tokens || 0
+      reasoning: 'Demo mode - add DEEPSEEK_API_KEY for real AI generation',
+      tokensUsed: mockResponse.usage.total_tokens
     });
 
   } catch (error) {
