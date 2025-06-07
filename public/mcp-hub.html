@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Hub - Model Context Protocol</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/js/realtime.js"></script>
+    <style>
+        .protocol-status { transition: all 0.3s ease; }
+        .agent-card { background: linear-gradient(135deg, #1f2937 0%, #111827 100%); transition: transform 0.2s; }
+        .agent-card:hover { transform: translateY(-2px); }
+        .connection-line { stroke-dasharray: 5,5; animation: dash 1s linear infinite; }
+        @keyframes dash { to { stroke-dashoffset: -10; } }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-xl font-bold">MCP Hub</h1>
+                <div class="flex space-x-6">
+                    <a href="/" class="text-gray-300 hover:text-white">Generator</a>
+                    <a href="/dashboard.html" class="text-gray-300 hover:text-white">Dashboard</a>
+                    <a href="/analytics.html" class="text-gray-300 hover:text-white">Analytics</a>
+                    <a href="/rag-database.html" class="text-gray-300 hover:text-white">RAG Database</a>
+                    <a href="/chat.html" class="text-gray-300 hover:text-white">Chat</a>
+                    <a href="/mcp-hub.html" class="text-blue-400 font-medium">MCP Hub</a>
+                    <a href="/docs.html" class="text-gray-300 hover:text-white">Docs</a>
+                    <a href="/admin.html" class="text-gray-300 hover:text-white">Admin</a>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2">
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span class="text-sm">MCP Active</span>
+                </div>
+                <button class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">Protocol Settings</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-6 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold mb-2">Model Context Protocol Hub</h2>
+            <p class="text-gray-400">Agent-to-Agent communication and reasoning engine coordination</p>
+        </div>
+
+        <!-- Protocol Status Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-gradient-to-br from-green-600 to-green-700 rounded-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-100 text-sm">Active Agents</p>
+                        <p class="text-3xl font-bold text-white" id="activeAgents">3</p>
+                        <p class="text-green-200 text-xs mt-1">Currently online</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-100 text-sm">Protocol Messages</p>
+                        <p class="text-3xl font-bold text-white" id="protocolMessages">847</p>
+                        <p class="text-blue-200 text-xs mt-1">This session</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+                            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-purple-100 text-sm">Reasoning Tasks</p>
+                        <p class="text-3xl font-bold text-white" id="reasoningTasks">12</p>
+                        <p class="text-purple-200 text-xs mt-1">In queue</p>
+                    </div>
+                    <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-orange-600 to-orange-700 rounded-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-orange-100 text-sm">Avg Response</p>
+                        <p class="text-3xl font-bold text-white" id="avgResponse">245ms</p>
+                        <p class="text-orange-200 text-xs mt-1">Protocol latency</p>
+                    </div>
+                    <div class="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Agent Network Visualization -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-8">
+            <h3 class="text-lg font-semibold mb-4">Agent Network Topology</h3>
+            <div class="relative h-96 bg-gray-900 rounded-lg overflow-hidden">
+                <svg class="w-full h-full" id="networkVisualization">
+                    <!-- Central Hub -->
+                    <circle cx="50%" cy="50%" r="40" fill="#3B82F6" stroke="#60A5FA" stroke-width="2"/>
+                    <text x="50%" y="50%" text-anchor="middle" dy="0.3em" fill="white" font-size="12" font-weight="bold">MCP HUB</text>
+                    
+                    <!-- DeepSeek Reasoner Agent -->
+                    <circle cx="20%" cy="20%" r="30" fill="#8B5CF6" stroke="#A78BFA" stroke-width="2"/>
+                    <text x="20%" y="20%" text-anchor="middle" dy="0.3em" fill="white" font-size="10">DeepSeek</text>
+                    <line x1="20%" y1="20%" x2="50%" y2="50%" stroke="#60A5FA" stroke-width="2" class="connection-line"/>
+                    
+                    <!-- RAG Database Agent -->
+                    <circle cx="80%" cy="20%" r="30" fill="#10B981" stroke="#34D399" stroke-width="2"/>
+                    <text x="80%" y="20%" text-anchor="middle" dy="0.3em" fill="white" font-size="10">RAG DB</text>
+                    <line x1="80%" y1="20%" x2="50%" y2="50%" stroke="#60A5FA" stroke-width="2" class="connection-line"/>
+                    
+                    <!-- Platform Integration Agent -->
+                    <circle cx="20%" cy="80%" r="30" fill="#F59E0B" stroke="#FBBF24" stroke-width="2"/>
+                    <text x="20%" y="80%" text-anchor="middle" dy="0.3em" fill="white" font-size="10">Platform</text>
+                    <line x1="20%" y1="80%" x2="50%" y2="50%" stroke="#60A5FA" stroke-width="2" class="connection-line"/>
+                    
+                    <!-- Validation Agent -->
+                    <circle cx="80%" cy="80%" r="30" fill="#EF4444" stroke="#F87171" stroke-width="2"/>
+                    <text x="80%" y="80%" text-anchor="middle" dy="0.3em" fill="white" font-size="10">Validator</text>
+                    <line x1="80%" y1="80%" x2="50%" y2="50%" stroke="#60A5FA" stroke-width="2" class="connection-line"/>
+                    
+                    <!-- Agent-to-Agent connections -->
+                    <line x1="20%" y1="20%" x2="80%" y2="20%" stroke="#4B5563" stroke-width="1" stroke-dasharray="3,3"/>
+                    <line x1="20%" y1="20%" x2="20%" y2="80%" stroke="#4B5563" stroke-width="1" stroke-dasharray="3,3"/>
+                    <line x1="80%" y1="20%" x2="80%" y2="80%" stroke="#4B5563" stroke-width="1" stroke-dasharray="3,3"/>
+                    <line x1="20%" y1="80%" x2="80%" y2="80%" stroke="#4B5563" stroke-width="1" stroke-dasharray="3,3"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Active Agents Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <!-- DeepSeek Reasoner Agent -->
+            <div class="agent-card rounded-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">DeepSeek Reasoner</h3>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-xs text-gray-400">Active</span>
+                    </div>
+                </div>
+                <p class="text-gray-300 text-sm mb-4">
+                    Advanced reasoning engine with Chain of Thought processing for comprehensive prompt generation.
+                </p>
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Model:</span>
+                        <span>deepseek-reasoner</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Tasks Processed:</span>
+                        <span id="deepseekTasks">247</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Avg Response:</span>
+                        <span>1.2s</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RAG Database Agent -->
+            <div class="agent-card rounded-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">RAG Database</h3>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-xs text-gray-400">Active</span>
+                    </div>
+                </div>
+                <p class="text-gray-300 text-sm mb-4">
+                    Semantic search and contextual document retrieval across platform documentation.
+                </p>
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Documents:</span>
+                        <span>20+</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Queries:</span>
+                        <span id="ragQueries">3,892</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Hit Rate:</span>
+                        <span>94.2%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Platform Integration Agent -->
+            <div class="agent-card rounded-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Platform Integration</h3>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-xs text-gray-400">Active</span>
+                    </div>
+                </div>
+                <p class="text-gray-300 text-sm mb-4">
+                    Platform-specific optimization and feature integration coordinator.
+                </p>
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Platforms:</span>
+                        <span>5</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Integrations:</span>
+                        <span>847</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Success Rate:</span>
+                        <span>99.1%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Real-time Validation Agent -->
+            <div class="agent-card rounded-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Real-time Validator</h3>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-xs text-gray-400">Active</span>
+                    </div>
+                </div>
+                <p class="text-gray-300 text-sm mb-4">
+                    Console validation and interface update coordination for all system operations.
+                </p>
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Validations:</span>
+                        <span id="validations">12,453</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">WebSocket Connections:</span>
+                        <span id="wsConnections">1</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Uptime:</span>
+                        <span>99.8%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- A2A Communication Agent -->
+            <div class="agent-card rounded-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">A2A Communication</h3>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-xs text-gray-400">Active</span>
+                    </div>
+                </div>
+                <p class="text-gray-300 text-sm mb-4">
+                    Agent-to-Agent protocol handling and message routing coordination.
+                </p>
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Messages:</span>
+                        <span>5,672</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Protocols:</span>
+                        <span>MCP 1.0</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Latency:</span>
+                        <span>45ms</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MCP Server Coordinator -->
+            <div class="agent-card rounded-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">MCP Coordinator</h3>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span class="text-xs text-gray-400">Active</span>
+                    </div>
+                </div>
+                <p class="text-gray-300 text-sm mb-4">
+                    Central MCP server coordination and protocol state management.
+                </p>
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Servers:</span>
+                        <span>6</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Sync Events:</span>
+                        <span>23,891</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-400">Protocol Version:</span>
+                        <span>MCP 2.0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Protocol Message Log -->
+        <div class="bg-gray-800 rounded-lg p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Real-time Protocol Messages</h3>
+                <div class="flex space-x-2">
+                    <button class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-sm">Filter</button>
+                    <button class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm">Export</button>
+                </div>
+            </div>
+            <div class="bg-gray-900 rounded p-4 h-64 overflow-y-auto font-mono text-sm">
+                <div class="space-y-1" id="protocolLog">
+                    <div class="text-blue-400">[13:38:15] MCP → RAG: SEARCH_REQUEST {"query": "collaboration", "platform": "replit"}</div>
+                    <div class="text-green-400">[13:38:15] RAG → MCP: SEARCH_RESPONSE {"results": 2, "time": "45ms"}</div>
+                    <div class="text-purple-400">[13:38:16] MCP → DeepSeek: REASONING_REQUEST {"context": "platform-specific"}</div>
+                    <div class="text-orange-400">[13:38:17] Validator → All: METRICS_UPDATE {"connections": 1, "tasks": 12}</div>
+                    <div class="text-blue-400">[13:38:18] Platform → MCP: OPTIMIZATION_COMPLETE {"platform": "replit"}</div>
+                    <div class="text-green-400">[13:38:19] A2A → MCP: PROTOCOL_SYNC {"agents": 6, "status": "healthy"}</div>
+                    <div class="text-cyan-400">[13:38:20] MCP → Coordinator: STATE_UPDATE {"active_tasks": 3}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // MCP Hub functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            // Simulate real-time protocol messages
+            function addProtocolMessage() {
+                const log = document.getElementById('protocolLog');
+                const timestamp = new Date().toLocaleTimeString();
+                
+                const messageTypes = [
+                    { sender: 'MCP', receiver: 'RAG', type: 'SEARCH_REQUEST', color: 'text-blue-400' },
+                    { sender: 'RAG', receiver: 'MCP', type: 'SEARCH_RESPONSE', color: 'text-green-400' },
+                    { sender: 'MCP', receiver: 'DeepSeek', type: 'REASONING_REQUEST', color: 'text-purple-400' },
+                    { sender: 'DeepSeek', receiver: 'MCP', type: 'REASONING_RESPONSE', color: 'text-purple-300' },
+                    { sender: 'Validator', receiver: 'All', type: 'METRICS_UPDATE', color: 'text-orange-400' },
+                    { sender: 'Platform', receiver: 'MCP', type: 'OPTIMIZATION_COMPLETE', color: 'text-blue-400' },
+                    { sender: 'A2A', receiver: 'MCP', type: 'PROTOCOL_SYNC', color: 'text-green-400' }
+                ];
+                
+                const randomMessage = messageTypes[Math.floor(Math.random() * messageTypes.length)];
+                const messageDiv = document.createElement('div');
+                messageDiv.className = randomMessage.color;
+                messageDiv.textContent = `[${timestamp}] ${randomMessage.sender} → ${randomMessage.receiver}: ${randomMessage.type} {"status": "processed"}`;
+                
+                log.appendChild(messageDiv);
+                log.scrollTop = log.scrollHeight;
+                
+                // Keep only last 20 messages
+                while (log.children.length > 20) {
+                    log.removeChild(log.firstChild);
+                }
+            }
+
+            // Update metrics
+            function updateMetrics() {
+                document.getElementById('protocolMessages').textContent = Math.floor(Math.random() * 100) + 800;
+                document.getElementById('reasoningTasks').textContent = Math.floor(Math.random() * 10) + 5;
+                document.getElementById('deepseekTasks').textContent = Math.floor(Math.random() * 50) + 200;
+                document.getElementById('ragQueries').textContent = Math.floor(Math.random() * 100) + 3800;
+                document.getElementById('validations').textContent = Math.floor(Math.random() * 1000) + 12000;
+            }
+
+            // Real-time updates
+            setInterval(addProtocolMessage, 3000);
+            setInterval(updateMetrics, 10000);
+
+            // Subscribe to real-time client updates
+            if (window.realTimeClient) {
+                window.realTimeClient.on('metrics', (data) => {
+                    if (data.data.ragQueries) {
+                        document.getElementById('ragQueries').textContent = data.data.ragQueries;
+                    }
+                    if (data.data.apiCalls) {
+                        document.getElementById('deepseekTasks').textContent = data.data.apiCalls;
+                    }
+                });
+
+                window.realTimeClient.on('rag_search', (data) => {
+                    addProtocolMessage();
+                });
+
+                window.realTimeClient.on('chat_response', (data) => {
+                    addProtocolMessage();
+                });
+            }
+        });
+    </script>
+</body>
+</html>
