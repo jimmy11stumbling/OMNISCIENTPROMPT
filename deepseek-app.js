@@ -77,7 +77,7 @@ Transform the user's input into a complete full-stack application specification.
     if (process.env.DEEPSEEK_API_KEY) {
       try {
         // Real DeepSeek API integration with advanced reasoning
-        const fetch = (await import('node-fetch')).default;
+        const fetch = require('node-fetch');
         const response = await fetch('https://api.deepseek.com/chat/completions', {
           method: 'POST',
           headers: {
