@@ -1,50 +1,189 @@
 const express = require('express');
 const path = require('path');
+const { WebSocketServer, WebSocket } = require('ws');
+const http = require('http');
 const { RAGDatabase } = require('./rag-database');
 
 const app = express();
+const server = http.createServer(app);
+
+// WebSocket server for real-time updates
+const wss = new WebSocketServer({ server, path: '/ws' });
+
 app.use(express.json());
 app.use(express.static('public'));
 
-// Initialize RAG database
+// Initialize RAG database with real-time validation
 const ragDB = new RAGDatabase();
 
-// Store conversation sessions in memory (in production, use Redis or database)
+// Store conversation sessions and real-time connections
 const conversationSessions = new Map();
+const activeConnections = new Set();
+
+// Real-time validation and monitoring system
+class RealTimeValidator {
+  constructor() {
+    this.metrics = {
+      apiCalls: 0,
+      ragQueries: 0,
+      successRate: 0,
+      responseTime: [],
+      errors: []
+    };
+  }
+
+  logApiCall(endpoint, startTime, success, tokens = 0) {
+    const duration = Date.now() - startTime;
+    this.metrics.apiCalls++;
+    this.metrics.responseTime.push(duration);
+    
+    if (success) {
+      this.metrics.successRate = (this.metrics.successRate * (this.metrics.apiCalls - 1) + 1) / this.metrics.apiCalls;
+    } else {
+      this.metrics.errors.push({ endpoint, timestamp: new Date(), duration });
+    }
+
+    // Real-time console validation
+    console.log(`[REAL-TIME] ${endpoint} - ${success ? 'SUCCESS' : 'FAILED'} - ${duration}ms - Tokens: ${tokens}`);
+    
+    // Broadcast to connected clients
+    this.broadcastMetrics();
+  }
+
+  logRagQuery(query, platform, results, duration) {
+    this.metrics.ragQueries++;
+    console.log(`[RAG-VALIDATION] Query: "${query}" | Platform: ${platform} | Results: ${results.length} | Time: ${duration}ms`);
+    
+    this.broadcastMetrics();
+  }
+
+  broadcastMetrics() {
+    const data = {
+      type: 'metrics',
+      data: {
+        ...this.metrics,
+        avgResponseTime: this.metrics.responseTime.length > 0 
+          ? this.metrics.responseTime.reduce((a, b) => a + b, 0) / this.metrics.responseTime.length 
+          : 0,
+        timestamp: new Date().toISOString()
+      }
+    };
+
+    activeConnections.forEach(ws => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(data));
+      }
+    });
+  }
+}
+
+const validator = new RealTimeValidator();
+
+// WebSocket connection handler for real-time updates
+wss.on('connection', (ws, req) => {
+  console.log('[REAL-TIME] New WebSocket connection established');
+  activeConnections.add(ws);
+  
+  // Send initial connection confirmation
+  ws.send(JSON.stringify({
+    type: 'connection',
+    status: 'connected',
+    timestamp: new Date().toISOString()
+  }));
+
+  ws.on('close', () => {
+    console.log('[REAL-TIME] WebSocket connection closed');
+    activeConnections.delete(ws);
+  });
+
+  ws.on('error', (error) => {
+    console.error('[REAL-TIME] WebSocket error:', error);
+    activeConnections.delete(ws);
+  });
+});
 
 // Root route serves the HTML page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Health check endpoint
+// Health check endpoint with real-time validation
 app.get('/api/health', (req, res) => {
-  res.json({
+  const startTime = Date.now();
+  
+  const healthData = {
     status: 'healthy',
     service: 'DeepSeek AI Prompt Generator',
     timestamp: new Date().toISOString(),
-    apiConfigured: !!process.env.DEEPSEEK_API_KEY
-  });
+    apiConfigured: !!process.env.DEEPSEEK_API_KEY,
+    activeConnections: activeConnections.size,
+    metrics: validator.metrics
+  };
+  
+  validator.logApiCall('/api/health', startTime, true);
+  res.json(healthData);
 });
 
-// RAG Search endpoint
+// Real-time metrics endpoint
+app.get('/api/metrics', (req, res) => {
+  const startTime = Date.now();
+  
+  res.json({
+    metrics: validator.metrics,
+    timestamp: new Date().toISOString(),
+    activeConnections: activeConnections.size
+  });
+  
+  validator.logApiCall('/api/metrics', startTime, true);
+});
+
+// RAG Search endpoint with real-time validation
 app.post('/api/rag/search', (req, res) => {
+  const startTime = Date.now();
   const { query, platform, limit = 5 } = req.body;
   
   if (!query) {
+    validator.logApiCall('/api/rag/search', startTime, false);
     return res.status(400).json({ error: 'Query is required' });
   }
 
   try {
+    const ragStartTime = Date.now();
     const results = ragDB.searchDocuments(query, platform, limit);
-    res.json({
+    const ragDuration = Date.now() - ragStartTime;
+    
+    // Real-time RAG validation
+    validator.logRagQuery(query, platform || 'all', results, ragDuration);
+    
+    const response = {
       query,
       platform: platform || 'all',
       results,
-      totalFound: results.length
+      totalFound: results.length,
+      searchTime: ragDuration,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Broadcast RAG search results to connected clients
+    activeConnections.forEach(ws => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'rag_search',
+          data: {
+            query,
+            platform: platform || 'all',
+            resultsCount: results.length,
+            searchTime: ragDuration
+          }
+        }));
+      }
     });
+    
+    validator.logApiCall('/api/rag/search', startTime, true);
+    res.json(response);
   } catch (error) {
-    console.error('RAG search error:', error);
+    console.error('[RAG-ERROR] Search failed:', error);
+    validator.logApiCall('/api/rag/search', startTime, false);
     res.status(500).json({ error: 'Search failed' });
   }
 });
@@ -83,19 +222,38 @@ app.post('/api/rag/recommendations', (req, res) => {
   }
 });
 
-// Multi-round conversation endpoint for DeepSeek chat with RAG integration
+// Multi-round conversation endpoint with real-time validation and interface updates
 app.post('/api/chat', async (req, res) => {
+  const startTime = Date.now();
   const { message, sessionId, platform } = req.body;
   
   if (!message || !platform) {
+    validator.logApiCall('/api/chat', startTime, false);
     return res.status(400).json({ 
       error: 'Message and platform are required' 
     });
   }
 
   try {
-    // Get relevant documentation from RAG database
+    console.log(`[CHAT-START] Session: ${sessionId || 'new'} | Platform: ${platform} | Message: "${message}"`);
+    
+    // Real-time notification of chat start
+    activeConnections.forEach(ws => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'chat_start',
+          data: { sessionId, platform, message }
+        }));
+      }
+    });
+
+    // Get relevant documentation from RAG database with timing
+    const ragStartTime = Date.now();
     const ragResults = ragDB.searchDocuments(message, platform, 3);
+    const ragDuration = Date.now() - ragStartTime;
+    
+    validator.logRagQuery(message, platform, ragResults, ragDuration);
+    
     const contextualInfo = ragResults.map(doc => 
       `${doc.title}: ${doc.snippet}`
     ).join('\n');
@@ -109,6 +267,8 @@ app.post('/api/chat', async (req, res) => {
 
     if (process.env.DEEPSEEK_API_KEY) {
       try {
+        console.log('[DEEPSEEK-API] Making request to deepseek-reasoner...');
+        
         const fetch = (await import('node-fetch')).default;
         
         // Enhanced system prompt with RAG context
@@ -121,6 +281,7 @@ Use this context to provide accurate, platform-specific guidance. Reference spec
 
 Help users build comprehensive applications with detailed technical guidance based on ${platform}'s capabilities.`;
 
+        const apiStartTime = Date.now();
         const response = await fetch('https://api.deepseek.com/chat/completions', {
           method: 'POST',
           headers: {
@@ -140,8 +301,14 @@ Help users build comprehensive applications with detailed technical guidance bas
           })
         });
 
+        const apiDuration = Date.now() - apiStartTime;
+
         if (response.ok) {
           const data = await response.json();
+          const tokensUsed = data.usage?.total_tokens || 0;
+          
+          console.log(`[DEEPSEEK-SUCCESS] Response received - Tokens: ${tokensUsed} | Time: ${apiDuration}ms`);
+          
           const assistantMessage = {
             role: 'assistant',
             content: data.choices[0]?.message?.content || 'No response generated'
@@ -151,22 +318,60 @@ Help users build comprehensive applications with detailed technical guidance bas
           messages.push(assistantMessage);
           conversationSessions.set(session, messages);
 
-          res.json({
+          const responseData = {
             response: assistantMessage.content,
             reasoning: data.choices[0]?.message?.reasoning_content,
             sessionId: session,
             platform,
             ragContext: ragResults,
-            tokensUsed: data.usage?.total_tokens || 0
+            tokensUsed,
+            responseTime: Date.now() - startTime,
+            apiTime: apiDuration,
+            ragTime: ragDuration
+          };
+
+          // Real-time broadcast of successful response
+          activeConnections.forEach(ws => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                type: 'chat_response',
+                data: {
+                  sessionId: session,
+                  platform,
+                  tokensUsed,
+                  responseTime: responseData.responseTime,
+                  hasReasoning: !!data.choices[0]?.message?.reasoning_content
+                }
+              }));
+            }
           });
+
+          validator.logApiCall('/api/chat', startTime, true, tokensUsed);
+          res.json(responseData);
           return;
+        } else {
+          const errorText = await response.text();
+          console.error(`[DEEPSEEK-ERROR] API request failed: ${response.status} - ${errorText}`);
+          throw new Error(`DeepSeek API error: ${response.status}`);
         }
       } catch (apiError) {
-        console.error('DeepSeek API error:', apiError);
+        console.error('[DEEPSEEK-ERROR] API call failed:', apiError);
+        
+        // Real-time error notification
+        activeConnections.forEach(ws => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              type: 'chat_error',
+              data: { sessionId: session, platform, error: apiError.message }
+            }));
+          }
+        });
       }
     }
 
     // Enhanced fallback response with RAG context
+    console.log('[FALLBACK] Using enhanced demo mode with RAG context');
+    
     const contextSummary = ragResults.length > 0 
       ? `Based on ${platform} documentation, here are some relevant points:\n${ragResults.map(doc => `• ${doc.title}: ${doc.snippet}`).join('\n')}\n\n`
       : '';
@@ -176,17 +381,47 @@ Help users build comprehensive applications with detailed technical guidance bas
     messages.push({ role: 'assistant', content: fallbackResponse });
     conversationSessions.set(session, messages);
 
-    res.json({
+    const responseData = {
       response: fallbackResponse,
       reasoning: 'Enhanced demo mode with RAG context - add DEEPSEEK_API_KEY for full AI reasoning',
       sessionId: session,
       platform,
       ragContext: ragResults,
-      tokensUsed: 0
+      tokensUsed: 0,
+      responseTime: Date.now() - startTime,
+      ragTime: ragDuration
+    };
+
+    // Real-time broadcast of fallback response
+    activeConnections.forEach(ws => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'chat_fallback',
+          data: {
+            sessionId: session,
+            platform,
+            responseTime: responseData.responseTime
+          }
+        }));
+      }
     });
 
+    validator.logApiCall('/api/chat', startTime, true);
+    res.json(responseData);
+
   } catch (error) {
-    console.error('Chat error:', error);
+    console.error('[CHAT-ERROR] Processing failed:', error);
+    
+    activeConnections.forEach(ws => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'chat_error',
+          data: { error: error.message }
+        }));
+      }
+    });
+    
+    validator.logApiCall('/api/chat', startTime, false);
     res.status(500).json({ 
       error: 'Failed to process chat message' 
     });
@@ -469,11 +704,18 @@ function generateDeploymentStrategy(platform) {
 }
 
 const PORT = process.env.PORT || 5000;
-
-const server = app.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, () => {
   console.log(`✅ DeepSeek AI Prompt Generator running on port ${PORT}`);
-  console.log(`🔑 API Key configured: ${process.env.DEEPSEEK_API_KEY ? 'Yes' : 'No (Demo mode)'}`);
+  console.log(`🔑 API Key configured: ${!!process.env.DEEPSEEK_API_KEY ? 'Yes' : 'No'}`);
   console.log(`🌐 Access at: http://localhost:${PORT}`);
+  console.log(`🔄 WebSocket server running at ws://localhost:${PORT}/ws`);
+  console.log(`📊 Real-time validation and monitoring: ACTIVE`);
+  
+  // Initialize real-time validation system
+  console.log('[REAL-TIME] Validation system initialized');
+  console.log('[RAG-SYSTEM] Database loaded with comprehensive platform documentation');
+  console.log('[A2A-PROTOCOL] Agent-to-Agent communication ready');
+  console.log('[MCP-INTEGRATION] Model Context Protocol handlers active');
 });
 
 server.on('error', (err) => {
