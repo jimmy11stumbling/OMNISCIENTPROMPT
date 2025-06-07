@@ -1,2 +1,2 @@
 // xAI service removed - using DeepSeek API only
-export const xaiService = null;
+// xAI service completely removed - using only DeepSeek API

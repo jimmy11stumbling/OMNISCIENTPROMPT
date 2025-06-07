@@ -1,2 +1,2 @@
 // OpenAI service removed - using DeepSeek API only
-export const openaiService = null;
+// OpenAI service completely removed - using only DeepSeek API

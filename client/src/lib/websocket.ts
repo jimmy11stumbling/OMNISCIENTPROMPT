@@ -144,6 +144,14 @@ export const useWebSocket = () => {
   };
 };
 
+export const useWSConnection = () => {
+  return {
+    isConnected: wsManager.getConnectionStatus(),
+    send: wsManager.send.bind(wsManager),
+    subscribe: wsManager.subscribe.bind(wsManager),
+  };
+};
+
 export const useRealTimeMetrics = (callback: (metrics: any) => void) => {
   const unsubscribe = wsManager.subscribe("system_metrics", callback);
   return unsubscribe;
