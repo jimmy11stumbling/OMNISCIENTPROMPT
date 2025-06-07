@@ -1,0 +1,264 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+
+  /* Dark theme colors */
+  --dark-50: hsl(0, 0%, 98%);
+  --dark-100: hsl(0, 0%, 96%);
+  --dark-200: hsl(0, 0%, 93%);
+  --dark-800: hsl(0, 0%, 26%);
+  --dark-900: hsl(0, 0%, 13%);
+  --dark-950: hsl(0, 0%, 7%);
+
+  /* Platform colors */
+  --primary-500: hsl(207, 90%, 54%);
+  --primary-600: hsl(207, 90%, 47%);
+  --primary-700: hsl(207, 90%, 40%);
+  --secondary-500: hsl(180, 100%, 38%);
+  --secondary-600: hsl(180, 100%, 31%);
+  --accent-500: hsl(45, 100%, 51%);
+  --accent-600: hsl(45, 100%, 44%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Dark theme by default */
+  :root {
+    color-scheme: dark;
+    background: hsl(0, 0%, 7%);
+    color: hsl(0, 0%, 98%);
+  }
+}
+
+@layer components {
+  /* Platform-specific colors */
+  .platform-lovable {
+    @apply bg-purple-500 text-white;
+  }
+  
+  .platform-bolt {
+    @apply bg-yellow-500 text-black;
+  }
+  
+  .platform-replit {
+    @apply bg-orange-500 text-white;
+  }
+  
+  .platform-cursor {
+    @apply bg-blue-500 text-white;
+  }
+  
+  .platform-windsurf {
+    @apply bg-teal-500 text-white;
+  }
+
+  /* Navigation styles */
+  .nav-item {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  .nav-item:hover {
+    @apply bg-gray-800 text-white;
+  }
+
+  .nav-item.active {
+    @apply bg-primary-500 text-white;
+  }
+
+  /* Status indicators */
+  .status-online {
+    @apply bg-green-500;
+  }
+  
+  .status-offline {
+    @apply bg-red-500;
+  }
+  
+  .status-syncing {
+    @apply bg-yellow-500 animate-pulse;
+  }
+  
+  .status-error {
+    @apply bg-red-600;
+  }
+
+  /* Metric cards */
+  .metric-card {
+    @apply bg-gray-800 rounded-xl p-6 border border-gray-700;
+  }
+
+  .metric-value {
+    @apply text-2xl font-bold text-white;
+  }
+
+  .metric-label {
+    @apply text-gray-400 text-sm font-medium;
+  }
+
+  .metric-change {
+    @apply text-sm mt-2;
+  }
+
+  .metric-change.positive {
+    @apply text-green-400;
+  }
+
+  .metric-change.negative {
+    @apply text-red-400;
+  }
+
+  /* Button variants */
+  .btn-primary {
+    @apply bg-primary-500 hover:bg-primary-600 text-white;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary-500 hover:bg-secondary-600 text-white;
+  }
+
+  .btn-accent {
+    @apply bg-accent-500 hover:bg-accent-600 text-black;
+  }
+
+  /* Loading states */
+  .loading-spinner {
+    @apply animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full;
+  }
+
+  /* Performance chart placeholder */
+  .chart-placeholder {
+    @apply h-32 bg-gray-800 rounded-lg flex items-center justify-center border border-gray-700;
+  }
+
+  /* Responsive design helpers */
+  .container-fluid {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Animation utilities */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  /* Scrollbar styling */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: hsl(0, 0%, 13%);
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(0, 0%, 26%);
+    border-radius: 3px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(0, 0%, 33%);
+  }
+}
+
+@layer utilities {
+  /* Text color utilities for dark theme */
+  .text-primary-500 {
+    color: hsl(207, 90%, 54%);
+  }
+
+  .text-secondary-500 {
+    color: hsl(180, 100%, 38%);
+  }
+
+  .text-accent-500 {
+    color: hsl(45, 100%, 51%);
+  }
+
+  /* Background color utilities */
+  .bg-dark-950 {
+    background-color: hsl(0, 0%, 7%);
+  }
+
+  .bg-dark-900 {
+    background-color: hsl(0, 0%, 13%);
+  }
+
+  .bg-dark-800 {
+    background-color: hsl(0, 0%, 26%);
+  }
+
+  /* Border color utilities */
+  .border-gray-800 {
+    border-color: hsl(0, 0%, 26%);
+  }
+
+  .border-gray-700 {
+    border-color: hsl(0, 0%, 33%);
+  }
+
+  /* Gradient utilities */
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(207, 90%, 54%), hsl(180, 100%, 38%));
+  }
+
+  .gradient-accent {
+    background: linear-gradient(135deg, hsl(45, 100%, 51%), hsl(207, 90%, 54%));
+  }
+}
