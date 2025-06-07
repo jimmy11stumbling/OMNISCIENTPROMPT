@@ -147,7 +147,8 @@ export class DatabaseStorage implements IStorage {
   async createMcpServer(server: InsertMcpServer): Promise<McpServer> {
     const [newServer] = await db.insert(mcpServers).values([{
       ...server,
-      metadata: server.metadata as any
+      metadata: server.metadata as any,
+      capabilities: (server.capabilities || []) as any
     }]).returning();
     return newServer;
   }
@@ -254,7 +255,7 @@ export class DatabaseStorage implements IStorage {
   async createPromptSession(session: InsertPromptSession): Promise<PromptSession> {
     const [newSession] = await db.insert(promptSessions).values([{
       ...session,
-      ragDocumentsUsed: session.ragDocumentsUsed as any,
+      ragDocumentsUsed: (session.ragDocumentsUsed || []) as any,
       deepseekResponse: session.deepseekResponse as any
     }]).returning();
     return newSession;

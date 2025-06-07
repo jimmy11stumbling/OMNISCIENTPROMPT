@@ -134,7 +134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tokensUsed: deepseekResponse.tokensUsed
       });
     } catch (error) {
-      res.status(500).json({ error: `Prompt generation failed: ${error.message}` });
+      res.status(500).json({ error: `Prompt generation failed: ${(error as Error).message}` });
     }
   });
 
@@ -178,7 +178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(results);
     } catch (error) {
-      res.status(500).json({ error: `RAG search failed: ${error.message}` });
+      res.status(500).json({ error: `RAG search failed: ${(error as Error).message}` });
     }
   });
 
@@ -268,7 +268,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const taskId = await a2aService.assignTask({ type, data });
       res.json({ taskId, status: "assigned" });
     } catch (error) {
-      res.status(500).json({ error: `Failed to assign task: ${error.message}` });
+      res.status(500).json({ error: `Failed to assign task: ${(error as Error).message}` });
     }
   });
 
@@ -299,7 +299,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await platformService.syncPlatform(req.params.name);
       res.json(result);
     } catch (error) {
-      res.status(500).json({ error: `Platform sync failed: ${error.message}` });
+      res.status(500).json({ error: `Platform sync failed: ${(error as Error).message}` });
     }
   });
 
@@ -308,7 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const results = await platformService.syncAllPlatforms();
       res.json(results);
     } catch (error) {
-      res.status(500).json({ error: `Bulk platform sync failed: ${error.message}` });
+      res.status(500).json({ error: `Bulk platform sync failed: ${(error as Error).message}` });
     }
   });
 
@@ -337,7 +337,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = await deepSeekService.generateMultiTurnConversation(messages);
       res.json(response);
     } catch (error) {
-      res.status(500).json({ error: `Conversation failed: ${error.message}` });
+      res.status(500).json({ error: `Conversation failed: ${(error as Error).message}` });
     }
   });
 
@@ -376,7 +376,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date().toISOString()
       });
     } catch (error) {
-      res.status(500).json({ error: `Initialization failed: ${error.message}` });
+      res.status(500).json({ error: `Initialization failed: ${(error as Error).message}` });
     }
   });
 
