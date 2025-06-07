@@ -87,7 +87,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPrompt(prompt: InsertPrompt): Promise<Prompt> {
-    const [newPrompt] = await db.insert(prompts).values(prompt).returning();
+    const [newPrompt] = await db.insert(prompts).values([prompt]).returning();
     return newPrompt;
   }
 
@@ -106,7 +106,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createRagDocument(document: InsertRagDocument): Promise<RagDocument> {
-    const [newDocument] = await db.insert(ragDocuments).values(document).returning();
+    const [newDocument] = await db.insert(ragDocuments).values([document]).returning();
     return newDocument;
   }
 
@@ -139,7 +139,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createMcpServer(server: InsertMcpServer): Promise<McpServer> {
-    const [newServer] = await db.insert(mcpServers).values(server).returning();
+    const [newServer] = await db.insert(mcpServers).values([server]).returning();
     return newServer;
   }
 
@@ -167,7 +167,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createA2aAgent(agent: InsertA2aAgent): Promise<A2aAgent> {
-    const [newAgent] = await db.insert(a2aAgents).values(agent).returning();
+    const [newAgent] = await db.insert(a2aAgents).values([agent]).returning();
     return newAgent;
   }
 
@@ -186,7 +186,7 @@ export class DatabaseStorage implements IStorage {
 
   // System Metrics
   async createSystemMetric(metric: InsertSystemMetric): Promise<SystemMetric> {
-    const [newMetric] = await db.insert(systemMetrics).values(metric).returning();
+    const [newMetric] = await db.insert(systemMetrics).values([metric]).returning();
     return newMetric;
   }
 
@@ -214,7 +214,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPlatformIntegration(integration: InsertPlatformIntegration): Promise<PlatformIntegration> {
-    const [newIntegration] = await db.insert(platformIntegrations).values(integration).returning();
+    const [newIntegration] = await db.insert(platformIntegrations).values([integration]).returning();
     return newIntegration;
   }
 
@@ -233,7 +233,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createPromptSession(session: InsertPromptSession): Promise<PromptSession> {
-    const [newSession] = await db.insert(promptSessions).values(session).returning();
+    const [newSession] = await db.insert(promptSessions).values([session]).returning();
     return newSession;
   }
 

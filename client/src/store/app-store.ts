@@ -196,5 +196,5 @@ export const useLoadingState = (key?: string) => useAppStore(state =>
 
 // Provider component for app store
 export const AppStoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return <>{children}</>;
+  return children;
 };

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAppStore } from "@/store/app-store";
 import { ragAPI } from "@/lib/api";
@@ -629,9 +629,9 @@ export default function Documentation() {
                   <div className="flex items-center space-x-3">
                     {platformDocs[selectedPlatform as keyof typeof platformDocs] && (
                       <>
-                        <platformDocs[selectedPlatform as keyof typeof platformDocs].icon 
-                          className={cn("w-6 h-6", platformDocs[selectedPlatform as keyof typeof platformDocs].color)} 
-                        />
+                        {React.createElement(platformDocs[selectedPlatform as keyof typeof platformDocs].icon, {
+                          className: cn("w-6 h-6", platformDocs[selectedPlatform as keyof typeof platformDocs].color)
+                        })}
                         <CardTitle className="text-white capitalize">
                           {selectedPlatform} Documentation
                         </CardTitle>
