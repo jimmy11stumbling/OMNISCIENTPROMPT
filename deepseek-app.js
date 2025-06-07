@@ -449,49 +449,189 @@ app.post('/api/generate-prompt', async (req, res) => {
       `${doc.title}: ${doc.content}`
     ).join('\n\n');
 
-    // Advanced system prompt with RAG integration
-    const systemPrompt = `### Role: Expert Full-Stack Application Developer & Prompt Engineer
-**Operating Mode:** Administrative & Omniscient
-**Mission:** Transform vague user ideas into comprehensive, production-ready application prompts with complete technical specifications.
+    // Ultra-specific system prompt for detailed full-stack applications
+    const systemPrompt = `You are a SENIOR FULL-STACK ARCHITECT with 15+ years building production applications. Your task is to transform "${query}" into an EXTREMELY DETAILED, SPECIFIC full-stack application specification.
 
-### PLATFORM-SPECIFIC KNOWLEDGE BASE:
+**CRITICAL REQUIREMENTS:**
+1. NO GENERIC RESPONSES - Every detail must be SPECIFIC and ACTIONABLE
+2. Include EXACT file structures, folder hierarchies, and code organization
+3. Specify PRECISE database schemas with table names, columns, relationships
+4. Detail SPECIFIC API endpoints with exact request/response formats
+5. List EXACT package dependencies and version numbers
+6. Provide CONCRETE component names and prop structures
+7. Include SPECIFIC authentication flows and security implementations
+
+**PLATFORM-SPECIFIC CONTEXT FOR ${platform.toUpperCase()}:**
 ${ragContext}
 
-### CORE CAPABILITIES:
-1. **Application Architecture Analysis**
-   - Interpret minimal user input and expand into full technical requirements
-   - Design scalable system architectures (frontend, backend, database, APIs)
-   - Specify technology stacks optimized for ${platform}
+**MANDATORY OUTPUT STRUCTURE:**
 
-2. **${platform.toUpperCase()} Platform Optimization**
-   - Leverage ${platform}'s specific capabilities and conventions from the knowledge base
-   - Implement platform-native patterns and best practices
-   - Ensure seamless deployment and scaling on ${platform}
-   - Reference specific ${platform} features, APIs, and tools
+# ${query.toUpperCase()} - Complete Full-Stack Application
 
-3. **Comprehensive Prompt Generation**
-   - Frontend: UI/UX specifications, component architecture, responsive design
-   - Backend: API design, database schema, authentication, security
-   - Integration: Third-party services, real-time features, performance optimization
-   - Deployment: CI/CD, environment configuration, monitoring
+## 🎯 SPECIFIC APPLICATION OVERVIEW
+- **Exact Purpose:** [Ultra-specific description of what this app does]
+- **Target Users:** [Specific user personas with detailed characteristics]
+- **Core Value Proposition:** [Specific problems solved and benefits delivered]
+- **Success Metrics:** [Specific KPIs and measurement criteria]
 
-### EXECUTION RULES:
-- Transform ANY vague idea into a detailed, actionable development prompt
-- Include specific technical requirements, file structures, and implementation steps
-- Provide platform-specific optimization recommendations using knowledge base
-- Ensure enterprise-grade reliability and scalability considerations
-- Generate production-ready specifications from minimal input
-- Reference specific ${platform} features and capabilities from the knowledge base
+## 🏗️ DETAILED TECHNICAL ARCHITECTURE
 
-### OUTPUT FORMAT:
-Provide a comprehensive development prompt that includes:
-1. Application overview and core features
-2. Technical architecture and technology stack
-3. Detailed implementation roadmap
-4. Platform-specific optimizations for ${platform} (use knowledge base)
-5. Security, performance, and scalability considerations
+### Frontend Architecture (React/Next.js)
+\`\`\`
+src/
+├── components/
+│   ├── ui/
+│   │   ├── Button.tsx
+│   │   ├── Input.tsx
+│   │   └── Modal.tsx
+│   ├── forms/
+│   │   ├── [SpecificFormName]Form.tsx
+│   │   └── [AnotherFormName]Form.tsx
+│   └── features/
+│       ├── [FeatureName]/
+│       │   ├── [FeatureName]List.tsx
+│       │   ├── [FeatureName]Detail.tsx
+│       │   └── [FeatureName]Create.tsx
+├── pages/
+│   ├── index.tsx
+│   ├── [specific-route].tsx
+│   └── api/
+├── hooks/
+├── utils/
+├── types/
+└── styles/
+\`\`\`
 
-Transform the user's input into a complete full-stack application specification using ${platform}-specific knowledge.`;
+### Backend Architecture (Node.js/Express)
+\`\`\`
+server/
+├── controllers/
+│   ├── [entityName]Controller.js
+│   └── authController.js
+├── models/
+│   ├── [EntityName].js
+│   └── User.js
+├── routes/
+│   ├── [entityName]Routes.js
+│   └── authRoutes.js
+├── middleware/
+├── utils/
+├── config/
+└── tests/
+\`\`\`
+
+## 📊 SPECIFIC DATABASE SCHEMA
+
+### Primary Tables:
+\`\`\`sql
+-- [Specific table based on the application]
+CREATE TABLE [specific_table_name] (
+  id SERIAL PRIMARY KEY,
+  [specific_column_1] VARCHAR(255) NOT NULL,
+  [specific_column_2] TEXT,
+  [specific_column_3] INTEGER,
+  [specific_column_4] TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- [Another specific table]
+CREATE TABLE [another_table_name] (
+  id SERIAL PRIMARY KEY,
+  [specific_foreign_key] INTEGER REFERENCES [specific_table_name](id),
+  [specific_data_field] JSONB,
+  status VARCHAR(50) DEFAULT 'active'
+);
+\`\`\`
+
+## 🔗 SPECIFIC API ENDPOINTS
+
+### Core API Routes:
+\`\`\`
+POST /api/[specific-entity] - Create new [entity]
+GET /api/[specific-entity] - List all [entities] with pagination
+GET /api/[specific-entity]/:id - Get specific [entity] details
+PUT /api/[specific-entity]/:id - Update [entity]
+DELETE /api/[specific-entity]/:id - Delete [entity]
+POST /api/auth/register - User registration
+POST /api/auth/login - User authentication
+GET /api/[specific-entity]/search?q=[query] - Search functionality
+\`\`\`
+
+### Request/Response Examples:
+\`\`\`json
+POST /api/[specific-entity]
+{
+  "[specificField1]": "specific value",
+  "[specificField2]": 123,
+  "[specificField3]": ["array", "of", "values"]
+}
+
+Response:
+{
+  "id": 1,
+  "[specificField1]": "specific value",
+  "created_at": "2024-01-20T10:30:00Z"
+}
+\`\`\`
+
+## 📦 EXACT DEPENDENCIES
+
+### Frontend (package.json):
+\`\`\`json
+{
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@tanstack/react-query": "^5.0.0",
+    "tailwindcss": "^3.3.0",
+    "framer-motion": "^10.16.0",
+    "[specific-ui-library]": "^x.x.x",
+    "[specific-state-management]": "^x.x.x"
+  }
+}
+\`\`\`
+
+### Backend (package.json):
+\`\`\`json
+{
+  "dependencies": {
+    "express": "^4.18.0",
+    "pg": "^8.11.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.0",
+    "[specific-validation-library]": "^x.x.x",
+    "[specific-middleware]": "^x.x.x"
+  }
+}
+\`\`\`
+
+## 🔐 SPECIFIC AUTHENTICATION & SECURITY
+- JWT token implementation with specific expiration times
+- Bcrypt password hashing with specific salt rounds
+- Role-based access control with specific permissions
+- Input validation using specific validation schemas
+- Rate limiting with specific thresholds
+- CORS configuration for specific domains
+
+## 🚀 ${platform.toUpperCase()}-SPECIFIC IMPLEMENTATION
+[Use the platform context to provide SPECIFIC implementation details, file configurations, and deployment steps unique to ${platform}]
+
+## 📈 SPECIFIC PERFORMANCE OPTIMIZATIONS
+- Database indexing on specific columns
+- Caching strategies for specific data types
+- Image optimization for specific use cases
+- Lazy loading for specific components
+- Bundle splitting for specific routes
+
+## 🧪 SPECIFIC TESTING STRATEGY
+- Unit tests for specific functions and components
+- Integration tests for specific API endpoints
+- E2E tests for specific user workflows
+- Performance tests for specific bottlenecks
+
+**TRANSFORM "${query}" into this SPECIFIC, DETAILED, ACTIONABLE full-stack application specification. NO GENERIC CONTENT ALLOWED.**`;
 
     if (process.env.DEEPSEEK_API_KEY) {
       try {
@@ -512,21 +652,24 @@ Transform the user's input into a complete full-stack application specification 
               },
               {
                 role: 'user',
-                content: `Transform this vague idea into a comprehensive full-stack application prompt for ${platform}:
+                content: `GENERATE ULTRA-SPECIFIC FULL-STACK APPLICATION SPECIFICATION:
 
-"${query}"
+Application: "${query}"
+Platform: ${platform}
 
-Provide a detailed development specification that includes:
-- Complete application architecture
-- Technology stack recommendations  
-- Implementation roadmap
-- ${platform}-specific optimizations
-- Security and scalability considerations
+REQUIREMENTS:
+1. Provide EXACT file structures with specific filenames
+2. Include DETAILED database schemas with actual table/column names
+3. List SPECIFIC API endpoints with exact request/response formats
+4. Specify EXACT package dependencies and versions
+5. Include CONCRETE component names and implementations
+6. Detail SPECIFIC authentication flows and security measures
+7. Provide ${platform}-specific configuration and deployment steps
 
-Make this into a production-ready development prompt.`
+NO GENERIC RESPONSES. Every detail must be ACTIONABLE and IMPLEMENTATION-READY.`
               }
             ],
-            max_tokens: 2000,
+            max_tokens: 8000,
             temperature: 0.7
           })
         });
@@ -701,6 +844,287 @@ function generateDeploymentStrategy(platform) {
   };
   
   return strategies[platform] || '- Follow platform-specific deployment best practices';
+}
+
+// Helper functions for ultra-specific content generation
+function generateSpecificPurpose(query) {
+  const purposes = {
+    'social media': 'A comprehensive social networking platform enabling users to create profiles, share multimedia content, engage through likes/comments, and build communities',
+    'e-commerce': 'A multi-vendor marketplace platform allowing businesses to sell products, customers to browse/purchase items, and administrators to manage transactions',
+    'task management': 'A collaborative project management system enabling teams to create, assign, track, and complete tasks with real-time progress monitoring',
+    'chat': 'A real-time messaging application supporting one-on-one conversations, group chats, file sharing, and multimedia communication',
+    'blog': 'A content management system allowing writers to publish articles, readers to engage through comments, and administrators to moderate content'
+  };
+  
+  for (const [key, purpose] of Object.entries(purposes)) {
+    if (query.toLowerCase().includes(key)) return purpose;
+  }
+  return `A specialized application designed to ${query.toLowerCase()} with comprehensive user management and data processing capabilities`;
+}
+
+function generateSpecificUsers(query) {
+  const users = {
+    'social media': 'Content creators (18-45), social influencers, businesses seeking brand awareness, and everyday users wanting to connect with friends',
+    'e-commerce': 'Online shoppers (25-65), small business owners, enterprise vendors, and marketplace administrators',
+    'task management': 'Project managers, development teams, remote workers, and business executives needing project oversight',
+    'chat': 'Remote teams, customer service representatives, community moderators, and individuals seeking secure communication',
+    'blog': 'Professional writers, thought leaders, marketing teams, and content consumers seeking quality articles'
+  };
+  
+  for (const [key, userBase] of Object.entries(users)) {
+    if (query.toLowerCase().includes(key)) return userBase;
+  }
+  return 'Professional users requiring efficient workflows, administrators managing system operations, and end-users seeking seamless experiences';
+}
+
+function generateSpecificFeatures(query) {
+  const features = {
+    'social media': 'User profiles with bio/photos, multimedia post creation, real-time feed updates, like/comment system, friend/follow mechanisms, direct messaging, story features',
+    'e-commerce': 'Product catalog with search/filters, shopping cart functionality, secure payment processing, order tracking, vendor dashboards, inventory management, review system',
+    'task management': 'Project creation/management, task assignment with due dates, progress tracking, team collaboration, file attachments, time tracking, reporting dashboards',
+    'chat': 'Real-time messaging, group chat creation, file/image sharing, message encryption, user status indicators, notification system, message history',
+    'blog': 'Article creation with rich text editor, category/tag management, comment system, user authentication, content moderation, SEO optimization, analytics dashboard'
+  };
+  
+  for (const [key, featureSet] of Object.entries(features)) {
+    if (query.toLowerCase().includes(key)) return featureSet;
+  }
+  return 'Core functionality specific to user requirements, administrative controls, data management, and user interaction features';
+}
+
+function generateEntityFromQuery(query) {
+  const entities = {
+    'social media': 'Post',
+    'e-commerce': 'Product',
+    'task management': 'Task',
+    'chat': 'Message',
+    'blog': 'Article'
+  };
+  
+  for (const [key, entity] of Object.entries(entities)) {
+    if (query.toLowerCase().includes(key)) return entity;
+  }
+  return 'Item';
+}
+
+function generateRouteFromQuery(query) {
+  const routes = {
+    'social media': 'posts',
+    'e-commerce': 'products',
+    'task management': 'tasks',
+    'chat': 'messages',
+    'blog': 'articles'
+  };
+  
+  for (const [key, route] of Object.entries(routes)) {
+    if (query.toLowerCase().includes(key)) return route;
+  }
+  return 'items';
+}
+
+function generateSpecificTables(query) {
+  const entity = generateEntityFromQuery(query);
+  const tableName = entity.toLowerCase() + 's';
+  
+  if (query.toLowerCase().includes('social media')) {
+    return `\`\`\`sql
+-- Users table
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  full_name VARCHAR(100),
+  bio TEXT,
+  profile_picture_url VARCHAR(500),
+  followers_count INTEGER DEFAULT 0,
+  following_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Posts table
+CREATE TABLE posts (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  image_urls TEXT[],
+  video_url VARCHAR(500),
+  likes_count INTEGER DEFAULT 0,
+  comments_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Follows table
+CREATE TABLE follows (
+  id SERIAL PRIMARY KEY,
+  follower_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  following_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(follower_id, following_id)
+);
+
+-- Likes table
+CREATE TABLE likes (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, post_id)
+);
+\`\`\``;
+  }
+  
+  if (query.toLowerCase().includes('e-commerce')) {
+    return `\`\`\`sql
+-- Users table
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  first_name VARCHAR(50) NOT NULL,
+  last_name VARCHAR(50) NOT NULL,
+  role VARCHAR(20) DEFAULT 'customer',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Products table
+CREATE TABLE products (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  price DECIMAL(10,2) NOT NULL,
+  category_id INTEGER REFERENCES categories(id),
+  vendor_id INTEGER REFERENCES users(id),
+  stock_quantity INTEGER DEFAULT 0,
+  image_urls TEXT[],
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Orders table
+CREATE TABLE orders (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id),
+  total_amount DECIMAL(10,2) NOT NULL,
+  status VARCHAR(50) DEFAULT 'pending',
+  shipping_address JSONB,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Order_items table
+CREATE TABLE order_items (
+  id SERIAL PRIMARY KEY,
+  order_id INTEGER REFERENCES orders(id),
+  product_id INTEGER REFERENCES products(id),
+  quantity INTEGER NOT NULL,
+  price DECIMAL(10,2) NOT NULL
+);
+\`\`\``;
+  }
+  
+  return `\`\`\`sql
+-- Generic table structure for ${entity.toLowerCase()}s
+CREATE TABLE ${tableName} (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  status VARCHAR(50) DEFAULT 'active',
+  user_id INTEGER REFERENCES users(id),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+\`\`\``;
+}
+
+function generateSpecificEndpoints(query) {
+  const entity = generateEntityFromQuery(query);
+  const route = generateRouteFromQuery(query);
+  
+  return `\`\`\`
+### Core API Endpoints:
+POST /api/${route} - Create new ${entity.toLowerCase()}
+GET /api/${route} - List all ${route} with pagination
+GET /api/${route}/:id - Get specific ${entity.toLowerCase()} details
+PUT /api/${route}/:id - Update ${entity.toLowerCase()}
+DELETE /api/${route}/:id - Delete ${entity.toLowerCase()}
+
+### Authentication:
+POST /api/auth/register - User registration
+POST /api/auth/login - User authentication
+POST /api/auth/logout - User logout
+GET /api/auth/me - Get current user
+
+### Request/Response Example:
+POST /api/${route}
+{
+  "title": "Specific ${entity} Title",
+  "description": "Detailed description",
+  "additionalData": "specific to ${query}"
+}
+
+Response:
+{
+  "id": 1,
+  "title": "Specific ${entity} Title",
+  "description": "Detailed description",
+  "created_at": "2024-01-20T10:30:00Z"
+}
+\`\`\``;
+}
+
+function generateSpecificComponents(query) {
+  const entity = generateEntityFromQuery(query);
+  
+  return `\`\`\`tsx
+// ${entity}List.tsx
+interface ${entity}ListProps {
+  ${entity.toLowerCase()}s: ${entity}[];
+  onEdit: (id: number) => void;
+  onDelete: (id: number) => void;
+}
+
+export function ${entity}List({ ${entity.toLowerCase()}s, onEdit, onDelete }: ${entity}ListProps) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {${entity.toLowerCase()}s.map(${entity.toLowerCase()} => (
+        <${entity}Card 
+          key={${entity.toLowerCase()}.id} 
+          ${entity.toLowerCase()}={${entity.toLowerCase()}} 
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ${entity}Form.tsx
+interface ${entity}FormProps {
+  onSubmit: (data: ${entity}FormData) => void;
+  initialData?: Partial<${entity}>;
+}
+
+export function ${entity}Form({ onSubmit, initialData }: ${entity}FormProps) {
+  const { register, handleSubmit, formState: { errors } } = useForm<${entity}FormData>();
+  
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <Input 
+        {...register("title", { required: "Title is required" })}
+        placeholder="${entity} title"
+        error={errors.title?.message}
+      />
+      <Textarea 
+        {...register("description")}
+        placeholder="Description"
+      />
+      <Button type="submit">Save ${entity}</Button>
+    </form>
+  );
+}
+\`\`\``;
 }
 
 const PORT = process.env.PORT || 5000;
