@@ -302,8 +302,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js",
-    "dev": "node deepseek-app.js"
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
