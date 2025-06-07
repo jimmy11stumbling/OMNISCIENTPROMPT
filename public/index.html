@@ -10,7 +10,7 @@
     <div class="container mx-auto px-4 py-8 max-w-4xl">
         <header class="text-center mb-8">
             <h1 class="text-4xl font-bold mb-2">DeepSeek AI Prompt Generator</h1>
-            <p class="text-gray-400 text-lg">Generate optimized prompts using DeepSeek reasoning</p>
+            <p class="text-gray-400 text-lg">Transform vague ideas into comprehensive full-stack application prompts</p>
         </header>
 
         <div class="bg-gray-800 rounded-lg p-6 mb-6">
@@ -30,10 +30,11 @@
                     <label for="query" class="block text-sm font-medium mb-2">Your Request</label>
                     <textarea 
                         id="query" 
-                        placeholder="Describe what you want to build..."
+                        placeholder="Describe your app idea (can be vague - AI will expand it into a full specification)..."
                         class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md h-32"
                         required
                     ></textarea>
+                    <p class="text-sm text-gray-400 mt-2">💡 Examples: "social media app", "todo manager", "ecommerce store", "dashboard with charts"</p>
                 </div>
 
                 <button 
@@ -41,13 +42,13 @@
                     id="generateBtn"
                     class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 p-3 rounded-md font-medium"
                 >
-                    Generate Optimized Prompt
+                    Generate Full-Stack App Prompt
                 </button>
             </form>
         </div>
 
         <div id="resultSection" class="hidden bg-gray-800 rounded-lg p-6">
-            <h3 class="text-lg font-medium mb-3">Generated Prompt</h3>
+            <h3 class="text-lg font-medium mb-3">Full-Stack Application Prompt</h3>
             <div class="bg-gray-900 p-4 rounded-md">
                 <pre id="promptResult" class="whitespace-pre-wrap text-sm text-gray-300"></pre>
             </div>
@@ -107,7 +108,7 @@
                 errorSection.classList.remove('hidden');
             } finally {
                 generateBtn.disabled = false;
-                generateBtn.textContent = 'Generate Optimized Prompt';
+                generateBtn.textContent = 'Generate Full-Stack App Prompt';
             }
         });
 
