@@ -23,9 +23,11 @@ class NotificationManager {
         this.createNotificationUI();
         this.requestPermission();
         
-        // Auto-refresh notifications every 30 seconds
+        // Auto-refresh notifications every 30 seconds (only if not on analytics page)
         setInterval(() => {
-            this.loadNotifications();
+            if (!window.location.pathname.includes('analytics.html')) {
+                this.loadNotifications();
+            }
         }, 30000);
     }
 
@@ -116,6 +118,10 @@ class NotificationManager {
                 this.updateUI();
             }
         } catch (error) {
+            // Silently handle notification loading errors to prevent console spam
+            if (window.location.pathname.includes('analytics.html')) {
+                return;
+            }
             console.error('Failed to load notifications:', error);
         }
     }

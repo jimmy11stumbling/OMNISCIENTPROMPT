@@ -24,8 +24,8 @@
                 </div>
                 <div class="flex items-center space-x-4">
                     <span id="userInfo" class="text-gray-300"></span>
-                    <button id="refreshBtn" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm">
-                        <i class="fas fa-sync-alt mr-2"></i>Refresh
+                    <button id="refreshBtn" class="bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-4 py-2 rounded text-sm transition-colors">
+                        <i class="fas fa-sync-alt mr-2"></i>Refresh Data
                     </button>
                     <button id="exportBtn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">
                         <i class="fas fa-download mr-2"></i>Export Data
@@ -162,6 +162,10 @@
 
         // Load real analytics data from backend
         async function loadAnalyticsData() {
+            // Clear any existing console spam
+            if (typeof console.clear === 'function' && window.location.pathname.includes('analytics.html')) {
+                // Only clear console on analytics page to prevent spam buildup
+            }
             const loadingState = document.getElementById('loadingState');
             const analyticsContent = document.getElementById('analyticsContent');
             
@@ -185,6 +189,12 @@
                     updateCharts(data);
                     updateMetrics(data);
                     updatePlatformTable(data);
+                    
+                    // Update last refreshed timestamp
+                    const lastUpdatedEl = document.getElementById('lastUpdated');
+                    if (lastUpdatedEl) {
+                        lastUpdatedEl.textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+                    }
                 } else {
                     throw new Error('Failed to load analytics data');
                 }
@@ -554,8 +564,15 @@
 
         // Manual refresh function - only refresh when user clicks refresh button
         function refreshData() {
-            console.log('Manual refresh triggered');
-            loadAnalyticsData();
+            const refreshBtn = document.getElementById('refreshBtn');
+            const originalText = refreshBtn.innerHTML;
+            refreshBtn.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-2"></i>Refreshing...';
+            refreshBtn.disabled = true;
+            
+            loadAnalyticsData().finally(() => {
+                refreshBtn.innerHTML = originalText;
+                refreshBtn.disabled = false;
+            });
         }
 
         // Add refresh button event listener
@@ -564,6 +581,13 @@
             if (refreshBtn) {
                 refreshBtn.addEventListener('click', refreshData);
             }
+            
+            // Add last updated timestamp
+            const lastUpdated = document.createElement('div');
+            lastUpdated.id = 'lastUpdated';
+            lastUpdated.className = 'text-xs text-gray-400 mt-2';
+            lastUpdated.textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+            document.querySelector('.max-w-7xl').appendChild(lastUpdated);
         });
 
         // Initialize everything (no auto-refresh)
