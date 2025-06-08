@@ -6,6 +6,7 @@
     <title>Analytics Dashboard - DeepSeek AI</title>
     <link rel="stylesheet" href="/css/tailwind.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/js/realtime.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="bg-gray-900 text-white">
@@ -160,6 +161,39 @@
         document.getElementById('userInfo').textContent = `Welcome, ${userData.username || 'User'}`;
 
         let usageChart, platformChart, responseTimeChart, ragChart;
+        let realTimeClient;
+
+        // Initialize real-time connection
+        function initializeRealTime() {
+            if (typeof RealTimeClient !== 'undefined') {
+                realTimeClient = new RealTimeClient();
+                realTimeClient.connect();
+                
+                // Handle real-time metrics updates
+                realTimeClient.on('metrics', (metrics) => {
+                    updateRealTimeMetrics(metrics);
+                });
+            }
+        }
+
+        // Update real-time metrics
+        function updateRealTimeMetrics(metrics) {
+            if (document.getElementById('totalRequests')) {
+                document.getElementById('totalRequests').textContent = metrics.apiCalls || 0;
+            }
+            if (document.getElementById('successRate')) {
+                document.getElementById('successRate').textContent = 
+                    `${((metrics.successRate || 0) * 100).toFixed(1)}%`;
+            }
+            if (document.getElementById('avgResponseTime')) {
+                document.getElementById('avgResponseTime').textContent = 
+                    `${Math.round(metrics.avgResponseTime || 0)}ms`;
+            }
+            if (document.getElementById('totalTokens')) {
+                document.getElementById('totalTokens').textContent = 
+                    (metrics.totalTokens || 0).toLocaleString();
+            }
+        }
 
         // Load real analytics data from backend
         async function loadAnalyticsData() {

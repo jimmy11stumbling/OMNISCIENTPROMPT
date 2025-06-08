@@ -1037,13 +1037,13 @@ app.get('/api/analytics', async (req, res) => {
         timeCondition = "created_at >= NOW() - INTERVAL '24 hours'";
     }
 
-    // Get prompt generation analytics with retry
+    // Get prompt generation analytics with retry (using correct column names)
     const promptStats = await queryWithRetry(`
       SELECT 
         DATE_TRUNC('hour', created_at) as hour,
         COUNT(*) as count,
-        AVG(tokens_used) as avg_tokens,
-        AVG(response_time) as avg_response_time,
+        AVG(COALESCE(tokens_used, 0)) as avg_tokens,
+        AVG(COALESCE(response_time, 0)) as avg_response_time,
         platform
       FROM saved_prompts 
       WHERE ${timeCondition}
@@ -1064,23 +1064,36 @@ app.get('/api/analytics', async (req, res) => {
     const tokenStats = await queryWithRetry(`
       SELECT 
         DATE_TRUNC('day', created_at) as day,
-        SUM(tokens_used) as total_tokens,
+        SUM(COALESCE(tokens_used, 0)) as total_tokens,
         COUNT(*) as requests
       FROM saved_prompts 
-      WHERE ${timeCondition} AND tokens_used > 0
+      WHERE ${timeCondition}
       GROUP BY DATE_TRUNC('day', created_at)
       ORDER BY day ASC
+    `);
+
+    // Get RAG performance stats
+    const ragStats = await queryWithRetry(`
+      SELECT 
+        DATE_TRUNC('hour', created_at) as hour,
+        COUNT(*) as total_queries,
+        COUNT(CASE WHEN rag_context IS NOT NULL THEN 1 END) as rag_hits,
+        AVG(CASE WHEN rag_context IS NOT NULL THEN response_time ELSE NULL END) as avg_rag_time
+      FROM saved_prompts 
+      WHERE ${timeCondition}
+      GROUP BY DATE_TRUNC('hour', created_at)
+      ORDER BY hour ASC
     `);
 
     // Calculate performance metrics
     const performanceStats = await queryWithRetry(`
       SELECT 
-        AVG(response_time) as avg_response_time,
-        MIN(response_time) as min_response_time,
-        MAX(response_time) as max_response_time,
-        PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY response_time) as p95_response_time
+        AVG(COALESCE(response_time, 0)) as avg_response_time,
+        MIN(COALESCE(response_time, 0)) as min_response_time,
+        MAX(COALESCE(response_time, 0)) as max_response_time,
+        PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY COALESCE(response_time, 0)) as p95_response_time
       FROM saved_prompts 
-      WHERE ${timeCondition} AND response_time > 0
+      WHERE ${timeCondition}
     `);
 
     res.json({
@@ -1088,6 +1101,7 @@ app.get('/api/analytics', async (req, res) => {
       promptStats: promptStats.rows,
       platformStats: platformStats.rows,
       tokenStats: tokenStats.rows,
+      ragStats: ragStats.rows,
       performanceStats: performanceStats.rows[0] || {},
       realTimeMetrics: validator.metrics,
       generatedAt: new Date().toISOString()
@@ -1095,21 +1109,22 @@ app.get('/api/analytics', async (req, res) => {
   } catch (error) {
     console.error('Analytics query error:', error);
     
-    // Return basic structure with empty data when database fails
+    // Return basic structure with real-time data when database fails
     res.json({
       timeRange,
       promptStats: [],
       platformStats: [],
       tokenStats: [],
+      ragStats: [],
       performanceStats: {
-        avg_response_time: 0,
+        avg_response_time: validator.metrics.avgResponseTime || 0,
         min_response_time: 0,
         max_response_time: 0,
         p95_response_time: 0
       },
       realTimeMetrics: validator.metrics,
       generatedAt: new Date().toISOString(),
-      error: 'Database connection issue - showing cached metrics only'
+      error: 'Database connection issue - showing real-time metrics only'
     });
   }
 });
