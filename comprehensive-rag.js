@@ -117,16 +117,9 @@ class ComprehensiveRAG {
         if (doc.keywords?.some(kw => kw.toLowerCase().includes(term))) {
           score += 3;
         }
-        // Content matches with frequency bonus - escape regex special characters
-        try {
-          const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const matches = (searchableText.match(new RegExp(escapedTerm, 'g')) || []).length;
-          score += matches;
-        } catch (regexError) {
-          // Fallback to simple string matching if regex fails
-          const termOccurrences = searchableText.split(term).length - 1;
-          score += termOccurrences;
-        }
+        // Content matches with frequency bonus - use simple string counting for safety
+        const termOccurrences = searchableText.split(term).length - 1;
+        score += termOccurrences;
       }
     }
     

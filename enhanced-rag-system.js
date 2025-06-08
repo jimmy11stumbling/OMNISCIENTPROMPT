@@ -157,8 +157,8 @@ class EnhancedRAGSystem {
           score += 3;
         }
         // Content matches get base score, with frequency bonus
-        const matches = (searchableText.match(new RegExp(term, 'g')) || []).length;
-        score += matches;
+        const termOccurrences = searchableText.split(term).length - 1;
+        score += termOccurrences;
       }
     }
     
