@@ -222,8 +222,9 @@ const checkApiQuota = async (req, res, next) => {
 
 app.use(express.static('public'));
 
-// Initialize RAG database with real-time validation and database access
-const ragDB = new RAGDatabase(pool);
+// Initialize comprehensive RAG system with database access
+const ComprehensiveRAG = require('./comprehensive-rag');
+const ragDB = new ComprehensiveRAG(pool);
 
 // Store conversation sessions and real-time connections
 const conversationSessions = new Map();

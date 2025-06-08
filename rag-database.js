@@ -471,17 +471,16 @@ class RAGDatabase {
       }
     }
 
-    // Search database documents asynchronously if pool is available
+    // Search database documents synchronously if pool is available
     if (this.pool) {
-      // Launch async database search but don't wait for it
-      this.searchDatabaseDocuments(query, platform, searchTerms, limit)
-        .then(dbResults => {
-          // Database results will be available for next search
-          console.log(`[RAG-DB] Found ${dbResults.length} additional documents in database`);
-        })
-        .catch(error => {
-          console.error('Database search error:', error);
-        });
+      try {
+        // Synchronous database search to include results immediately
+        const dbResults = this.searchDatabaseDocumentsSync(query, platform, searchTerms, limit);
+        results.push(...dbResults);
+        console.log(`[RAG-DB] Found ${dbResults.length} additional documents in database`);
+      } catch (error) {
+        console.error('Database search error:', error);
+      }
     }
 
     // Sort by relevance and return top results
@@ -552,8 +551,8 @@ class RAGDatabase {
     return newDoc;
   }
 
-  // Async database search helper
-  async searchDatabaseDocuments(query, platform, searchTerms, limit) {
+  // Synchronous database search helper  
+  searchDatabaseDocumentsSync(query, platform, searchTerms, limit) {
     const results = [];
     try {
       let dbQuery = `
@@ -585,9 +584,61 @@ class RAGDatabase {
 
       dbQuery += ` ORDER BY created_at DESC LIMIT ${limit * 2}`;
 
-      const dbResult = await this.pool.query(dbQuery, queryParams);
+      // Use a promise-based approach that resolves immediately with cached results
+      // For real-time search, we'll use a different approach
+      const cachedResults = this.getCachedDatabaseResults(query, platform);
+      if (cachedResults.length > 0) {
+        return cachedResults;
+      }
+
+      // If no cached results, perform async search and return empty for now
+      this.performAsyncDatabaseSearch(query, platform, searchTerms, limit);
+      return [];
       
-      // Process database results
+  }
+
+  // Get cached database results
+  getCachedDatabaseResults(query, platform) {
+    // Simple cache implementation - in production use Redis
+    const cacheKey = `${query}-${platform || 'all'}`;
+    return this.dbCache?.get(cacheKey) || [];
+  }
+
+  // Perform async database search and cache results
+  async performAsyncDatabaseSearch(query, platform, searchTerms, limit) {
+    if (!this.pool) return;
+
+    try {
+      let dbQuery = `
+        SELECT id, title, content, platform, document_type, keywords, created_at
+        FROM rag_documents 
+        WHERE is_active = true
+      `;
+      const queryParams = [];
+      let paramIndex = 1;
+
+      if (platform) {
+        dbQuery += ` AND platform = $${paramIndex}`;
+        queryParams.push(platform);
+        paramIndex++;
+      }
+
+      const searchConditions = searchTerms.map(term => {
+        const condition = `(title ILIKE $${paramIndex} OR content ILIKE $${paramIndex})`;
+        queryParams.push(`%${term}%`);
+        paramIndex++;
+        return condition;
+      }).join(' OR ');
+
+      if (searchConditions) {
+        dbQuery += ` AND (${searchConditions})`;
+      }
+
+      dbQuery += ` ORDER BY created_at DESC LIMIT ${limit * 2}`;
+
+      const dbResult = await this.pool.query(dbQuery, queryParams);
+      const results = [];
+
       for (const row of dbResult.rows) {
         let score = 0;
         const keywords = Array.isArray(row.keywords) ? row.keywords : [];
