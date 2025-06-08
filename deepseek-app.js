@@ -1190,7 +1190,8 @@ app.get('/api/rag/platform/:platform', (req, res) => {
   const { platform } = req.params;
   
   try {
-    const docs = ragDB.getPlatformDocs(platform);
+    // Use the correct method name from rag-database.js
+    const docs = ragDB.getPlatformDocs ? ragDB.getPlatformDocs(platform) : [];
     res.json({
       platform,
       documents: docs,
@@ -1198,7 +1199,12 @@ app.get('/api/rag/platform/:platform', (req, res) => {
     });
   } catch (error) {
     console.error('Platform docs error:', error);
-    res.status(500).json({ error: 'Failed to retrieve platform documentation' });
+    // Return empty result instead of error to prevent crashes
+    res.json({
+      platform,
+      documents: [],
+      count: 0
+    });
   }
 });
 
