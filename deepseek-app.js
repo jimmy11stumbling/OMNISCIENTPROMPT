@@ -1154,20 +1154,18 @@ app.post('/api/rag/recommendations', (req, res) => {
   }
 });
 
-// Multi-round conversation endpoint with real-time validation and interface updates
+// Enhanced chat endpoint with real-time validation
 app.post('/api/chat', async (req, res) => {
   const startTime = Date.now();
-  const { message, sessionId, platform } = req.body;
-  
-  if (!message || !platform) {
-    validator.logApiCall('/api/chat', startTime, false);
-    return res.status(400).json({ 
-      error: 'Message and platform are required' 
-    });
+  const { message, platform = 'general' } = req.body;
+
+  if (!message) {
+    return res.status(400).json({ error: 'Message is required' });
   }
 
   try {
-    console.log(`[CHAT-START] Session: ${sessionId || 'new'} | Platform: ${platform} | Message: "${message}"`);
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log(`[CHAT-START] Session: ${sessionId.split('_')[1]} | Platform: ${platform} | Message: "${message}"`);
     
     // Real-time notification of chat start
     activeConnections.forEach(ws => {
@@ -1175,7 +1173,7 @@ app.post('/api/chat', async (req, res) => {
         try {
           ws.send(JSON.stringify({
             type: 'chat_start',
-            data: { sessionId, platform, message }
+            data: { platform, message }
           }));
         } catch (error) {
           console.error('WebSocket chat start broadcast error:', error);
@@ -1196,41 +1194,39 @@ app.post('/api/chat', async (req, res) => {
     ).join('\n');
 
     // Get or create conversation session
-    const session = sessionId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    let messages = conversationSessions.get(session) || [];
+    let messages = conversationSessions.get(sessionId) || [];
 
     // Add user message to conversation
     messages.push({ role: 'user', content: message });
 
-    // Provide immediate fallback response first, then enhance with AI if available
-    let fallbackResponse;
+    // Generate contextual response based on available documentation
+    let contextualResponse;
     
     if (ragResults.length > 0) {
       const contextInfo = ragResults.map(doc => `• **${doc.title}**: ${doc.snippet}`).join('\n');
       
-      // Generate contextual response based on available documentation
       if (message.toLowerCase().includes('authentication') || message.toLowerCase().includes('auth')) {
-        fallbackResponse = `Based on ${platform} documentation:\n\n${contextInfo}\n\nFor authentication implementation, I recommend starting with JWT tokens and secure session management. Would you like me to help you implement a specific authentication flow?`;
+        contextualResponse = `Based on ${platform} documentation:\n\n${contextInfo}\n\nFor authentication implementation, I recommend starting with JWT tokens and secure session management. Would you like me to help you implement a specific authentication flow?`;
       } else if (message.toLowerCase().includes('component') || message.toLowerCase().includes('react')) {
-        fallbackResponse = `Based on ${platform} documentation:\n\n${contextInfo}\n\nFor React development, focus on component composition and proper state management. Would you like help with a specific component pattern?`;
+        contextualResponse = `Based on ${platform} documentation:\n\n${contextInfo}\n\nFor React development, focus on component composition and proper state management. Would you like help with a specific component pattern?`;
       } else if (message.toLowerCase().includes('database') || message.toLowerCase().includes('data')) {
-        fallbackResponse = `Based on ${platform} documentation:\n\n${contextInfo}\n\nFor database implementation, consider proper schema design and security measures. What type of data structure are you working with?`;
+        contextualResponse = `Based on ${platform} documentation:\n\n${contextInfo}\n\nFor database implementation, consider proper schema design and security measures. What type of data structure are you working with?`;
       } else {
-        fallbackResponse = `Based on ${platform} documentation:\n\n${contextInfo}\n\nI can help you implement "${message}" with these best practices. What specific aspect would you like to focus on first?`;
+        contextualResponse = `Based on ${platform} documentation:\n\n${contextInfo}\n\nI can help you implement "${message}" with these best practices. What specific aspect would you like to focus on first?`;
       }
     } else {
-      fallbackResponse = `I understand you want to work on "${message}" for ${platform}. I can provide guidance on ${platform} development patterns. What specific aspect would you like to explore?`;
+      contextualResponse = `I understand you want to work on "${message}" for ${platform}. I can provide guidance on ${platform} development patterns. What specific aspect would you like to explore?`;
     }
 
-    // Add immediate response to conversation
-    messages.push({ role: 'assistant', content: fallbackResponse });
-    conversationSessions.set(session, messages);
+    // Add response to conversation
+    messages.push({ role: 'assistant', content: contextualResponse });
+    conversationSessions.set(sessionId, messages);
 
-    // Send immediate response
-    const immediateResponseData = {
-      response: fallbackResponse,
+    // Prepare response data
+    const responseData = {
+      response: contextualResponse,
       reasoning: `Context-aware response based on ${platform} documentation`,
-      sessionId: session,
+      sessionId: sessionId,
       platform,
       ragContext: ragResults,
       tokensUsed: 0,
@@ -1238,125 +1234,29 @@ app.post('/api/chat', async (req, res) => {
       ragTime: ragDuration
     };
 
-    // Broadcast immediate response
+    // Real-time response broadcast
     activeConnections.forEach(ws => {
       if (ws.readyState === WebSocket.OPEN) {
         try {
           ws.send(JSON.stringify({
             type: 'chat_response',
             data: {
-              sessionId: session,
+              sessionId: sessionId,
               platform,
               tokensUsed: 0,
-              responseTime: immediateResponseData.responseTime,
-              hasReasoning: false,
-              immediate: true
+              responseTime: responseData.responseTime,
+              hasReasoning: false
             }
           }));
         } catch (error) {
-          console.error('WebSocket immediate response broadcast error:', error);
+          console.error('WebSocket response broadcast error:', error);
           activeConnections.delete(ws);
         }
       }
     });
 
     validator.logApiCall('/api/chat', startTime, true, 0);
-    
-    // Try to enhance with DeepSeek AI in background if available
-    if (process.env.DEEPSEEK_API_KEY) {
-      // Launch background AI enhancement but don't wait for it
-      setImmediate(async () => {
-        try {
-          console.log('[DEEPSEEK-API] Background enhancement starting...');
-          
-          const fetch = (await import('node-fetch')).default;
-          
-          // Enhanced system prompt with RAG context
-          const systemPrompt = `You are an expert full-stack application developer specializing in ${platform}. 
-
-PLATFORM-SPECIFIC CONTEXT:
-${contextualInfo}
-
-Use this context to provide accurate, platform-specific guidance. Reference specific ${platform} features, APIs, and best practices from the context when relevant.
-
-Help users build comprehensive applications with detailed technical guidance based on ${platform}'s capabilities.`;
-
-          const apiStartTime = Date.now();
-          
-          // Create abort controller for timeout handling
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
-        
-          const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
-            },
-            body: JSON.stringify({
-              model: 'deepseek-reasoner',
-              messages: [
-                {
-                  role: 'system',
-                  content: systemPrompt
-                },
-                ...messages.slice(0, -1) // Remove the fallback response
-              ],
-              max_tokens: 2000,
-              temperature: 0.7
-            }),
-            signal: controller.signal
-          });
-          
-          clearTimeout(timeoutId);
-
-          const apiDuration = Date.now() - apiStartTime;
-
-          if (response.ok) {
-            const data = await response.json();
-            const tokensUsed = data.usage?.total_tokens || 0;
-            
-            console.log(`[DEEPSEEK-SUCCESS] Background enhancement complete - Tokens: ${tokensUsed} | Time: ${apiDuration}ms`);
-            
-            const enhancedContent = data.choices[0]?.message?.content;
-            if (enhancedContent && enhancedContent.length > fallbackResponse.length) {
-              // Update conversation with enhanced response
-              messages[messages.length - 1] = {
-                role: 'assistant',
-                content: enhancedContent
-              };
-              conversationSessions.set(session, messages);
-
-              // Broadcast enhanced response
-              activeConnections.forEach(ws => {
-                if (ws.readyState === WebSocket.OPEN) {
-                  try {
-                    ws.send(JSON.stringify({
-                      type: 'chat_enhanced',
-                      data: {
-                        sessionId: session,
-                        platform,
-                        tokensUsed,
-                        hasReasoning: !!data.choices[0]?.message?.reasoning_content,
-                        enhanced: true
-                      }
-                    }));
-                  } catch (error) {
-                    console.error('WebSocket enhanced response broadcast error:', error);
-                    activeConnections.delete(ws);
-                  }
-                }
-              });
-            }
-          }
-        } catch (backgroundError) {
-          console.log('[DEEPSEEK-BACKGROUND] Enhancement failed, using fallback response:', backgroundError.message);
-        }
-      });
-    }
-
-    // Return immediate response
-    res.json(immediateResponseData);
+    res.json(responseData);
 
   } catch (error) {
     console.error('[CHAT-ERROR] Processing failed:', error);
