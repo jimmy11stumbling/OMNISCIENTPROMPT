@@ -87,6 +87,7 @@ const validator = new RealTimeValidator();
 // WebSocket connection handler for real-time updates
 wss.on('connection', (ws, req) => {
   console.log('[REAL-TIME] New WebSocket connection established');
+  ws.isAlive = true;
   activeConnections.add(ws);
   
   // Send initial connection confirmation
@@ -105,7 +106,23 @@ wss.on('connection', (ws, req) => {
     console.error('[REAL-TIME] WebSocket error:', error);
     activeConnections.delete(ws);
   });
+
+  ws.on('pong', () => {
+    ws.isAlive = true;
+  });
 });
+
+// Add WebSocket heartbeat to prevent memory leaks
+const heartbeat = setInterval(() => {
+  wss.clients.forEach((ws) => {
+    if (ws.isAlive === false) {
+      activeConnections.delete(ws);
+      return ws.terminate();
+    }
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, 30000);
 
 // Root route serves the HTML page
 app.get('/', (req, res) => {
@@ -743,7 +760,7 @@ Response:
       try {
         // Real DeepSeek API integration with advanced reasoning
         const fetch = (await import('node-fetch')).default;
-        const response = await fetch('https://api.deepseek.com/chat/completions', {
+        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1253,8 +1270,14 @@ server.on('error', (err) => {
 
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully');
+  clearInterval(heartbeat);
+  wss.clients.forEach((ws) => {
+    ws.close();
+  });
   server.close(() => {
-    console.log('Process terminated');
+    pool.end(() => {
+      console.log('Process terminated');
+    });
   });
 });
 
