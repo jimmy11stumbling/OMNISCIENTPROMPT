@@ -287,7 +287,8 @@ Use this context to provide accurate, platform-specific guidance. Reference spec
 Help users build comprehensive applications with detailed technical guidance based on ${platform}'s capabilities.`;
 
         const apiStartTime = Date.now();
-        const response = await fetch('https://api.deepseek.com/chat/completions', {
+        console.log('[DEEPSEEK-API] Making request to deepseek-reasoner...');
+        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -386,6 +387,8 @@ Help users build comprehensive applications with detailed technical guidance bas
 
     const fallbackResponse = `${contextSummary}I understand you want to work on "${message}" for ${platform}. Let me help you create a comprehensive solution. This appears to be a ${platform} development question. What specific aspect would you like to focus on first?`;
     
+    console.log('[FALLBACK-DEBUG] Generated fallback response:', fallbackResponse.substring(0, 200));
+    
     messages.push({ role: 'assistant', content: fallbackResponse });
     conversationSessions.set(session, messages);
 
@@ -399,6 +402,8 @@ Help users build comprehensive applications with detailed technical guidance bas
       responseTime: Date.now() - startTime,
       ragTime: ragDuration
     };
+    
+    console.log('[FALLBACK-DEBUG] Response data keys:', Object.keys(responseData));
 
     // Real-time broadcast of fallback response
     activeConnections.forEach(ws => {
