@@ -1,4 +1,4 @@
-// RAG 2.0 Database System for Platform Documentation Retrieval - Updated with Comprehensive No-Code Platform Data
+// RAG 2.0 Database System for Platform Documentation Retrieval
 const platformDocuments = {
   replit: [
     {
@@ -267,7 +267,7 @@ const platformDocuments = {
       lastUpdated: '2025-06-08'
     }
   ],
-  
+    
   windsurf: [
     {
       id: 'wind_1',
@@ -359,17 +359,15 @@ class RAGDatabase {
         // Calculate relevance score
         for (const term of searchTerms) {
           if (searchableText.includes(term)) {
+            score += 1;
             // Boost score for title matches
             if (doc.title.toLowerCase().includes(term)) {
-              score += 3;
-            }
-            // Boost score for keyword matches
-            if (doc.keywords.some(kw => kw.toLowerCase().includes(term))) {
               score += 2;
             }
-            // Standard content match
-            const matches = (searchableText.match(new RegExp(term, 'g')) || []).length;
-            score += matches;
+            // Boost score for keyword matches
+            if (doc.keywords.some(keyword => keyword.includes(term))) {
+              score += 1.5;
+            }
           }
         }
         
@@ -384,37 +382,25 @@ class RAGDatabase {
       }
     }
 
-    // Sort by relevance and return top results
     return results
       .sort((a, b) => b.relevanceScore - a.relevanceScore)
       .slice(0, limit);
   }
 
-  // Generate contextual snippet for search results
+  // Generate relevant snippet from content
   generateSnippet(content, searchTerms, maxLength = 200) {
-    const words = content.split(' ');
-    let bestStart = 0;
-    let maxMatches = 0;
-
-    // Find the section with most search term matches
-    for (let i = 0; i < words.length - 20; i++) {
-      const section = words.slice(i, i + 20).join(' ').toLowerCase();
-      const matches = searchTerms.reduce((count, term) => {
-        return count + (section.includes(term) ? 1 : 0);
-      }, 0);
-      
-      if (matches > maxMatches) {
-        maxMatches = matches;
-        bestStart = i;
+    const sentences = content.split('. ');
+    
+    for (const sentence of sentences) {
+      const lowerSentence = sentence.toLowerCase();
+      if (searchTerms.some(term => lowerSentence.includes(term))) {
+        return sentence.length > maxLength 
+          ? sentence.substring(0, maxLength) + '...'
+          : sentence + '.';
       }
     }
-
-    let snippet = words.slice(bestStart, bestStart + 25).join(' ');
-    if (snippet.length > maxLength) {
-      snippet = snippet.substring(0, maxLength - 3) + '...';
-    }
     
-    return snippet;
+    return content.substring(0, maxLength) + '...';
   }
 
   // Get platform-specific documentation
@@ -422,29 +408,29 @@ class RAGDatabase {
     return this.documents[platform] || [];
   }
 
-  // Get documents by type across platforms
+  // Get documentation by type
   getDocsByType(type, platform = null) {
-    const results = [];
     const platforms = platform ? [platform] : Object.keys(this.documents);
+    const results = [];
 
     for (const platformName of platforms) {
       const docs = this.documents[platformName] || [];
-      const typeDocs = docs.filter(doc => doc.type === type);
-      results.push(...typeDocs.map(doc => ({ ...doc, platform: platformName })));
+      const filtered = docs.filter(doc => doc.type === type);
+      results.push(...filtered.map(doc => ({ ...doc, platform: platformName })));
     }
 
     return results;
   }
 
-  // Add new document to platform (for future extensibility)
+  // Add new document (for dynamic updates)
   addDocument(platform, document) {
     if (!this.documents[platform]) {
       this.documents[platform] = [];
     }
     
     const newDoc = {
-      id: `${platform}_${Date.now()}`,
       ...document,
+      id: `${platform}_${Date.now()}`,
       lastUpdated: new Date().toISOString().split('T')[0]
     };
     
@@ -452,25 +438,28 @@ class RAGDatabase {
     return newDoc;
   }
 
-  // Get contextual recommendations based on query and platform
+  // Get contextual recommendations
   getContextualRecommendations(query, platform) {
     const searchResults = this.searchDocuments(query, platform, 3);
-    const relatedTypes = [...new Set(searchResults.map(doc => doc.type))];
+    const platformDocs = this.getPlatformDocs(platform);
     
-    const recommendations = [];
-    for (const type of relatedTypes) {
-      const typeDocs = this.getDocsByType(type, platform);
-      recommendations.push(...typeDocs.filter(doc => 
-        !searchResults.some(result => result.id === doc.id)
-      ).slice(0, 2));
+    // Get related documents by type
+    const types = [...new Set(searchResults.map(doc => doc.type))];
+    const relatedDocs = [];
+    
+    for (const type of types) {
+      const related = this.getDocsByType(type, platform)
+        .filter(doc => !searchResults.find(result => result.id === doc.id))
+        .slice(0, 2);
+      relatedDocs.push(...related);
     }
-    
+
     return {
       primary: searchResults,
-      related: recommendations.slice(0, 5)
+      related: relatedDocs,
+      platformSpecific: platformDocs.slice(0, 2)
     };
   }
 }
 
-// Export for use in the main application
-module.exports = RAGDatabase;
+module.exports = { RAGDatabase, platformDocuments };
