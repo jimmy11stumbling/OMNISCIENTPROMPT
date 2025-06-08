@@ -201,6 +201,7 @@
                     });
 
                     const data = await response.json();
+                    console.log('Chat response received:', data);
                     
                     // Update session ID
                     this.currentSessionId = data.sessionId;
@@ -211,8 +212,10 @@
                         tokensUsed: data.tokensUsed || 0
                     });
                     
-                    // Add AI response
-                    this.addMessage('ai', data.response, data.reasoning);
+                    // Add AI response - check for response content
+                    const responseContent = data.response || data.content || 'No response content received';
+                    console.log('Adding AI message:', responseContent);
+                    this.addMessage('ai', responseContent, data.reasoning);
                     
                     // Update RAG context
                     this.updateRagContext(data.ragContext || []);
