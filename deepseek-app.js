@@ -1225,7 +1225,6 @@ export function ${entity}Form({ onSubmit, initialData }: ${entity}FormProps) {
 \`\`\``;
 }
 
-const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`✅ DeepSeek AI Prompt Generator running on port ${PORT}`);
   console.log(`🔑 API Key configured: ${!!process.env.DEEPSEEK_API_KEY ? 'Yes' : 'No'}`);
