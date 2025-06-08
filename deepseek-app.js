@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const { WebSocketServer, WebSocket } = require('ws');
 const http = require('http');
-const { RAGDatabase } = require('./rag-database');
+const RAGDatabase = require('./rag-database');
 
 const app = express();
 const server = http.createServer(app);
