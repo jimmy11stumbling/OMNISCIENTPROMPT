@@ -343,7 +343,7 @@ app.post('/api/auth/register', async (req, res) => {
 
     // Create user
     const result = await pool.query(`
-      INSERT INTO users (username, email, password_hash, full_name, verification_token, api_key)
+      INSERT INTO users (username, email, password, full_name, verification_token, api_key)
       VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING id, username, email, full_name, role, is_active, email_verified, created_at
     `, [username, email, passwordHash, fullName, verificationToken, apiKey]);
@@ -415,7 +415,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    const isValidPassword = await bcrypt.compare(password, user.password || user.password_hash);
 
     if (!isValidPassword) {
       // Increment failed attempts
