@@ -19,10 +19,10 @@ const BCRYPT_ROUNDS = 12;
 // PostgreSQL connection with improved error handling and timeouts
 const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  max: 10,
-  idleTimeoutMillis: 60000,
-  connectionTimeoutMillis: 10000,
-  acquireTimeoutMillis: 10000,
+  max: 5,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000,
+  acquireTimeoutMillis: 5000,
   keepAlive: true,
   keepAliveInitialDelayMillis: 0,
 });
