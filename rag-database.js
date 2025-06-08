@@ -267,6 +267,90 @@ const platformDocuments = {
       lastUpdated: '2025-06-08'
     }
   ],
+
+  // Advanced AI Protocols & Technologies
+  'advanced-ai': [
+    {
+      id: 'ai_1',
+      title: 'RAG 2.0 Advanced Retrieval Systems',
+      content: 'RAG 2.0 represents the evolution beyond naive RAG implementations, incorporating sophisticated multi-stage pipelines with pre-retrieval optimization, hybrid search combining dense vector and sparse keyword retrieval, re-ranking mechanisms using cross-encoders, contextual compression, and advanced chunking strategies. Key techniques include HyDE (Hypothetical Document Embeddings), RAG-Fusion for multi-query generation, Self-RAG for self-reflection, Corrective RAG (CRAG) for quality assessment, and Maximum Marginal Relevance (MMR) for diversity promotion.',
+      type: 'rag-protocol',
+      keywords: ['rag-2.0', 'hybrid-search', 're-ranking', 'hyde', 'rag-fusion', 'self-rag', 'crag', 'vector-search', 'contextual-compression'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'ai_2',
+      title: 'RAG 2.0 Implementation Pipeline',
+      content: 'Advanced RAG workflow includes: Ingestion phase (content preprocessing, optimized chunking with overlapping and hierarchical strategies, metadata enrichment with hypothetical questions), Retrieval phase (query transformation, hybrid search with BM25+vector, metadata filtering), Post-retrieval processing (re-ranking with cross-encoders, filtering/compression, Corrective RAG evaluation), Generation phase (contextual fusion, prompt construction, Chain-of-Thought reasoning), and Post-generation (fact checking, citation generation, evaluation with RAGAS/ARES/RAGBench).',
+      type: 'rag-implementation',
+      keywords: ['rag-pipeline', 'chunking', 'bm25', 'cross-encoders', 'chain-of-thought', 'ragas', 'fact-checking', 'citations'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'ai_3',
+      title: 'Model Context Protocol (MCP) Architecture',
+      content: 'MCP is an open standard protocol for connecting AI models to external systems using a client-server architecture. Core components include MCP Host (AI application), MCP Client (connector library), and MCP Server (gateway to external systems). Built on JSON-RPC 2.0 foundation with stateful connections. Supports multiple transport mechanisms: stdio for local communication and Server-Sent Events (SSE) for remote connections with HTTPS/OAuth security.',
+      type: 'mcp-protocol',
+      keywords: ['mcp', 'model-context-protocol', 'json-rpc', 'client-server', 'stdio', 'sse', 'oauth', 'stateful'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'ai_4',
+      title: 'MCP Core Primitives and Capabilities',
+      content: 'MCP defines four core primitives: Tools (executable functions with side effects, analogous to POST requests), Resources (contextual read-only data identified by URIs, analogous to GET requests), Prompts (reusable templates and workflows for user/LLM interactions), and Sampling (client capability allowing servers to request LLM text generation). Features capability negotiation during initialization, user consent controls, and standardized security principles including data privacy and tool safety.',
+      type: 'mcp-primitives',
+      keywords: ['mcp-tools', 'mcp-resources', 'mcp-prompts', 'sampling', 'capability-negotiation', 'user-consent', 'security'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'ai_5',
+      title: 'Agent-to-Agent (A2A) Communication Protocols',
+      content: 'A2A protocols enable autonomous software agents to interact in multi-agent systems through standardized Agent Communication Languages (ACLs). Built on speech act theory with performatives (inform, request, query-if, propose, agree, refuse) that indicate communicative intent. Message structure includes sender/receiver agent identifiers, content in specified languages, conversation management with protocol/conversation-id tracking, and facilitator agents for message routing and matchmaking.',
+      type: 'a2a-protocol',
+      keywords: ['a2a', 'agent-communication', 'speech-acts', 'performatives', 'multi-agent', 'facilitators', 'acl', 'conversation-management'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'ai_6',
+      title: 'KQML and FIPA ACL Foundations',
+      content: 'Knowledge Query and Manipulation Language (KQML) emerged from DARPA Knowledge Sharing Effort with extensible performatives (ask-if, tell, achieve, subscribe, advertise) and LISP-like syntax. FIPA ACL provides standardized IEEE specification with formal semantics, detailed message parameters (:performative, :sender, :receiver, :content, :language, :ontology, :protocol, :conversation-id), and interaction protocols for structured conversations including request, contract-net, and auction protocols.',
+      type: 'acl-languages',
+      keywords: ['kqml', 'fipa-acl', 'performatives', 'message-structure', 'interaction-protocols', 'ontology', 'ieee-standard'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'ai_7',
+      title: 'AG-UI Real-Time Agent-User Interaction',
+      content: 'AG-UI is an open-source, lightweight, event-based protocol for standardizing real-time interactions between AI agents and frontend applications. Uses Server-Sent Events (SSE) over HTTP with 16 standard event types: lifecycle events (RUN_STARTED, RUN_FINISHED, RUN_ERROR), text streaming (TEXT_MESSAGE_START, TEXT_MESSAGE_CONTENT, TEXT_MESSAGE_CHUNK, TEXT_MESSAGE_END), tool interactions (TOOL_CALL_START, TOOL_CALL_COMPLETE, TOOL_CALL_CHUNK), state management (STATE_SNAPSHOT, STATE_DELTA), and media streaming (MEDIA_FRAME).',
+      type: 'ag-ui-protocol',
+      keywords: ['ag-ui', 'agent-user-interaction', 'real-time', 'sse', 'event-driven', 'streaming', 'state-sync', 'lifecycle-events'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'ai_8',
+      title: 'AG-UI Implementation and Frontend Integration',
+      content: 'AG-UI backend implementation supports Python with FastAPI and TypeScript with Express.js using dedicated SDKs. Features EventEncoder for proper SSE formatting, StreamingResponse with text/event-stream media type, and optional binary serialization for 60% payload reduction. Frontend integration through CopilotKit React components (CopilotKitProvider, CopilotChat) with HttpAgent for API communication. Includes middleware layer for protocol translation and framework compatibility.',
+      type: 'ag-ui-implementation',
+      keywords: ['ag-ui-sdk', 'fastapi', 'express', 'event-encoder', 'copilotkit', 'react-components', 'binary-serialization', 'middleware'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'ai_9',
+      title: 'DeepSeek Reasoning Model Integration',
+      content: 'DeepSeek-reasoner is an advanced reasoning model that generates Chain of Thought (CoT) before delivering final answers. Features 64K context length with reasoning_content output separate from final content, multi-round conversation support with CoT exclusion from context to prevent contamination, enhanced accuracy through explicit reasoning processes, and transparent reasoning visibility. Supports chat completion with prefix completion beta, requires OpenAI SDK upgrade, and provides max_tokens control for final response (4K default, 8K max) while CoT can reach 32K tokens.',
+      type: 'deepseek-model',
+      keywords: ['deepseek-reasoner', 'chain-of-thought', 'reasoning', 'cot', 'context-length', 'transparency', 'openai-sdk', 'multi-round'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'ai_10',
+      title: 'Multi-Protocol AI Architecture Design',
+      content: 'Next-generation AI applications integrate multiple protocols for comprehensive functionality: AG-UI for frontend interaction and real-time streaming, MCP for external tool/data access and capability discovery, A2A for agent collaboration and coordination, and RAG 2.0 for advanced knowledge retrieval. Architecture patterns include event-driven communication, state synchronization across protocols, middleware layers for protocol translation, security boundaries with OAuth/authentication, scalable deployment with containerization and load balancing, and unified error handling across protocol boundaries.',
+      type: 'multi-protocol-architecture',
+      keywords: ['multi-protocol', 'event-driven', 'middleware', 'protocol-translation', 'oauth', 'containerization', 'load-balancing', 'unified-architecture'],
+      lastUpdated: '2025-06-08'
+    }
+  ],
   
   windsurf: [
     {
