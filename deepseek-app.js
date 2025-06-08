@@ -635,15 +635,20 @@ app.post('/api/rag/upload', authenticateToken, upload.single('document'), async 
     // Broadcast to connected clients
     activeConnections.forEach(ws => {
       if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'document_uploaded',
-          data: {
-            documentId: document.id,
-            title: document.title,
-            platform: document.platform,
-            uploadedBy: req.user.username
-          }
-        }));
+        try {
+          ws.send(JSON.stringify({
+            type: 'document_uploaded',
+            data: {
+              documentId: document.id,
+              title: document.title,
+              platform: document.platform,
+              uploadedBy: req.user.username
+            }
+          }));
+        } catch (error) {
+          console.error('WebSocket document upload broadcast error:', error);
+          activeConnections.delete(ws);
+        }
       }
     });
 
@@ -1166,10 +1171,15 @@ app.post('/api/chat', async (req, res) => {
     // Real-time notification of chat start
     activeConnections.forEach(ws => {
       if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'chat_start',
-          data: { sessionId, platform, message }
-        }));
+        try {
+          ws.send(JSON.stringify({
+            type: 'chat_start',
+            data: { sessionId, platform, message }
+          }));
+        } catch (error) {
+          console.error('WebSocket chat start broadcast error:', error);
+          activeConnections.delete(ws);
+        }
       }
     });
 
@@ -1263,16 +1273,21 @@ Help users build comprehensive applications with detailed technical guidance bas
           // Real-time broadcast of successful response
           activeConnections.forEach(ws => {
             if (ws.readyState === WebSocket.OPEN) {
-              ws.send(JSON.stringify({
-                type: 'chat_response',
-                data: {
-                  sessionId: session,
-                  platform,
-                  tokensUsed,
-                  responseTime: responseData.responseTime,
-                  hasReasoning: !!data.choices[0]?.message?.reasoning_content
-                }
-              }));
+              try {
+                ws.send(JSON.stringify({
+                  type: 'chat_response',
+                  data: {
+                    sessionId: session,
+                    platform,
+                    tokensUsed,
+                    responseTime: responseData.responseTime,
+                    hasReasoning: !!data.choices[0]?.message?.reasoning_content
+                  }
+                }));
+              } catch (error) {
+                console.error('WebSocket chat response broadcast error:', error);
+                activeConnections.delete(ws);
+              }
             }
           });
 
@@ -1290,10 +1305,15 @@ Help users build comprehensive applications with detailed technical guidance bas
         // Real-time error notification
         activeConnections.forEach(ws => {
           if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({
-              type: 'chat_error',
-              data: { sessionId: session, platform, error: apiError.message }
-            }));
+            try {
+              ws.send(JSON.stringify({
+                type: 'chat_error',
+                data: { sessionId: session, platform, error: apiError.message }
+              }));
+            } catch (error) {
+              console.error('WebSocket chat error broadcast error:', error);
+              activeConnections.delete(ws);
+            }
           }
         });
       }
@@ -1329,14 +1349,19 @@ Help users build comprehensive applications with detailed technical guidance bas
     // Real-time broadcast of fallback response
     activeConnections.forEach(ws => {
       if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'chat_fallback',
-          data: {
-            sessionId: session,
-            platform,
-            responseTime: responseData.responseTime
-          }
-        }));
+        try {
+          ws.send(JSON.stringify({
+            type: 'chat_fallback',
+            data: {
+              sessionId: session,
+              platform,
+              responseTime: responseData.responseTime
+            }
+          }));
+        } catch (error) {
+          console.error('WebSocket chat fallback broadcast error:', error);
+          activeConnections.delete(ws);
+        }
       }
     });
 
@@ -1348,10 +1373,15 @@ Help users build comprehensive applications with detailed technical guidance bas
     
     activeConnections.forEach(ws => {
       if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'chat_error',
-          data: { error: error.message }
-        }));
+        try {
+          ws.send(JSON.stringify({
+            type: 'chat_error',
+            data: { error: error.message }
+          }));
+        } catch (broadcastError) {
+          console.error('WebSocket chat error final broadcast error:', broadcastError);
+          activeConnections.delete(ws);
+        }
       }
     });
     
@@ -2130,10 +2160,15 @@ app.post('/api/admin/notifications/broadcast', authenticateToken, requireAdmin, 
     // Broadcast to connected clients
     activeConnections.forEach(ws => {
       if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'admin_broadcast',
-          data: { title, message, type }
-        }));
+        try {
+          ws.send(JSON.stringify({
+            type: 'admin_broadcast',
+            data: { title, message, type }
+          }));
+        } catch (error) {
+          console.error('WebSocket admin broadcast error:', error);
+          activeConnections.delete(ws);
+        }
       }
     });
 
