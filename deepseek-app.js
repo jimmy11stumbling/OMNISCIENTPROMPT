@@ -7,6 +7,10 @@ const RAGDatabase = require('./rag-database');
 
 const app = express();
 const server = http.createServer(app);
+const PORT = process.env.PORT || 5000;
+
+// PostgreSQL connection
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 // WebSocket server for real-time updates
 const wss = new WebSocketServer({ server, path: '/ws' });
@@ -426,6 +430,99 @@ Help users build comprehensive applications with detailed technical guidance bas
     res.status(500).json({ 
       error: 'Failed to process chat message' 
     });
+  }
+});
+
+// Save generated prompt to database
+app.post('/api/prompts/save', async (req, res) => {
+  const { title, originalQuery, platform, generatedPrompt, reasoning, ragContext, tokensUsed, responseTime } = req.body;
+  
+  if (!title || !originalQuery || !platform || !generatedPrompt) {
+    return res.status(400).json({ error: 'Title, originalQuery, platform, and generatedPrompt are required' });
+  }
+
+  try {
+    const result = await pool.query(`
+      INSERT INTO saved_prompts (title, original_query, platform, generated_prompt, reasoning, rag_context, tokens_used, response_time, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
+      RETURNING *
+    `, [title, originalQuery, platform, generatedPrompt, reasoning, ragContext, tokensUsed || 0, responseTime || 0]);
+
+    console.log(`[PROMPT-SAVED] ID: ${result.rows[0].id} | Platform: ${platform} | Title: "${title}"`);
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Save prompt error:', error);
+    res.status(500).json({ error: 'Failed to save prompt' });
+  }
+});
+
+// Get all saved prompts
+app.get('/api/prompts', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM saved_prompts ORDER BY created_at DESC');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get prompts error:', error);
+    res.status(500).json({ error: 'Failed to retrieve prompts' });
+  }
+});
+
+// Get saved prompt by ID
+app.get('/api/prompts/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const result = await pool.query('SELECT * FROM saved_prompts WHERE id = $1', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Prompt not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Get prompt error:', error);
+    res.status(500).json({ error: 'Failed to retrieve prompt' });
+  }
+});
+
+// Delete saved prompt
+app.delete('/api/prompts/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const result = await pool.query('DELETE FROM saved_prompts WHERE id = $1 RETURNING id', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Prompt not found' });
+    }
+    
+    console.log(`[PROMPT-DELETED] ID: ${id}`);
+    res.json({ message: 'Prompt deleted successfully' });
+  } catch (error) {
+    console.error('Delete prompt error:', error);
+    res.status(500).json({ error: 'Failed to delete prompt' });
+  }
+});
+
+// Search saved prompts
+app.post('/api/prompts/search', async (req, res) => {
+  const { query } = req.body;
+  
+  if (!query) {
+    return res.status(400).json({ error: 'Search query is required' });
+  }
+
+  try {
+    const result = await pool.query(`
+      SELECT * FROM saved_prompts 
+      WHERE title ILIKE $1 OR original_query ILIKE $1 OR generated_prompt ILIKE $1
+      ORDER BY created_at DESC
+    `, [`%${query}%`]);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Search prompts error:', error);
+    res.status(500).json({ error: 'Failed to search prompts' });
   }
 });
 
