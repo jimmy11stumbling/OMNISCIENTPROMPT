@@ -314,14 +314,14 @@ Help users build comprehensive applications with detailed technical guidance bas
           const tokensUsed = data.usage?.total_tokens || 0;
           
           console.log(`[DEEPSEEK-SUCCESS] Response received - Tokens: ${tokensUsed} | Time: ${apiDuration}ms`);
-          console.log(`[DEEPSEEK-DEBUG] Full response structure:`, JSON.stringify(data, null, 2));
+          // console.log(`[DEEPSEEK-DEBUG] Full response structure:`, JSON.stringify(data, null, 2));
           
           const assistantMessage = {
             role: 'assistant',
             content: data.choices[0]?.message?.content || 'No response generated'
           };
           
-          console.log(`[DEEPSEEK-DEBUG] Assistant message content:`, assistantMessage.content);
+          // console.log(`[DEEPSEEK-DEBUG] Assistant message content:`, assistantMessage.content);
           
           // Add assistant response to conversation (without reasoning_content)
           messages.push(assistantMessage);
