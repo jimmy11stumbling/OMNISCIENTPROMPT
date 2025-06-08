@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for the application */
+.code-block { 
+  background: #1a1a1a; 
+  border-left: 4px solid #3B82F6; 
+}
+
+.sidebar-link.active { 
+  background: #374151; 
+  color: #3B82F6; 
+}
+
+.progress-stage {
+  transition: all 0.3s ease;
+}
+
+.progress-stage.active {
+  transform: scale(1.05);
+}
+
+.typing-indicator .animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+/* Message styling */
+.message {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
