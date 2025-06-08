@@ -56,7 +56,11 @@ class ComprehensiveRAG {
 
   // Comprehensive search across all document sources
   searchDocuments(query, platform = null, limit = 5) {
-    const searchTerms = query.toLowerCase().split(' ');
+    // Clean and filter search terms to avoid regex issues
+    const searchTerms = query.toLowerCase()
+      .split(' ')
+      .map(term => term.trim())
+      .filter(term => term.length > 0 && term !== 'and' && term !== 'the' && term !== 'of' && term !== 'to');
     const results = [];
 
     // Search in-memory platform documents
@@ -113,9 +117,16 @@ class ComprehensiveRAG {
         if (doc.keywords?.some(kw => kw.toLowerCase().includes(term))) {
           score += 3;
         }
-        // Content matches with frequency bonus
-        const matches = (searchableText.match(new RegExp(term, 'g')) || []).length;
-        score += matches;
+        // Content matches with frequency bonus - escape regex special characters
+        try {
+          const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const matches = (searchableText.match(new RegExp(escapedTerm, 'g')) || []).length;
+          score += matches;
+        } catch (regexError) {
+          // Fallback to simple string matching if regex fails
+          const termOccurrences = searchableText.split(term).length - 1;
+          score += termOccurrences;
+        }
       }
     }
     
@@ -129,10 +140,12 @@ class ComprehensiveRAG {
     let maxMatches = 0;
 
     // Find section with most search term matches
-    for (let i = 0; i < words.length - 20; i++) {
+    for (let i = 0; i < Math.max(0, words.length - 20); i++) {
       const section = words.slice(i, i + 20).join(' ').toLowerCase();
       const matches = searchTerms.reduce((count, term) => {
-        return count + (section.includes(term) ? 1 : 0);
+        // Safe term matching without regex
+        const cleanTerm = term.toLowerCase().trim();
+        return count + (cleanTerm && section.includes(cleanTerm) ? 1 : 0);
       }, 0);
       
       if (matches > maxMatches) {
@@ -146,7 +159,7 @@ class ComprehensiveRAG {
       snippet = snippet.substring(0, maxLength - 3) + '...';
     }
     
-    return snippet;
+    return snippet || content.substring(0, maxLength - 3) + '...';
   }
 
   // Get all available platforms

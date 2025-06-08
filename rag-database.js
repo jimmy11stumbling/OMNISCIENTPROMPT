@@ -453,9 +453,16 @@ class RAGDatabase {
             if (doc.keywords.some(kw => kw.toLowerCase().includes(term))) {
               score += 2;
             }
-            // Standard content match
-            const matches = (searchableText.match(new RegExp(term, 'g')) || []).length;
-            score += matches;
+            // Standard content match - escape regex special characters
+            try {
+              const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const matches = (searchableText.match(new RegExp(escapedTerm, 'g')) || []).length;
+              score += matches;
+            } catch (regexError) {
+              // Fallback to simple string matching if regex fails
+              const termOccurrences = searchableText.split(term).length - 1;
+              score += termOccurrences;
+            }
           }
         }
         
@@ -656,8 +663,14 @@ class RAGDatabase {
             if (keywords.some(kw => kw.toLowerCase().includes(term))) {
               score += 2;
             }
-            const matches = (searchableText.match(new RegExp(term, 'g')) || []).length;
-            score += matches;
+            try {
+              const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const matches = (searchableText.match(new RegExp(escapedTerm, 'g')) || []).length;
+              score += matches;
+            } catch (regexError) {
+              const termOccurrences = searchableText.split(term).length - 1;
+              score += termOccurrences;
+            }
           }
         }
         
