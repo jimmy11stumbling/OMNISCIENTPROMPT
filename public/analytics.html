@@ -8,6 +8,30 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/js/realtime.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            overflow-x: hidden;
+            height: 100vh;
+        }
+        .analytics-container {
+            max-height: calc(100vh - 80px);
+            overflow-y: auto;
+            padding-bottom: 2rem;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        .metric-card {
+            min-height: 120px;
+        }
+        /* Prevent infinite scroll issues */
+        .analytics-content {
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+    </style>
 </head>
 <body class="bg-gray-900 text-white">
     <!-- Header -->
@@ -38,113 +62,123 @@
         </div>
     </header>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <!-- Loading State -->
-        <div id="loadingState" class="text-center py-8">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
-            <p class="mt-2 text-gray-400">Loading analytics data...</p>
-        </div>
+    <div class="analytics-container">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 analytics-content">
+            <!-- Loading State -->
+            <div id="loadingState" class="text-center py-8">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
+                <p class="mt-2 text-gray-400">Loading analytics data...</p>
+            </div>
 
-        <!-- Analytics Content -->
-        <div id="analyticsContent" style="display: none;">
-            <!-- Metrics Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg p-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-blue-100 text-sm">Total Requests</p>
-                            <p id="totalRequests" class="text-2xl font-bold text-white">0</p>
+            <!-- Analytics Content -->
+            <div id="analyticsContent" style="display: none;">
+                <!-- Metrics Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg p-6 metric-card">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-blue-100 text-sm">Total Requests</p>
+                                <p id="totalRequests" class="text-2xl font-bold text-white">0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-chart-line text-white text-xl"></i>
+                            </div>
                         </div>
-                        <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-chart-line text-white text-xl"></i>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-green-600 to-green-700 rounded-lg p-6 metric-card">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-green-100 text-sm">Success Rate</p>
+                                <p id="successRate" class="text-2xl font-bold text-white">0%</p>
+                            </div>
+                            <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-check-circle text-white text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg p-6 metric-card">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-purple-100 text-sm">Avg Response Time</p>
+                                <p id="avgResponseTime" class="text-2xl font-bold text-white">0ms</p>
+                            </div>
+                            <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-clock text-white text-xl"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-orange-600 to-orange-700 rounded-lg p-6 metric-card">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-orange-100 text-sm">Total Tokens</p>
+                                <p id="totalTokens" class="text-2xl font-bold text-white">0</p>
+                            </div>
+                            <div class="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-coins text-white text-xl"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-gradient-to-br from-green-600 to-green-700 rounded-lg p-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-green-100 text-sm">Success Rate</p>
-                            <p id="successRate" class="text-2xl font-bold text-white">0%</p>
+                <!-- Charts Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- Usage Trends -->
+                    <div class="bg-gray-800 rounded-lg p-6">
+                        <h3 class="text-lg font-semibold mb-4">Request Volume Trends</h3>
+                        <div class="chart-container">
+                            <canvas id="usageChart"></canvas>
                         </div>
-                        <div class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-check-circle text-white text-xl"></i>
+                    </div>
+
+                    <!-- Platform Distribution -->
+                    <div class="bg-gray-800 rounded-lg p-6">
+                        <h3 class="text-lg font-semibold mb-4">Platform Usage Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="platformChart"></canvas>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg p-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-purple-100 text-sm">Avg Response Time</p>
-                            <p id="avgResponseTime" class="text-2xl font-bold text-white">0ms</p>
-                        </div>
-                        <div class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-clock text-white text-xl"></i>
-                        </div>
+                <!-- Response Time Analysis -->
+                <div class="bg-gray-800 rounded-lg p-6 mb-8">
+                    <h3 class="text-lg font-semibold mb-4">Response Time Analysis</h3>
+                    <div class="chart-container">
+                        <canvas id="responseTimeChart"></canvas>
                     </div>
                 </div>
 
-                <div class="bg-gradient-to-br from-orange-600 to-orange-700 rounded-lg p-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-orange-100 text-sm">Total Tokens</p>
-                            <p id="totalTokens" class="text-2xl font-bold text-white">0</p>
-                        </div>
-                        <div class="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-coins text-white text-xl"></i>
-                        </div>
+                <!-- Platform Performance Table -->
+                <div class="bg-gray-800 rounded-lg p-6 mb-8">
+                    <h3 class="text-lg font-semibold mb-4">Platform Performance Breakdown</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="text-left py-3 px-4">Platform</th>
+                                    <th class="text-left py-3 px-4">Requests</th>
+                                    <th class="text-left py-3 px-4">Success Rate</th>
+                                    <th class="text-left py-3 px-4">Avg Response</th>
+                                    <th class="text-left py-3 px-4">Token Usage</th>
+                                    <th class="text-left py-3 px-4">RAG Hits</th>
+                                </tr>
+                            </thead>
+                            <tbody id="platformTable">
+                                <tr><td colspan="6" class="text-center py-4 text-gray-400">Loading data...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-            </div>
 
-            <!-- Charts Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <!-- Usage Trends -->
-                <div class="bg-gray-800 rounded-lg p-6">
-                    <h3 class="text-lg font-semibold mb-4">Request Volume Trends</h3>
-                    <canvas id="usageChart" width="400" height="200"></canvas>
+                <!-- RAG Performance -->
+                <div class="bg-gray-800 rounded-lg p-6 mb-8">
+                    <h3 class="text-lg font-semibold mb-4">RAG System Performance</h3>
+                    <div class="chart-container">
+                        <canvas id="ragPerformanceChart"></canvas>
+                    </div>
                 </div>
-
-                <!-- Platform Distribution -->
-                <div class="bg-gray-800 rounded-lg p-6">
-                    <h3 class="text-lg font-semibold mb-4">Platform Usage Distribution</h3>
-                    <canvas id="platformChart" width="400" height="200"></canvas>
-                </div>
-            </div>
-
-            <!-- Response Time Analysis -->
-            <div class="bg-gray-800 rounded-lg p-6 mb-8">
-                <h3 class="text-lg font-semibold mb-4">Response Time Analysis</h3>
-                <canvas id="responseTimeChart" width="800" height="300"></canvas>
-            </div>
-
-            <!-- Platform Performance Table -->
-            <div class="bg-gray-800 rounded-lg p-6 mb-8">
-                <h3 class="text-lg font-semibold mb-4">Platform Performance Breakdown</h3>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b border-gray-700">
-                                <th class="text-left py-3 px-4">Platform</th>
-                                <th class="text-left py-3 px-4">Requests</th>
-                                <th class="text-left py-3 px-4">Success Rate</th>
-                                <th class="text-left py-3 px-4">Avg Response</th>
-                                <th class="text-left py-3 px-4">Token Usage</th>
-                                <th class="text-left py-3 px-4">RAG Hits</th>
-                            </tr>
-                        </thead>
-                        <tbody id="platformTable">
-                            <tr><td colspan="6" class="text-center py-4 text-gray-400">Loading data...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- RAG Performance -->
-            <div class="bg-gray-800 rounded-lg p-6">
-                <h3 class="text-lg font-semibold mb-4">RAG System Performance</h3>
-                <canvas id="ragPerformanceChart" width="800" height="300"></canvas>
             </div>
         </div>
     </div>
@@ -163,17 +197,10 @@
         let usageChart, platformChart, responseTimeChart, ragChart;
         let realTimeClient;
 
-        // Initialize real-time connection
+        // Initialize real-time connection (disabled to prevent scroll issues)
         function initializeRealTime() {
-            if (typeof RealTimeClient !== 'undefined') {
-                realTimeClient = new RealTimeClient();
-                realTimeClient.connect();
-                
-                // Handle real-time metrics updates
-                realTimeClient.on('metrics', (metrics) => {
-                    updateRealTimeMetrics(metrics);
-                });
-            }
+            // Temporarily disabled to fix scrolling issues
+            console.log('Real-time updates disabled to prevent scroll issues');
         }
 
         // Update real-time metrics
@@ -283,7 +310,7 @@
             if (usageChart) {
                 usageChart.data.labels = hourlyData.labels;
                 usageChart.data.datasets[0].data = hourlyData.data;
-                usageChart.update();
+                usageChart.update('none'); // No animation
             }
 
             // Update platform distribution chart
@@ -291,7 +318,7 @@
             if (platformChart) {
                 platformChart.data.labels = platformData.map(p => p.platform.charAt(0).toUpperCase() + p.platform.slice(1));
                 platformChart.data.datasets[0].data = platformData.map(p => parseInt(p.count));
-                platformChart.update();
+                platformChart.update('none'); // No animation
             }
 
             // Update response time chart
@@ -299,7 +326,7 @@
             if (responseTimeChart) {
                 responseTimeChart.data.labels = responseTimeData.labels;
                 responseTimeChart.data.datasets[0].data = responseTimeData.data;
-                responseTimeChart.update();
+                responseTimeChart.update('none'); // No animation
             }
 
             // Update RAG performance chart
@@ -308,7 +335,7 @@
                 ragChart.data.labels = ragData.labels;
                 ragChart.data.datasets[0].data = ragData.hitRate;
                 ragChart.data.datasets[1].data = ragData.queryTime;
-                ragChart.update();
+                ragChart.update('none'); // No animation
             }
         }
 
@@ -433,11 +460,15 @@
             }).join('');
         }
 
-        // Initialize charts
+        // Initialize charts with fixed dimensions
         function initializeCharts() {
             const chartConfig = {
                 responsive: true,
                 maintainAspectRatio: false,
+                animation: false, // Disable animations to prevent layout shifts
+                interaction: {
+                    intersect: false
+                },
                 plugins: {
                     legend: {
                         labels: { color: '#9CA3AF' }
