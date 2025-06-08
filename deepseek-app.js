@@ -1064,7 +1064,7 @@ app.get('/api/analytics', async (req, res) => {
 });
 
 // RAG Search endpoint with real-time validation
-app.post('/api/rag/search', async (req, res) => {
+app.post('/api/rag/search', (req, res) => {
   const startTime = Date.now();
   const { query, platform, limit = 5 } = req.body;
   
@@ -1075,7 +1075,7 @@ app.post('/api/rag/search', async (req, res) => {
 
   try {
     const ragStartTime = Date.now();
-    const results = await ragDB.searchDocuments(query, platform, limit);
+    const results = ragDB.searchDocuments(query, platform, limit);
     const ragDuration = Date.now() - ragStartTime;
     
     // Real-time RAG validation
@@ -1185,7 +1185,7 @@ app.post('/api/chat', async (req, res) => {
 
     // Get relevant documentation from RAG database with timing
     const ragStartTime = Date.now();
-    const ragResults = await ragDB.searchDocuments(message, platform, 3);
+    const ragResults = ragDB.searchDocuments(message, platform, 3);
     const ragDuration = Date.now() - ragStartTime;
     
     validator.logRagQuery(message, platform, ragResults, ragDuration);
@@ -1501,7 +1501,7 @@ app.post('/api/generate-prompt', async (req, res) => {
     let tokensUsed = 0;
 
     // Get RAG context for enhanced prompt generation
-    const ragResults = await ragDB.searchDocuments(query, platform, 5);
+    const ragResults = ragDB.searchDocuments(query, platform, 5);
     const ragContext = ragResults.map(doc => 
       `${doc.title}: ${doc.content}`
     ).join('\n\n');

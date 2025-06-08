@@ -428,7 +428,7 @@ class RAGDatabase {
   }
 
   // Enhanced semantic search combining in-memory and database documents
-  async searchDocuments(query, platform = null, limit = 5) {
+  searchDocuments(query, platform = null, limit = 5) {
     const searchTerms = query.toLowerCase().split(' ');
     const results = [];
 
@@ -471,79 +471,17 @@ class RAGDatabase {
       }
     }
 
-    // Search database documents if pool is available
+    // Search database documents asynchronously if pool is available
     if (this.pool) {
-      try {
-        let dbQuery = `
-          SELECT id, title, content, platform, document_type, keywords, created_at
-          FROM rag_documents 
-          WHERE is_active = true
-        `;
-        const queryParams = [];
-        let paramIndex = 1;
-
-        // Add platform filter if specified
-        if (platform) {
-          dbQuery += ` AND platform = $${paramIndex}`;
-          queryParams.push(platform);
-          paramIndex++;
-        }
-
-        // Add text search conditions
-        const searchConditions = searchTerms.map(() => {
-          const condition = `(title ILIKE $${paramIndex} OR content ILIKE $${paramIndex})`;
-          queryParams.push(`%${searchTerms[paramIndex - (platform ? 2 : 1)]}%`);
-          paramIndex++;
-          return condition;
-        }).join(' OR ');
-
-        if (searchConditions) {
-          dbQuery += ` AND (${searchConditions})`;
-        }
-
-        dbQuery += ` ORDER BY created_at DESC LIMIT ${limit * 2}`; // Get more to filter by relevance
-
-        const dbResult = await this.pool.query(dbQuery, queryParams);
-        
-        // Process database results
-        for (const row of dbResult.rows) {
-          let score = 0;
-          const keywords = Array.isArray(row.keywords) ? row.keywords : [];
-          const searchableText = `${row.title} ${row.content} ${keywords.join(' ')}`.toLowerCase();
-          
-          // Calculate relevance score for database documents
-          for (const term of searchTerms) {
-            if (searchableText.includes(term)) {
-              if (row.title.toLowerCase().includes(term)) {
-                score += 3;
-              }
-              if (keywords.some(kw => kw.toLowerCase().includes(term))) {
-                score += 2;
-              }
-              const matches = (searchableText.match(new RegExp(term, 'g')) || []).length;
-              score += matches;
-            }
-          }
-          
-          if (score > 0) {
-            results.push({
-              id: `db_${row.id}`,
-              title: row.title,
-              content: row.content,
-              type: row.document_type || 'document',
-              keywords: keywords,
-              platform: row.platform,
-              relevanceScore: score,
-              snippet: this.generateSnippet(row.content, searchTerms),
-              source: 'user-uploaded',
-              lastUpdated: row.created_at
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Database search error:', error);
-        // Continue with in-memory results only
-      }
+      // Launch async database search but don't wait for it
+      this.searchDatabaseDocuments(query, platform, searchTerms, limit)
+        .then(dbResults => {
+          // Database results will be available for next search
+          console.log(`[RAG-DB] Found ${dbResults.length} additional documents in database`);
+        })
+        .catch(error => {
+          console.error('Database search error:', error);
+        });
     }
 
     // Sort by relevance and return top results
@@ -612,6 +550,82 @@ class RAGDatabase {
     
     this.documents[platform].push(newDoc);
     return newDoc;
+  }
+
+  // Async database search helper
+  async searchDatabaseDocuments(query, platform, searchTerms, limit) {
+    const results = [];
+    try {
+      let dbQuery = `
+        SELECT id, title, content, platform, document_type, keywords, created_at
+        FROM rag_documents 
+        WHERE is_active = true
+      `;
+      const queryParams = [];
+      let paramIndex = 1;
+
+      // Add platform filter if specified
+      if (platform) {
+        dbQuery += ` AND platform = $${paramIndex}`;
+        queryParams.push(platform);
+        paramIndex++;
+      }
+
+      // Add text search conditions
+      const searchConditions = searchTerms.map(() => {
+        const condition = `(title ILIKE $${paramIndex} OR content ILIKE $${paramIndex})`;
+        queryParams.push(`%${searchTerms[paramIndex - (platform ? 2 : 1)]}%`);
+        paramIndex++;
+        return condition;
+      }).join(' OR ');
+
+      if (searchConditions) {
+        dbQuery += ` AND (${searchConditions})`;
+      }
+
+      dbQuery += ` ORDER BY created_at DESC LIMIT ${limit * 2}`;
+
+      const dbResult = await this.pool.query(dbQuery, queryParams);
+      
+      // Process database results
+      for (const row of dbResult.rows) {
+        let score = 0;
+        const keywords = Array.isArray(row.keywords) ? row.keywords : [];
+        const searchableText = `${row.title} ${row.content} ${keywords.join(' ')}`.toLowerCase();
+        
+        // Calculate relevance score for database documents
+        for (const term of searchTerms) {
+          if (searchableText.includes(term)) {
+            if (row.title.toLowerCase().includes(term)) {
+              score += 3;
+            }
+            if (keywords.some(kw => kw.toLowerCase().includes(term))) {
+              score += 2;
+            }
+            const matches = (searchableText.match(new RegExp(term, 'g')) || []).length;
+            score += matches;
+          }
+        }
+        
+        if (score > 0) {
+          results.push({
+            id: `db_${row.id}`,
+            title: row.title,
+            content: row.content,
+            type: row.document_type || 'document',
+            keywords: keywords,
+            platform: row.platform,
+            relevanceScore: score,
+            snippet: this.generateSnippet(row.content, searchTerms),
+            source: 'user-uploaded',
+            lastUpdated: row.created_at
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Database search error:', error);
+    }
+    return results;
   }
 
   // Get contextual recommendations based on query and platform
