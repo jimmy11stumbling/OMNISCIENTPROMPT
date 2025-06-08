@@ -3,143 +3,335 @@ const platformDocuments = {
   replit: [
     {
       id: 'repl_1',
-      title: 'Replit Database Integration',
-      content: 'Replit provides built-in database support with PostgreSQL and Redis. Use the Database tab to create and manage your database. Environment variables DATABASE_URL and REPLIT_DB_URL are automatically configured.',
-      type: 'database',
-      keywords: ['database', 'postgresql', 'redis', 'storage'],
-      lastUpdated: '2024-01-15'
+      title: 'Replit Agent AI Development',
+      content: 'Replit Agent is an AI system that builds full-stack applications from natural language prompts. It creates complete project structures, implements databases, handles authentication, and manages deployments. Agent can work with PostgreSQL, Redis, and various APIs while providing real-time collaboration features.',
+      type: 'ai-agent',
+      keywords: ['agent', 'ai', 'fullstack', 'prompt', 'natural-language'],
+      lastUpdated: '2025-06-08'
     },
     {
-      id: 'repl_2', 
-      title: 'Replit Authentication System',
-      content: 'Replit Auth provides OAuth integration with GitHub, Google, and email. Use @replit/auth package for seamless user authentication. Supports session management and user profiles.',
-      type: 'authentication',
-      keywords: ['auth', 'oauth', 'login', 'session'],
-      lastUpdated: '2024-01-10'
+      id: 'repl_2',
+      title: 'Replit Database & Storage Systems',
+      content: 'Replit provides comprehensive database solutions including PostgreSQL with automated backups, ReplDB for key-value storage, and Object Storage for file management. Environment variables are auto-configured. Supports schema design, migrations, and real-time data sync.',
+      type: 'database',
+      keywords: ['database', 'postgresql', 'repldb', 'storage', 'migrations'],
+      lastUpdated: '2025-06-08'
     },
     {
       id: 'repl_3',
-      title: 'Replit Deployment and Hosting',
-      content: 'Deploy applications with zero configuration. Replit automatically handles SSL certificates, custom domains, and scaling. Use .replit file for deployment configuration.',
-      type: 'deployment',
-      keywords: ['deploy', 'hosting', 'ssl', 'domains'],
-      lastUpdated: '2024-01-20'
+      title: 'Authentication & Security Systems',
+      content: 'Replit Auth provides OAuth integration with GitHub, Google, email, and custom providers. Includes session management, user profiles, role-based access control, and security scanning. Supports JWT tokens and encrypted password storage.',
+      type: 'authentication',
+      keywords: ['auth', 'oauth', 'security', 'jwt', 'encryption'],
+      lastUpdated: '2025-06-08'
     },
     {
       id: 'repl_4',
-      title: 'Real-time Collaboration Features',
-      content: 'Replit supports real-time multiplayer coding with live cursors, voice/video chat, and shared terminals. Use Replit multiplayer APIs for collaborative features.',
+      title: 'Deployment & Hosting Options',
+      content: 'Multiple deployment types: Autoscale (dynamic scaling, $1/month), Static (free for Core users), Reserved VM (always-on, $10/month), and Scheduled (cron jobs). Includes automatic SSL, custom domains, CDN, and global edge deployment.',
+      type: 'deployment',
+      keywords: ['deploy', 'autoscale', 'static', 'vm', 'ssl', 'cdn'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'repl_5',
+      title: 'Mobile Development with Expo',
+      content: 'Replit integrates with Expo for mobile app development. Zero-setup React Native environment with instant device preview via QR codes. Supports iOS/Android deployment through Expo Application Services (EAS) with automated certificate management.',
+      type: 'mobile',
+      keywords: ['expo', 'mobile', 'react-native', 'ios', 'android', 'eas'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'repl_6',
+      title: 'Real-time Collaboration & Version Control',
+      content: 'Multiplayer coding with live cursors, voice/video chat, shared terminals, and real-time file editing. Integrated Git support with GitHub sync, branch management, and automated checkpoints for rollback functionality.',
       type: 'collaboration',
-      keywords: ['multiplayer', 'realtime', 'collaboration'],
-      lastUpdated: '2024-01-12'
+      keywords: ['multiplayer', 'realtime', 'git', 'github', 'version-control'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'repl_7',
+      title: 'API Integrations & Third-party Services',
+      content: 'Seamless integration with external APIs and services. Replit Agent automatically handles API authentication, environment variables, and service configuration. Supports REST, GraphQL, WebSocket, and gRPC protocols.',
+      type: 'integrations',
+      keywords: ['api', 'rest', 'graphql', 'websocket', 'grpc', 'integrations'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'repl_8',
+      title: 'Prompt Engineering Best Practices',
+      content: 'Effective Replit Agent prompting follows ISSS principles: Instruct (clear goals), Select (focused context), Show (concrete examples), Simplify (clear communication), Specify (exact requirements). Break complex tasks into sequential steps and use iterative refinement.',
+      type: 'prompting',
+      keywords: ['prompting', 'isss', 'best-practices', 'iterative', 'examples'],
+      lastUpdated: '2025-06-08'
     }
   ],
   
   lovable: [
     {
       id: 'lov_1',
-      title: 'Lovable AI Component Generation',
-      content: 'Lovable generates React components from natural language descriptions. Use the AI assistant to create forms, layouts, and interactive elements with TailwindCSS styling.',
-      type: 'ai-generation',
-      keywords: ['ai', 'components', 'react', 'tailwind'],
-      lastUpdated: '2024-01-18'
+      title: 'Lovable 2.0 AI Fullstack Engineer',
+      content: 'Lovable 2.0 positions itself as an "AI Fullstack Engineer" enabling production-ready application development through conversational AI. Features "vibe coding" philosophy where users describe requirements in natural language and AI generates complete React/Tailwind/Vite frontend with Supabase backend integration.',
+      type: 'ai-fullstack',
+      keywords: ['ai-engineer', 'vibe-coding', 'react', 'tailwind', 'supabase', 'production'],
+      lastUpdated: '2025-06-08'
     },
     {
       id: 'lov_2',
-      title: 'Design-to-Code Workflow',
-      content: 'Upload designs or wireframes to generate production-ready code. Lovable converts Figma designs, sketches, and mockups into functional React applications.',
-      type: 'design-conversion',
-      keywords: ['design', 'figma', 'wireframe', 'conversion'],
-      lastUpdated: '2024-01-16'
+      title: 'Multiplayer Collaboration & Teams',
+      content: 'Real-time co-editing with shared team workspaces. Pro plan supports 2 collaborators per project, Teams plan supports up to 20 users per workspace with shared credits, role management, and centralized billing. Uses WebSocket technology for live collaboration.',
+      type: 'collaboration',
+      keywords: ['multiplayer', 'teams', 'real-time', 'websocket', 'shared-credits'],
+      lastUpdated: '2025-06-08'
     },
     {
       id: 'lov_3',
-      title: 'Rapid Prototyping Environment',
-      content: 'Iterate quickly with Lovable\'s instant preview and hot reload. Make changes in natural language and see updates in real-time.',
-      type: 'prototyping',
-      keywords: ['prototype', 'preview', 'iteration'],
-      lastUpdated: '2024-01-14'
+      title: 'Agentic Chat Mode & Dev Mode',
+      content: 'Intelligent chat agent for planning, debugging, and understanding applications without direct code modification. Dev Mode allows direct editing of underlying project code. Multi-step reasoning with file search, log inspection, and database queries using LLM with RAG capabilities.',
+      type: 'development-modes',
+      keywords: ['agentic-chat', 'dev-mode', 'debugging', 'multi-step', 'rag'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'lov_4',
+      title: 'Visual Edits & Security Scanning',
+      content: 'Visual modification of application styling similar to Figma/Webflow with improved CSS generation. Automatic security scanning for vulnerabilities, especially in Supabase-connected projects. Detects missing RLS, exposed data, and common security issues.',
+      type: 'visual-security',
+      keywords: ['visual-edits', 'security-scan', 'css', 'rls', 'vulnerabilities'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'lov_5',
+      title: 'Custom Domains & Publishing',
+      content: 'Built-in custom domain functionality with native Entri support and configuration for Netlify, Vercel, Namecheap. Over 10,000 custom domains connected pre-2.0 launch. DNS automation and one-click publishing with preview links.',
+      type: 'publishing',
+      keywords: ['custom-domains', 'entri', 'netlify', 'vercel', 'dns', 'publishing'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'lov_6',
+      title: 'Credit System & Pricing Tiers',
+      content: 'Credit-based pricing: Free (30 credits/month), Pro ($25-30, 100 credits), Teams ($30, shared pool), Enterprise (custom). 1 credit per AI message regardless of length. Manual style tweaks consume no credits. Credits do not roll over monthly.',
+      type: 'pricing',
+      keywords: ['credits', 'pricing', 'free', 'pro', 'teams', 'enterprise'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'lov_7',
+      title: 'Native Integrations & Ecosystem',
+      content: 'Deep integrations: GitHub (real-time two-way sync), Supabase (full backend), Stripe (payments), Replicate (AI media), Builder.io (Figma import), Resend (email). Supports any external API with guided integration through Agentic Chat Mode.',
+      type: 'integrations',
+      keywords: ['github', 'supabase', 'stripe', 'replicate', 'figma', 'api-integration'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'lov_8',
+      title: 'Advanced Features & AI Models',
+      content: 'Uses Anthropic Claude Sonnet 3.7 for code generation. Features responsive design generation, image/sketch to code conversion, knowledge base for project specs, SEO tools, versioning 2.0 with bookmarking, and enhanced history management.',
+      type: 'advanced-features',
+      keywords: ['claude-sonnet', 'responsive', 'image-to-code', 'seo', 'versioning'],
+      lastUpdated: '2025-06-08'
     }
   ],
   
   bolt: [
     {
       id: 'bolt_1',
-      title: 'Bolt Instant Deployment',
-      content: 'Deploy full-stack applications instantly with Bolt\'s zero-config deployment. Supports Node.js, Python, and static sites with automatic HTTPS.',
-      type: 'deployment',
-      keywords: ['deploy', 'instant', 'https', 'fullstack'],
-      lastUpdated: '2024-01-19'
+      title: 'Bolt.new AI Web Development Agent',
+      content: 'Bolt.new is an AI web development agent built on StackBlitz WebContainer technology. Uses prompt-based generation where users provide natural language prompts to generate full-stack applications. AI has control over filesystem, Node.js server, package manager, terminal, and browser console.',
+      type: 'ai-agent',
+      keywords: ['ai-agent', 'webcontainer', 'prompt-based', 'filesystem', 'nodejs'],
+      lastUpdated: '2025-06-08'
     },
     {
       id: 'bolt_2',
-      title: 'Real-time Preview System',
-      content: 'See changes immediately with Bolt\'s real-time preview. Every code change is instantly reflected in the live preview window.',
-      type: 'preview',
-      keywords: ['preview', 'realtime', 'live'],
-      lastUpdated: '2024-01-17'
+      title: 'Browser-Based IDE & Development Environment',
+      content: 'Complete development environment in browser with code editor featuring syntax highlighting, auto-completion, real-time error checking, multi-cursor support, and live preview. Integrated terminal for commands, npm management, and server logs.',
+      type: 'ide',
+      keywords: ['browser-ide', 'code-editor', 'terminal', 'live-preview', 'syntax-highlighting'],
+      lastUpdated: '2025-06-08'
     },
     {
       id: 'bolt_3',
-      title: 'Collaborative Development',
-      content: 'Work together with team members in real-time. Bolt provides shared workspaces, live editing, and integrated communication tools.',
-      type: 'collaboration',
-      keywords: ['collaboration', 'team', 'workspace'],
-      lastUpdated: '2024-01-13'
+      title: 'Project Management & Version Control',
+      content: 'Rollback functionality to previous states via chat history. Backup system with timestamped backups creating new chat forks. File locking to prevent AI changes and targeting files for focused modifications. Integrated Git workflows.',
+      type: 'version-control',
+      keywords: ['rollback', 'backups', 'file-locking', 'git', 'chat-history'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'bolt_4',
+      title: 'One-Click Deployment & Integrations',
+      content: 'Integrated deployment to Netlify with one-click build and deploy. Provides live project URL and Netlify claim link. Additional integrations: Supabase (BaaS), Expo (mobile), GitHub (repositories), Stripe (payments), Figma via Anima (design-to-code).',
+      type: 'deployment-integrations',
+      keywords: ['netlify', 'one-click', 'supabase', 'expo', 'github', 'stripe', 'figma'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'bolt_5',
+      title: 'Discussion Mode with Gemini 2.0',
+      content: 'Discussion Mode uses Gemini 2.0 Flash with search grounding for project insights, debugging assistance, and strategic guidance without code generation. Accesses Bolt documentation and real-time internet information. Context includes codebase and six recent messages.',
+      type: 'discussion-mode',
+      keywords: ['discussion-mode', 'gemini-2.0', 'debugging', 'search-grounding', 'project-insights'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'bolt_6',
+      title: 'Enhanced Prompt Features & AI Control',
+      content: 'Enhanced prompt feature with icon-indicated structured input. Well-detailed free-form prompts also effective. AI actively monitors for errors and suggests/implements automated fixes. Core interaction through natural language prompts with varying specificity levels.',
+      type: 'prompting',
+      keywords: ['enhanced-prompts', 'structured-input', 'error-monitoring', 'automated-fixes'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'bolt_7',
+      title: 'Pricing & Token-Based System',
+      content: 'Freemium model with token-based AI interactions. Free plan includes StackBlitz IDE, unlimited public projects, 1MB file uploads, daily token limit. Pro ($18-20/month): 10M tokens, unlimited uploads. Teams ($55-60/month): collaboration features. Enterprise: custom pricing.',
+      type: 'pricing',
+      keywords: ['freemium', 'tokens', 'free-plan', 'pro-plan', 'teams', 'enterprise'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'bolt_8',
+      title: 'LLM Models & AI Architecture',
+      content: 'Primarily uses Anthropic Claude series (Claude 3.7 Sonnet) for main code generation. Discussion Mode utilizes Gemini 2.0 Flash. Built on StackBlitz WebContainer for browser-based Node.js execution with full development environment capabilities.',
+      type: 'ai-models',
+      keywords: ['claude-sonnet', 'gemini-2.0', 'webcontainer', 'nodejs', 'browser-execution'],
+      lastUpdated: '2025-06-08'
     }
   ],
   
   cursor: [
     {
       id: 'cur_1',
-      title: 'Cursor AI Code Completion',
-      content: 'Cursor provides intelligent code completion with context awareness. The AI understands your codebase and suggests relevant completions.',
-      type: 'ai-assistance',
-      keywords: ['ai', 'completion', 'context', 'suggestions'],
-      lastUpdated: '2024-01-21'
+      title: 'Cursor AI-First IDE & VSCode Fork',
+      content: 'Cursor is an AI-first IDE built as a VSCode fork, providing intelligent code completion with deep codebase understanding. Features Tab (autocomplete), Composer (multi-file editing), Chat (codebase Q&A), and Inline AI for targeted modifications. Uses custom and frontier models from OpenAI, Anthropic, Google, and xAI.',
+      type: 'ai-ide',
+      keywords: ['ai-first', 'vscode-fork', 'tab', 'composer', 'chat', 'inline-ai'],
+      lastUpdated: '2025-06-08'
     },
     {
       id: 'cur_2',
-      title: 'Intelligent Refactoring',
-      content: 'Use Cursor\'s AI for automated refactoring. Extract functions, rename variables, and restructure code with AI-powered suggestions.',
-      type: 'refactoring',
-      keywords: ['refactor', 'ai', 'restructure'],
-      lastUpdated: '2024-01-15'
+      title: 'Codebase Indexing & Context Management',
+      content: 'Computes embeddings for each file in codebase using custom retrieval models. Automatic indexing with .gitignore/.cursorignore support. @-symbols for precise context control: @files, @folders, @Docs, @Web, @git, @Recent Changes. Supports full codebase context inclusion.',
+      type: 'context-management',
+      keywords: ['codebase-indexing', 'embeddings', 'retrieval-models', '@-symbols', 'context-control'],
+      lastUpdated: '2025-06-08'
     },
     {
       id: 'cur_3',
-      title: 'Automated Testing Generation',
-      content: 'Generate comprehensive test suites with Cursor\'s AI. Create unit tests, integration tests, and end-to-end tests automatically.',
-      type: 'testing',
-      keywords: ['testing', 'automated', 'unit', 'integration'],
-      lastUpdated: '2024-01-11'
+      title: 'Advanced AI Features & Models',
+      content: 'Tab autocomplete with custom models, Composer for multi-file edits, Chat with codebase Q&A, Inline AI (Cmd+I) for targeted changes. Supports GPT-4o, Claude 3.5 Sonnet, Gemini 2.5 Pro, Grok models, and DeepSeek. Features Auto-select for optimal model choice and Max Mode for enhanced reasoning.',
+      type: 'ai-features',
+      keywords: ['tab-autocomplete', 'composer', 'multi-file', 'gpt-4o', 'claude', 'gemini', 'grok', 'deepseek'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'cur_4',
+      title: 'Smart Code Enhancement & Debugging',
+      content: 'Multi-line edits, smart rewrites for code optimization, cursor prediction for navigation, automatic error correction with lint fixes, quick questions on selected code, AI commit messages, documentation generation, and refactoring assistance across multiple files.',
+      type: 'code-enhancement',
+      keywords: ['multi-line-edits', 'smart-rewrites', 'error-correction', 'refactoring', 'documentation'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'cur_5',
+      title: 'Customization & Rules System',
+      content: '.cursorrules files for project-specific AI instructions and global "Rules for AI" settings. Supports coding standards, framework preferences, style guidelines, and naming patterns. Privacy mode for sensitive projects with local-only processing and SOC 2 compliance.',
+      type: 'customization',
+      keywords: ['cursorrules', 'project-specific', 'global-rules', 'privacy-mode', 'soc2'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'cur_6',
+      title: 'Enterprise & Subscription Tiers',
+      content: 'Free tier with basic features and usage limits. Pro ($20/month): unlimited usage, GPT-4, Claude, premium features. Business ($40/user/month): admin controls, centralized billing, audit logs. Enterprise: custom pricing, self-hosting, enhanced security, dedicated support.',
+      type: 'pricing-enterprise',
+      keywords: ['free-tier', 'pro', 'business', 'enterprise', 'admin-controls', 'self-hosting'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'cur_7',
+      title: 'Technical Architecture & Privacy',
+      content: 'Built on VSCode foundation with regular rebasing. Cloud-based AI processing with privacy mode for sensitive data. Codebase indexing using embeddings and AST parsing with tree-sitter. Supports Windows, macOS, Linux with 4GB+ RAM recommended.',
+      type: 'technical-architecture',
+      keywords: ['vscode-foundation', 'cloud-processing', 'embeddings', 'ast-parsing', 'cross-platform'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'cur_8',
+      title: 'Integration & Extension Ecosystem',
+      content: 'Supports most VSCode extensions with compatibility considerations. Integrated terminal, Git support, debugging tools, and language servers. Extension marketplace access with AI-enhanced functionality where applicable.',
+      type: 'integrations',
+      keywords: ['vscode-extensions', 'terminal', 'git', 'debugging', 'language-servers'],
+      lastUpdated: '2025-06-08'
     }
   ],
-  
+    
   windsurf: [
     {
       id: 'wind_1',
-      title: 'Windsurf Team Collaboration',
-      content: 'Windsurf enables seamless team collaboration with real-time code sharing, integrated chat, and project management tools.',
-      type: 'collaboration',
-      keywords: ['team', 'collaboration', 'chat', 'management'],
-      lastUpdated: '2024-01-20'
+      title: 'Windsurf Agentic IDE & Cascade AI',
+      content: 'Windsurf (formerly Codeium) is an agentic IDE with Cascade AI agent having full contextual codebase awareness. Features Write Mode (highly automated), Chat Mode (interactive guidance), and various specialized modes for different development tasks. Excellent for database development and schema design.',
+      type: 'agentic-ide',
+      keywords: ['agentic', 'cascade', 'write-mode', 'chat-mode', 'database', 'schema'],
+      lastUpdated: '2025-06-08'
     },
     {
       id: 'wind_2',
-      title: 'Real-time Synchronization',
-      content: 'All team members see changes instantly with Windsurf\'s real-time sync. Conflicts are automatically resolved with intelligent merging.',
-      type: 'synchronization',
-      keywords: ['sync', 'realtime', 'merge', 'conflicts'],
-      lastUpdated: '2024-01-16'
+      title: 'AI Features & Model Context Protocol',
+      content: 'Inline AI for targeted code modifications (Cmd/Ctrl+I), Supercomplete for advanced autocompletion, AI Terminal for natural language commands. Model Context Protocol (MCP) enables connection to external tools including PostgreSQL, MongoDB, MySQL databases for direct operations.',
+      type: 'ai-features',
+      keywords: ['inline-ai', 'supercomplete', 'ai-terminal', 'mcp', 'postgresql', 'mongodb', 'mysql'],
+      lastUpdated: '2025-06-08'
     },
     {
       id: 'wind_3',
-      title: 'Integrated Project Management',
-      content: 'Manage tasks, deadlines, and team assignments directly in Windsurf. Track progress with built-in project management tools.',
-      type: 'project-management',
-      keywords: ['tasks', 'deadlines', 'progress', 'management'],
-      lastUpdated: '2024-01-12'
+      title: 'Database Development Capabilities',
+      content: 'Specialized for database development with SQL DDL generation, ORM model creation (SQLAlchemy, Prisma, TypeORM), schema design assistance, migration scripts, and direct database operations through MCP servers. Supports context-aware database code generation.',
+      type: 'database-development',
+      keywords: ['sql-ddl', 'orm', 'sqlalchemy', 'prisma', 'typeorm', 'migrations', 'mcp-servers'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'wind_4',
+      title: 'Context Management & Indexing',
+      content: 'Local codebase indexing with deep contextual understanding. .windsurfrules files for custom AI behavior guidance and Memories system for persistent context. Respects .gitignore patterns and provides semantic code analysis.',
+      type: 'context-management',
+      keywords: ['local-indexing', 'windsurfrules', 'memories', 'semantic-analysis', 'gitignore'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'wind_5',
+      title: 'VS Code Import & Setup',
+      content: 'One-click import from VS Code or Cursor including settings, extensions, keybindings. Cross-platform support (Windows, macOS, Linux) with familiar interface. Easy onboarding flow with theme and keybinding customization.',
+      type: 'setup-import',
+      keywords: ['vscode-import', 'cursor-import', 'cross-platform', 'onboarding', 'customization'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'wind_6',
+      title: 'Database Schema & ORM Generation',
+      content: 'Generates SQL DDL for various databases, creates SQLAlchemy models with relationships, designs Prisma schemas with proper relations, and builds TypeORM entities. Supports best practices for normalization, naming conventions, and security guidelines.',
+      type: 'schema-orm',
+      keywords: ['sql-ddl', 'sqlalchemy-models', 'prisma-schemas', 'typeorm-entities', 'best-practices'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'wind_7',
+      title: 'Advanced Database Operations',
+      content: 'Direct database connectivity through MCP for PostgreSQL (Neon, Prisma), MongoDB, MySQL. Can perform schema manipulation, data querying, migration management using natural language prompts. Supports complex joins, indexing strategies, and performance optimization.',
+      type: 'database-operations',
+      keywords: ['mcp-connectivity', 'schema-manipulation', 'data-querying', 'migrations', 'performance'],
+      lastUpdated: '2025-06-08'
+    },
+    {
+      id: 'wind_8',
+      title: 'Project Templates & Code Generation',
+      content: 'New Project functionality generates project structures from natural language prompts. Can create Flask projects with SQLAlchemy, Django with PostgreSQL, Node.js with TypeORM, and other full-stack configurations with proper database integration.',
+      type: 'project-generation',
+      keywords: ['project-templates', 'flask', 'django', 'nodejs', 'full-stack', 'database-integration'],
+      lastUpdated: '2025-06-08'
     }
   ]
 };

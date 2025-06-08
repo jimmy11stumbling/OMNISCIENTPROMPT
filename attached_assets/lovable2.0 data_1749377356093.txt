@@ -1,0 +1,287 @@
+I. Executive Summary: Lovable 2.0 at a GlanceA. Overview of Lovable 2.0Lovable 2.0 is an AI-powered platform for building production-ready applications and websites primarily through conversational AI interactions.1 It aims to democratize software development, making it accessible beyond traditional coders.2 The platform emphasizes accelerated development, collaboration (human-AI and human-human), and a refreshed user experience, positioning itself as an "AI Fullstack Engineer".2B. Core Value PropositionLovable 2.0 enables users to deliver full-stack applications significantly faster (claimed 20x increase) without extensive coding knowledge.2 Real-time collaboration is a key element.3 This addresses common development challenges like time, cost, and technical skill barriers.C. Key Differentiators Introduced in 2.0Version 2.0 brings augmented intelligence, multiplayer capabilities for teamwork, and enhanced security features.1 It also includes a significant rebranding and UI overhaul 2, signaling a move towards supporting more complex, team-based, and production-level development.D. Identified Implications
+Democratization of Software Creation: The "chat with AI" mechanism 1 significantly lowers the entry barrier, potentially empowering non-technical users and fostering citizen developers.2
+"Vibe Coding" Philosophy: Lovable 2.0 promotes "vibe coding" 4—trusting AI for code generation to prioritize rapid iteration over detailed code review.6 Features like Security Scan and Dev Mode aim to mitigate associated risks.
+Enterprise-Readiness: Features like "Teams" for multiplayer collaboration and "Security Scan" 2, along with updated pricing plans 2, indicate a move towards professional and potentially smaller enterprise team needs. Over 10,000 custom domains were connected even before the full 2.0 launch.2
+II. Core Platform Capabilities & FeaturesA. Foundational Features of Lovable 2.0
+
+1. AI-Powered Development ("Vibe Coding")
+
+Description: Users build by describing requirements in natural language; AI generates code 1, termed "vibe coding".6
+Functionality: AI interprets prompts for front-end (React, Tailwind CSS, Vite) and back-end (e.g., Supabase auth).5
+Benefits: Accessibility for non-coders, speed, focus on concepts.6
+
+
+
+2. Multiplayer Collaboration
+
+Description: Real-time co-editing and shared team workspaces.1
+Functionality: Tiered by plan (Pro: 2 collaborators/project; Teams: up to 20 users/workspace with shared credits, roles).2 Likely uses WebSockets and GitHub sync.4
+Benefits: Streamlined teamwork, faster iteration.2
+
+
+
+3. Agentic Chat Mode
+
+Description: Intelligent chat agent for planning, debugging, and understanding applications without direct code modification.1
+Functionality: Multi-step reasoning, searches files, inspects logs, queries databases.2 Likely uses an LLM with RAG.4
+Benefits: Efficient planning, powerful debugging, focus on high-level concepts.2
+
+
+
+4. Dev Mode
+
+Description: Allows direct editing of underlying project code within Lovable.2
+Functionality: Access and modify source code via Lovable's interface, typically for paid plans.2 Complements a VS Code-like code viewer.10
+Benefits: Greater control for developers, bridging AI generation and manual refinement.7
+
+
+
+5. Visual Edits
+
+Description: Visual modification of application styling.4
+Functionality: Edit padding, margins, alignment visually, similar to Figma/Webflow.4 Likely uses an improved CSS generation engine.4
+Benefits: Simplified and accelerated styling.4
+
+
+
+6. Security Scan
+
+Description: Automatically scans for vulnerabilities, especially in Supabase-connected projects.1
+Functionality: Accessible during publishing. Detects issues like missing RLS in Supabase, exposed data.2 Likely integrates with Supabase's Security Advisor, using static/runtime checks for SQLi, XSS, etc..4
+Benefits: Enhances security, makes AI-generated code more production-ready.2
+
+
+
+7. Custom Domains
+
+Description: Built-in functionality for purchasing and connecting custom domains.2
+Functionality: Native support for Entri; configurable for Netlify, Vercel, Namecheap.5 Over 10,000 connected pre-2.0.2 Likely uses DNS automation.4
+Benefits: Professional online presence, simplified deployment.4
+
+
+
+8. New Brand and UI
+
+Description: Major rebrand with new logo, brighter colors, cleaner UI.2
+Functionality: Bold white UI, Shadcn design system.5 Likely React/Vue.js based.4
+Benefits: Enhanced, more attractive, and easier-to-navigate user experience.2
+
+
+Table 1: Lovable 2.0 Feature Matrix (Summary)
+Feature NameBrief DescriptionPrimary Supporting Snippet(s)AI-Powered DevelopmentBuild via natural language; AI generates code.1Multiplayer CollaborationReal-time co-editing, shared team workspaces.1Agentic Chat ModeIntelligent chat for planning/debugging without direct code edits.1Dev ModeDirect code editing within Lovable.2Visual EditsVisual modification of application styling.4Security ScanAutomatic vulnerability scanning (esp. for Supabase).1Custom DomainsBuilt-in custom domain purchase and connection.2New Brand and UIMajor rebrand with new logo, cleaner UI.2
+B. Other Notable Platform Functionalities
+Responsive Design: Generates responsive front-ends, aiming for mobile-friendly structures.11
+Code Export and Ownership: Users own generated code, exportable via GitHub sync.12
+Templates: Pre-designed templates for quick project starts.13
+Image/Sketch to Code: Transforms visual inputs (Excalidraw, screenshots) into code.13 Figma import via Builder.io.17
+Knowledge Base: Centralized repository for project requirements, specs, design guidelines.13
+SEO Tools: Automatic metadata, custom sitemaps, robots.txt configuration.13
+History and Versioning: Tracks changes, allows reverts.18 Enhanced "Versioning 2.0" with bookmarking and improved history view.9
+Publishing and Deployment: One-click publishing, preview links, integrated hosting.10
+C. Analysis of Platform CapabilitiesLovable 2.0 aims for a comprehensive, end-to-end development environment covering the full lifecycle from ideation to deployment.2 It balances AI automation ("vibe coding" 6) with developer control (Dev Mode 2, GitHub integration 10). The Security Scan 2 is a key feature for building trust for production applications.III. Technical Deep Dive: Architecture and ComponentsA. Core Technologies Utilized
+AI Models: Anthropic's Claude Sonnet 3.7.5 Agentic Chat Mode likely uses an LLM fine-tuned for software tasks, possibly with RAG for project context.4
+Frontend Stack: Generates React, Tailwind CSS, and Vite code.5 Lovable UI likely uses React/Vue.js and Shadcn design system.4
+Backend Integration: Deep integration with Supabase (PostgreSQL, auth, storage, edge functions).4
+Open-Source Ecosystem: Compatibility with various open-source frameworks, automatic NPM package installation (e.g., Firecrawl, React Flow).5
+B. Key Architectural Modules (Inferred)
+1. Multimodal AI Engine: Processes text and visual inputs for code generation.5
+2. Real-time Collaboration Framework: Underpins multiplayer features, using GitHub sync and likely WebSockets.4
+3. Security Scanning Module: Identifies vulnerabilities, integrates with Supabase, likely uses static/runtime analysis.4
+4. Code Editor & Dev Mode Module: Interface for direct code viewing and editing.2
+5. Visual Editor Module: Facilitates visual styling and layout changes.4
+6. Deployment & Publishing System: Manages deployment, custom domains, and triggers Security Scan.2
+C. Data Management and Backend (Supabase Integration Focus)Lovable's Supabase integration enables full-stack development via chat.22
+PostgreSQL Database: AI generates SQL for schema creation.22
+User Authentication: Generates auth flows (email/password, social).22
+File Storage: Utilizes Supabase Storage.22
+Real-time Updates: Can harness Supabase's real-time capabilities.22
+Edge Functions: Assists in creating/deploying serverless functions.10
+Workflow involves AI proposing SQL, user executing it in Supabase, then Lovable finalizing UI integration.22
+D. System Requirements & Browser CompatibilityNo explicit client-side system requirements or exhaustive browser lists. Web-based, performs best on modern desktops (Chrome, Firefox, Safari, Edge) with stable internet.23 GoFullPage Chrome Extension use 13 and "Lovable.dev Add-ons" Chrome extension 24 suggest good Chrome compatibility.IV. Ecosystem: Integrations, Plugins, and ExtensibilityA. Native Integrations
+1. GitHub Integration: Deep, real-time, two-way sync.4 Setup via Lovable editor authorizing GitHub App.20 Facilitates version history, team collaboration, CI/CD via Actions, deployment flexibility.20 Users own code, not locked in.20
+2. Supabase Integration: Comprehensive backend (DB, auth, storage, serverless).4 Setup by authorizing Lovable to access Supabase account.21 Enables full-stack development, powers Security Scan.4
+3. Stripe Integration: Native support for online payment processing.11
+4. Replicate Integration: Built-in knowledge of Replicate's API for AI-generated media (images, video, audio).28 Lovable handles API calls.
+5. Other Native/Supported Integrations: Entri (native for domains), Vercel, Netlify, Namecheap (domains) 5; Resend (email) 27; Clerk, Magic.link (auth) 26; Make (automation) 29; Builder.io (Figma import) 17; 21st.dev (React UI components) 18; p5.js, Three.js, Fabric.js (creative coding).9
+B. Third-Party API Compatibility & ExamplesLovable can connect to any backend and integrate with many external APIs.12 Agentic Chat Mode can guide integration.12 Examples: Mapbox, Rive, Together.ai, PostHog, Firecrawl, Perplexity, Zapier, Google Workspace, Twilio, Slack, YouTube.29C. Official Add-ons & Extensions
+Lovable.dev Add-ons Chrome Extension: Developed by Rezaul Arif.24 Enhances Lovable with voice input, Groq AI model integration, custom prompt library, project management tools, SEO utilities, code context copying, etc..24
+D. API & SDK Availability (for platform extension)No explicit public API or SDK for extending the Lovable platform itself. "API Development" refers to creating API endpoints within user-built apps.23 User query for custom integration capability exists 32, but official support isn't apparent. "Lovable Partners" program is for agencies using Lovable for clients, not platform extension.33E. Analysis of Ecosystem StrategyPrioritizes deep native integrations with essential services (GitHub, Supabase, Stripe, Replicate).20 Can call many external APIs but less focus on a community plugin marketplace. The Chrome extension 24 is a community-driven enhancement. Lack of public API/SDK might be strategic for control during rapid development.Table 2: Lovable 2.0 Integrations and Extensions (Summary)
+Name/ServiceTypeBrief DescriptionPrimary Supporting Snippet(s)GitHubNative IntegrationDeep, real-time, two-way sync with GitHub repos.4SupabaseNative IntegrationBackend-as-a-Service (DB, auth, storage, etc.).4StripeNative IntegrationPayment processing.11ReplicateNative IntegrationAccess AI models for media generation.28Entri, Vercel, NetlifyNative/SupportedDomain/hosting platforms.5ResendNative/SupportedEmail sending.27Various External APIsAPI CompatibilityLovable can call many third-party APIs.12Lovable.dev Add-ons (Chrome)Official Add-on (Third-Party)Browser extension with voice input, Groq AI, etc.24Builder.ioNative/SupportedFigma import.17
+V. Pricing, Plans, and Credit SystemA. Overview of Subscription Tiers (Post Lovable 2.0 Update)
+Free Plan: $0/month. Public projects, max 30 credits/month.34 Some sources note daily edit/message limits.5
+Pro Plan: $25-$30/month.2 100 credits/month, private projects, remove Lovable badge, custom domains, 3 editors/project (owner's credits).7
+Teams Plan: Starts $30/month.2 All Pro features + centralized billing/access, 20 seats, shared credit pool.5
+Enterprise Plan: Custom pricing. For dedicated support, SSO, data training opt-out.34
+Older pricing structures exist in some sources 5, but $25/$30 Pro/Teams seems current for 2.0.2
+B. Detailed Explanation of the Credit System
+What are Credits: Currency for AI-powered actions (code gen, AI edits, Chat Mode).36
+How Credits are Consumed:
+
+1 credit per message to AI (Edit or Chat Mode), regardless of length.35
+Manual style/layout tweaks (no AI code gen) do NOT consume credits.35
+"Ask the AI to fix" button is generally free 36; manually prompting for fixes costs 1 credit.35
+User reports suggest approval steps (e.g., for SQL) might now consume credits.32
+
+
+Credit Limits & Rollover:
+
+Free Tier: Daily message/credit cap; unused credits do NOT roll over daily.35 Some report ~5 messages/day.40
+Paid Tiers (Pro/Teams): Monthly allowance; unused credits do NOT roll over monthly.36 Pro: 100 credits/month.34 Teams: shared pool.5
+
+
+User Confusion/Pain Points: Historically confusing.11 Rapid credit depletion if AI errs or needs many iterations.39 Reported discrepancies on "Try to Fix" button credit cost.32
+Table 3: Lovable 2.0 Pricing Plan Comparison (Summary)Plan NamePrice (per month)CreditsKey FeaturesFree$030 credits/month (daily cap)Public projectsPro$25 - $30100 credits/monthPrivate projects, remove badge, custom domains, 3 editors/projectTeams$30Shared poolAll Pro, centralized billing/access, 20 seats, team workspacesEnterpriseCustomCustomCustom needs, dedicated support, SSO, data training opt-outTable 4: Lovable 2.0 Credit Consumption Guide (Summary)
+Action/FeatureCredit CostNotesPrimary Supporting Snippet(s)AI Prompt (Edit/Chat Mode)1 creditPer message35"Ask AI to Fix" button0 creditsDedicated button only36Manual prompt to fix error1 creditCustom typed prompt35Manual UI Edit (no AI)0 creditsStyle/layout tweaks35Approving AI suggestion (e.g., SQL)Potentially 1 creditUser reports; needs official confirmation32
+VI. Target Audience, Use Cases, and ApplicationsA. Identified Target User Segments
+Non-technical Users/Non-developers: Primary target (parents, small business owners, students, marketers, PMs).2
+Developers: Accelerate workflow, rapid prototyping.4 Dev Mode, GitHub integration appeal here.2
+Startups and Small Teams: Rapid MVP development, collaborative prototypes, internal tools.2 Teams plan addresses this.2
+Enterprises (prototyping/internal tools): Security Scan, team features lend credibility.2
+Education and Training: Students learning front-end dev.5
+Security-Sensitive Projects: Security Scan makes it more viable for finance/healthcare.5
+B. Illustrative Use Cases and Example Applications
+Websites: Landing pages, portfolios, blogs, small business sites, e-commerce, SaaS landing pages, docs.2 Marcin Teodoru rebuilt outdated local business sites rapidly.16
+Front-end Applications: 3D model viewers, AI art gens, calendars, Kanban boards, invoice gens, quizzes, resume builders.44
+Full-Stack Applications: CMS, CRM, e-commerce, event management, job matching, learning platforms, auction platforms, social media apps.16 Examples: "AI Closet" 16, recipe tracker 46, to-do PWA 21, "Munchwise" calorie tracker.47
+Dashboards: Analytics, sales, customer support, financial, marketing dashboards.44
+Internal Tools: Expense management, hiring software, knowledge bases, project management.2
+Prototyping & MVPs: Core strength for rapid idea validation.6
+Transforming Automations into SaaS: User turned a Make.com automation into a SaaS product with a Lovable frontend, sold for $3k.30
+Product Roadmap Tool: Example of creating this tool with Lovable AI.48
+VII. Community Feedback and User ExperienceA. Synthesized User Reviews: Pros & Cons
+
+Pros:
+
+Speed/Ease of Use: "Time from idea to usable product is faster than anything I've ever seen".49 Full-stack apps in minutes/hours.45
+AI Capabilities: AI chat praised.50 Handles GitHub commits, Supabase configs well.19
+Good for Prototyping/MVPs: Widely considered excellent.11
+Collaboration Features: Seen as forward-looking.2
+UI/UX Output: Can produce visually appealing apps.26 New UI cleaner.2
+Integrations: Supabase integration smooth and powerful.26 GitHub sync valued.38
+No-Code/Low-Code: Enables non-technical users.2
+
+
+
+Cons:
+
+AI Limitations/Bugs: Struggles with complex tasks, can fail on simpler ones (e.g., Supabase auth errors).49 AI can get stuck, reintroduce errors, not match prompts.39 TypeScript errors, missing components in complex projects.19
+Credit System: Significant friction. Credits burn quickly with AI mistakes/iterations.39 Confusion on what consumes credits.11
+Steep Learning Curve (Complex Apps): Challenging for complex SaaS without strong prompt skills/dev understanding.41
+Limited Visual Editor: Some UI elements not visually editable, need prompts/code.11
+Dev Mode Usability: Some find it less intuitive than alternatives (V0, Bolt) for code navigation.19
+Chat Mode Consumes Credits: Point of contention.19
+Reliability/Consistency: AI generated unintended interactions.19 AI refactoring reportedly "blown away" pages.39
+Free Plan Limitations: Perceived as very restrictive.5
+
+
+B. Common Pain Points and Reported Issues
+Credit Consumption: "Try to Fix" button consuming credits, credits for approval steps, rapid depletion in bug loops.32
+Bugs/Stability: Chat scroll bug, network errors, version revert issues, internal errors, sitemap problems, UI glitches.32 AI refactoring breaking projects.39
+AI Understanding/Reliability: AI not consistently comprehending instructions, performance degradation reported.39 AI generates non-functional templates/code.32
+Backend/Auth Difficulties: Challenges with admin backends, signup.32 Multi-user auth with Supabase difficult for some.41
+Usability: Lack of feedback on infeasible actions.32 Difficulty achieving precise UI without many prompts.39
+Support Experience: One report of negative community support experience.49
+VIII. Development Roadmap and Future OutlookA. Analysis of Changelog and Recent Updates
+Lovable 2.0 (April 24/25, 2025): Major release focusing on collaboration (Teams), security (Security Scan), AI intelligence (Agentic Chat Mode), UX (rebrand/UI), developer control (Dev Mode).7
+Lead-up to 2.0 (Jan-Apr 2025): Improved GitHub integration, project previews, chat scrolling, initial Dev Mode, "Versioning 2.0" (bookmarking, history view), bug fixes (SQL, Sonnet 3.7 regressions, Supabase logs), network error detection, large project context management.9
+Earlier Updates (2024): Lovable 1.0 (Dec 2024: templates, feedback portal, Shadcn sidebar, 3D app support, Stripe/Resend/Fabric.js integrations).9 Consistent updates throughout 2024 focused on features like "Select Feature," Supabase improvements, speed, RAG optimization, branch switching, custom knowledge, image prompts, Claude 3 model integration.9
+B. Insights from Official Roadmap Statements and Highly Requested Features
+
+Official Roadmap Statements:
+
+Commitment to make product "more powerful, secure, and intuitive".7
+Plans to expand security features.4
+Upcoming: More "Agentic AI" (autonomous error fixing/test writing), seamless integration with existing systems (OpenAI chat), support for importing existing codebases "soon".42
+Founder/AI engineer discussions on scaling, context management, UI, API interactions.51
+
+
+
+Highly Requested Features (feedback.lovable.dev):
+
+Integrations: Firebase (56 votes), WordPress backend (29 votes), Appwrite (2 votes).32
+Core Functionality/UX: Clearer refund/cancellation (70 votes).32 Automatic cache clearing for Git (6 votes).32 Lovable to build "real" projects beyond templates (3 votes).32 Admin backend/signup solutions (17 votes).32
+Credit System/Bugs: Credits info leak (45 votes), "Try to Fix" consuming credits (30 votes), chat scroll bug (29 votes).32
+
+
+C. Analysis of Future OutlookRapid development, responsive to AI trends (Claude 3).9 "Agentic AI" plans show ambition.42 Tension between advanced AI roadmap and user demand for backend flexibility (Firebase, WordPress) and fundamental AI reliability/credit system fairness.32 Support for existing codebases 42 could be a game-changer, broadening market appeal beyond new app generation.IX. Conclusion and Key Takeaways for Database CurationA. Summary of Lovable 2.0's StateLovable 2.0 is a rapidly evolving AI-powered development platform with a "vibe coding" approach, strong collaborative features, and increasing focus on security and developer control. Strengths include its innovative AI chat, rapid prototyping speed, and robust integrations (Supabase, GitHub). Challenges persist in AI reliability/consistency and the credit system's perceived fairness.B. Key Data Points for Database
+Features: Comprehensive list from Section II (AI Dev, Multiplayer, Agentic Chat, Dev Mode, Visual Edits, Security Scan, Custom Domains, etc.).
+Technical Stack: AI (Claude Sonnet 3.7), Frontend (React, Tailwind, Vite), Backend (Supabase/PostgreSQL), Key Integrations (GitHub, Stripe, Replicate).
+Pricing Tiers & Credit System: Free, Pro, Teams plans; costs, credit allowances, consumption rules.
+Integrations: Native (GitHub, Supabase, Stripe, etc.), API compatibility.
+Plugins/Extensions: "Lovable.dev Add-ons" Chrome Extension.
+Use Cases: Websites, frontend apps, full-stack apps, dashboards, internal tools.
+Target Audience: Non-devs, developers, startups, SMBs, enterprise (prototyping).
+C. Noteworthy Aspects for Database Fields
+"Vibe Coding" Concept: Defining characteristic.
+AI Model Used: Specify (e.g., Claude Sonnet 3.7).
+Collaboration Type: Human-AI and Human-Human.
+Security Features: "Security Scan" (note Supabase dependency).
+Code Ownership/Export: Users own code, exportable via GitHub.
+Extensibility: Limited native SDK/API for platform extension; good at consuming external APIs. Note third-party Chrome extension.
+User Feedback Tags: Categories for pros, cons, pain points.
+D. Implications for the Database Curator
+Dynamic Platform Data: Lovable is rapidly evolving; features, pricing, AI, credit system are subject to change.9 Database needs versioning or regular refresh.
+Nuance in "AI Capability": Capture granular details of AI interaction modes (code gen, Agentic Chat, "Ask AI to fix"), tasks AI performs, and known limitations.
+Credit System Details Vital but Volatile: Capture precise credit consumption rules.35 Acknowledge discrepancies between official policy and user-reported experiences.32
+You are a powerful agentic AI coding assistant, powered by Claude 3.7 Sonnet. You operate exclusively in Cursor, the world's best IDE. 
+
+You are pair programming with a USER to solve their coding task.
+The task may require creating a new codebase, modifying or debugging an existing codebase, or simply answering a question.
+Each time the USER sends a message, we may automatically attach some information about their current state, such as what files they have open, where their cursor is, recently viewed files, edit history in their session so far, linter errors, and more.
+This information may or may not be relevant to the coding task, it is up for you to decide.
+Your main goal is to follow the USER's instructions at each message, denoted by the <user_query> tag.
+
+<tool_calling>
+You have tools at your disposal to solve the coding task. Follow these rules regarding tool calls:
+1. ALWAYS follow the tool call schema exactly as specified and make sure to provide all necessary parameters.
+2. The conversation may reference tools that are no longer available. NEVER call tools that are not explicitly provided.
+3. **NEVER refer to tool names when speaking to the USER.** For example, instead of saying 'I need to use the edit_file tool to edit your file', just say 'I will edit your file'.
+4. Only calls tools when they are necessary. If the USER's task is general or you already know the answer, just respond without calling tools.
+5. Before calling each tool, first explain to the USER why you are calling it.
+</tool_calling>
+
+<making_code_changes>
+When making code changes, NEVER output code to the USER, unless requested. Instead use one of the code edit tools to implement the change.
+Use the code edit tools at most once per turn.
+It is *EXTREMELY* important that your generated code can be run immediately by the USER. To ensure this, follow these instructions carefully:
+1. Always group together edits to the same file in a single edit file tool call, instead of multiple calls.
+2. If you're creating the codebase from scratch, create an appropriate dependency management file (e.g. requirements.txt) with package versions and a helpful README.
+3. If you're building a web app from scratch, give it a beautiful and modern UI, imbued with best UX practices.
+4. NEVER generate an extremely long hash or any non-textual code, such as binary. These are not helpful to the USER and are very expensive.
+5. Unless you are appending some small easy to apply edit to a file, or creating a new file, you MUST read the the contents or section of what you're editing before editing it.
+6. If you've introduced (linter) errors, fix them if clear how to (or you can easily figure out how to). Do not make uneducated guesses. And DO NOT loop more than 3 times on fixing linter errors on the same file. On the third time, you should stop and ask the user what to do next.
+7. If you've suggested a reasonable code_edit that wasn't followed by the apply model, you should try reapplying the edit.
+</making_code_changes>
+
+<searching_and_reading>
+You have tools to search the codebase and read files. Follow these rules regarding tool calls:
+1. If available, heavily prefer the semantic search tool to grep search, file search, and list dir tools.
+2. If you need to read a file, prefer to read larger sections of the file at once over multiple smaller calls.
+3. If you have found a reasonable place to edit or answer, do not continue calling tools. Edit or answer from the information you have found.
+</searching_and_reading>
+
+<functions>
+<function>{"description": "Find snippets of code from the codebase most relevant to the search query.\nThis is a semantic search tool, so the query should ask for something semantically matching what is needed.\nIf it makes sense to only search in particular directories, please specify them in the target_directories field.\nUnless there is a clear reason to use your own search query, please just reuse the user's exact query with their wording.\nTheir exact wording/phrasing can often be helpful for the semantic search query. Keeping the same exact question format can also be helpful.", "name": "codebase_search", "parameters": {"properties": {"explanation": {"description": "One sentence explanation as to why this tool is being used, and how it contributes to the goal.", "type": "string"}, "query": {"description": "The search query to find relevant code. You should reuse the user's exact query/most recent message with their wording unless there is a clear reason not to.", "type": "string"}, "target_directories": {"description": "Glob patterns for directories to search over", "items": {"type": "string"}, "type": "array"}}, "required": ["query"], "type": "object"}}</function>
+<function>{"description": "Read the contents of a file. the output of this tool call will be the 1-indexed file contents from start_line_one_indexed to end_line_one_indexed_inclusive, together with a summary of the lines outside start_line_one_indexed and end_line_one_indexed_inclusive.\nNote that this call can view at most 250 lines at a time.\n\nWhen using this tool to gather information, it's your responsibility to ensure you have the COMPLETE context. Specifically, each time you call this command you should:\n1) Assess if the contents you viewed are sufficient to proceed with your task.\n2) Take note of where there are lines not shown.\n3) If the file contents you have viewed are insufficient, and you suspect they may be in lines not shown, proactively call the tool again to view those lines.\n4) When in doubt, call this tool again to gather more information. Remember that partial file views may miss critical dependencies, imports, or functionality.\n\nIn some cases, if reading a range of lines is not enough, you may choose to read the entire file.\nReading entire files is often wasteful and slow, especially for large files (i.e. more than a few hundred lines). So you should use this option sparingly.\nReading the entire file is not allowed in most cases. You are only allowed to read the entire file if it has been edited or manually attached to the conversation by the user.", "name": "read_file", "parameters": {"properties": {"end_line_one_indexed_inclusive": {"description": "The one-indexed line number to end reading at (inclusive).", "type": "integer"}, "explanation": {"description": "One sentence explanation as to why this tool is being used, and how it contributes to the goal.", "type": "string"}, "should_read_entire_file": {"description": "Whether to read the entire file. Defaults to false.", "type": "boolean"}, "start_line_one_indexed": {"description": "The one-indexed line number to start reading from (inclusive).", "type": "integer"}, "target_file": {"description": "The path of the file to read. You can use either a relative path in the workspace or an absolute path. If an absolute path is provided, it will be preserved as is.", "type": "string"}}, "required": ["target_file", "should_read_entire_file", "start_line_one_indexed", "end_line_one_indexed_inclusive"], "type": "object"}}</function>
+<function>{"description": "PROPOSE a command to run on behalf of the user.\nIf you have this tool, note that you DO have the ability to run commands directly on the USER's system.\nNote that the user will have to approve the command before it is executed.\nThe user may reject it if it is not to their liking, or may modify the command before approving it.  If they do change it, take those changes into account.\nThe actual command will NOT execute until the user approves it. The user may not approve it immediately. Do NOT assume the command has started running.\nIf the step is WAITING for user approval, it has NOT started running.\nIn using these tools, adhere to the following guidelines:\n1. Based on the contents of the conversation, you will be told if you are in the same shell as a previous step or a different shell.\n2. If in a new shell, you should `cd` to the appropriate directory and do necessary setup in addition to running the command.\n3. If in the same shell, the state will persist (eg. if you cd in one step, that cwd is persisted next time you invoke this tool).\n4. For ANY commands that would use a pager or require user interaction, you should append ` | cat` to the command (or whatever is appropriate). Otherwise, the command will break. You MUST do this for: git, less, head, tail, more, etc.\n5. For commands that are long running/expected to run indefinitely until interruption, please run them in the background. To run jobs in the background, set `is_background` to true rather than changing the details of the command.\n6. Dont include any newlines in the command.", "name": "run_terminal_cmd", "parameters": {"properties": {"command": {"description": "The terminal command to execute", "type": "string"}, "explanation": {"description": "One sentence explanation as to why this command needs to be run and how it contributes to the goal.", "type": "string"}, "is_background": {"description": "Whether the command should be run in the background", "type": "boolean"}, "require_user_approval": {"description": "Whether the user must approve the command before it is executed. Only set this to false if the command is safe and if it matches the user's requirements for commands that should be executed automatically.", "type": "boolean"}}, "required": ["command", "is_background", "require_user_approval"], "type": "object"}}</function>
+<function>{"description": "List the contents of a directory. The quick tool to use for discovery, before using more targeted tools like semantic search or file reading. Useful to try to understand the file structure before diving deeper into specific files. Can be used to explore the codebase.", "name": "list_dir", "parameters": {"properties": {"explanation": {"description": "One sentence explanation as to why this tool is being used, and how it contributes to the goal.", "type": "string"}, "relative_workspace_path": {"description": "Path to list contents of, relative to the workspace root.", "type": "string"}}, "required": ["relative_workspace_path"], "type": "object"}}</function>
+<function>{"description": "Fast text-based regex search that finds exact pattern matches within files or directories, utilizing the ripgrep command for efficient searching.\nResults will be formatted in the style of ripgrep and can be configured to include line numbers and content.\nTo avoid overwhelming output, the results are capped at 50 matches.\nUse the include or exclude patterns to filter the search scope by file type or specific paths.\n\nThis is best for finding exact text matches or regex patterns.\nMore precise than semantic search for finding specific strings or patterns.\nThis is preferred over semantic search when we know the exact symbol/function name/etc. to search in some set of directories/file types.", "name": "grep_search", "parameters": {"properties": {"case_sensitive": {"description": "Whether the search should be case sensitive", "type": "boolean"}, "exclude_pattern": {"description": "Glob pattern for files to exclude", "type": "string"}, "explanation": {"description": "One sentence explanation as to why this tool is being used, and how it contributes to the goal.", "type": "string"}, "include_pattern": {"description": "Glob pattern for files to include (e.g. '*.ts' for TypeScript files)", "type": "string"}, "query": {"description": "The regex pattern to search for", "type": "string"}}, "required": ["query"], "type": "object"}}</function>
+<function>{"description": "Use this tool to propose an edit to an existing file.\n\nThis will be read by a less intelligent model, which will quickly apply the edit. You should make it clear what the edit is, while also minimizing the unchanged code you write.\nWhen writing the edit, you should specify each edit in sequence, with the special comment `// ... existing code ...` to represent unchanged code in between edited lines.\n\nFor example:\n\n```\n// ... existing code ...\nFIRST_EDIT\n// ... existing code ...\nSECOND_EDIT\n// ... existing code ...\nTHIRD_EDIT\n// ... existing code ...\n```\n\nYou should still bias towards repeating as few lines of the original file as possible to convey the change.\nBut, each edit should contain sufficient context of unchanged lines around the code you're editing to resolve ambiguity.\nDO NOT omit spans of pre-existing code (or comments) without using the `// ... existing code ...` comment to indicate its absence. If you omit the existing code comment, the model may inadvertently delete these lines.\nMake sure it is clear what the edit should be, and where it should be applied.\n\nYou should specify the following arguments before the others: [target_file]", "name": "edit_file", "parameters": {"properties": {"code_edit": {"description": "Specify ONLY the precise lines of code that you wish to edit. **NEVER specify or write out unchanged code**. Instead, represent all unchanged code using the comment of the language you're editing in - example: `// ... existing code ...`", "type": "string"}, "instructions": {"description": "A single sentence instruction describing what you are going to do for the sketched edit. This is used to assist the less intelligent model in applying the edit. Please use the first person to describe what you are going to do. Dont repeat what you have said previously in normal messages. And use it to disambiguate uncertainty in the edit.", "type": "string"}, "target_file": {"description": "The target file to modify. Always specify the target file as the first argument. You can use either a relative path in the workspace or an absolute path. If an absolute path is provided, it will be preserved as is.", "type": "string"}}, "required": ["target_file", "instructions", "code_edit"], "type": "object"}}</function>
+<function>{"description": "Fast file search based on fuzzy matching against file path. Use if you know part of the file path but don't know where it's located exactly. Response will be capped to 10 results. Make your query more specific if need to filter results further.", "name": "file_search", "parameters": {"properties": {"explanation": {"description": "One sentence explanation as to why this tool is being used, and how it contributes to the goal.", "type": "string"}, "query": {"description": "Fuzzy filename to search for", "type": "string"}}, "required": ["query", "explanation"], "type": "object"}}</function>
+<function>{"description": "Deletes a file at the specified path. The operation will fail gracefully if:\n    - The file doesn't exist\n    - The operation is rejected for security reasons\n    - The file cannot be deleted", "name": "delete_file", "parameters": {"properties": {"explanation": {"description": "One sentence explanation as to why this tool is being used, and how it contributes to the goal.", "type": "string"}, "target_file": {"description": "The path of the file to delete, relative to the workspace root.", "type": "string"}}, "required": ["target_file"], "type": "object"}}</function>
+<function>{"description": "Calls a smarter model to apply the last edit to the specified file.\nUse this tool immediately after the result of an edit_file tool call ONLY IF the diff is not what you expected, indicating the model applying the changes was not smart enough to follow your instructions.", "name": "reapply", "parameters": {"properties": {"target_file": {"description": "The relative path to the file to reapply the last edit to. You can use either a relative path in the workspace or an absolute path. If an absolute path is provided, it will be preserved as is.", "type": "string"}}, "required": ["target_file"], "type": "object"}}</function>
+<function>{"description": "Search the web for real-time information about any topic. Use this tool when you need up-to-date information that might not be available in your training data, or when you need to verify current facts. The search results will include relevant snippets and URLs from web pages. This is particularly useful for questions about current events, technology updates, or any topic that requires recent information.", "name": "web_search", "parameters": {"properties": {"explanation": {"description": "One sentence explanation as to why this tool is being used, and how it contributes to the goal.", "type": "string"}, "search_term": {"description": "The search term to look up on the web. Be specific and include relevant keywords for better results. For technical queries, include version numbers or dates if relevant.", "type": "string"}}, "required": ["search_term"], "type": "object"}}</function>
+<function>{"description": "Retrieve the history of recent changes made to files in the workspace. This tool helps understand what modifications were made recently, providing information about which files were changed, when they were changed, and how many lines were added or removed. Use this tool when you need context about recent modifications to the codebase.", "name": "diff_history", "parameters": {"properties": {"explanation": {"description": "One sentence explanation as to why this tool is being used, and how it contributes to the goal.", "type": "string"}}, "required": [], "type": "object"}}</function>
+</functions>
+
+You MUST use the following format when citing code regions or blocks:
+```startLine:endLine:filepath
+// ... existing code ...
+```
+This is the ONLY acceptable format for code citations. The format is ```startLine:endLine:filepath where startLine and endLine are line numbers.
+
+<user_info>
+The user's OS version is win32 10.0.26100. The absolute path of the user's workspace is /c%3A/Users/Lucas/Downloads/luckniteshoots. The user's shell is C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe. 
+</user_info>
+
+Answer the user's request using the relevant tool(s), if they are available. Check that all the required parameters for each tool call are provided or can reasonably be inferred from context. IF there are no relevant tools or there are missing values for required parameters, ask the user to supply these values; otherwise proceed with the tool calls. If the user provides a specific value for a parameter (for example provided in quotes), make sure to use that value EXACTLY. DO NOT make up values for or ask about optional parameters. Carefully analyze descriptive terms in the request as they may indicate required parameter values that should be included even if not explicitly quoted.

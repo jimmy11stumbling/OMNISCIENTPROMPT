@@ -1,0 +1,549 @@
+Leveraging Windsurf for AI-Assisted Database Development in Application Creation1. IntroductionThe landscape of software development is continually being reshaped by advancements in Artificial Intelligence (AI), with AI-powered tools promising to augment developer productivity and streamline complex tasks. Windsurf, formerly Codeium, has emerged as a significant entrant in this domain, positioning itself as an "agentic IDE".1 A critical initial clarification pertains to Windsurf's fundamental nature: it is an AI-driven code assistant designed to work alongside developers, not a "no-code" platform.1 No-code platforms typically allow users to build applications via graphical interfaces without writing any code. Windsurf, conversely, operates by assisting in the generation, modification, and debugging of actual code, requiring developer oversight and interaction.2This report provides an explicitly detailed examination of how Windsurf can be utilized to create and manage databases within an application development context. It will explore Windsurf's capabilities in assisting with database schema design, Object-Relational Mapper (ORM) integration, the generation of Create, Read, Update, Delete (CRUD) operations, query construction, migration scripting, and adherence to security and performance best practices. The analysis will draw upon available documentation and community discussions to offer a comprehensive guide for developers seeking to integrate Windsurf's AI capabilities into their database development workflows.2. Understanding Windsurf for Database DevelopmentWindsurf is an Integrated Development Environment (IDE) engineered to enhance the coding experience by deeply integrating AI into the developer's workflow.1 Its core philosophy revolves around "Flows," a system combining AI agents and copilots that collaborate with the developer and can tackle complex tasks independently while remaining synchronized with the developer's actions.1 This approach aims to maintain a "flow state" for developers by minimizing context switching and providing intelligent assistance.Several key features of Windsurf are particularly pertinent to database development:
+Cascade: This is Windsurf's primary AI agent, possessing full contextual awareness of the codebase.1 It can suggest and run commands, detect issues, debug code, and perform coherent multi-file edits.1 For database tasks, Cascade can be prompted to generate schema definitions, ORM models, queries, and migration scripts.2 Cascade operates in different modes, including "Write Mode" (highly automated, akin to AutoGPT), "Chat Mode" (generates code and instructions, requiring more user intervention), and "Legacy Mode" (operates like ChatGPT for general queries).2
+Inline AI: This feature allows for targeted modifications to specific lines or sections of code using natural language commands (typically invoked with Cmd+I or Ctrl+I).2 It is useful for refactoring specific SQL queries, generating docstrings for database-related functions, or making precise changes to ORM model definitions.2
+Supercomplete: An advanced autocompletion feature that analyzes potential next actions beyond simple code snippet insertion, predicting developer intent to generate more substantial code blocks, such as entire functions for database interaction.1
+AI Terminal: An integrated terminal where users can input instructions in natural language (using Cmd+I or Ctrl+I) to generate terminal commands, including those for database CLI tools or migration utilities.2
+Model Context Protocol (MCP): MCP enables Windsurf to connect to and interact with external tools and services, including database management systems.1 Through MCP servers specific to databases like PostgreSQL (Neon, Prisma), MongoDB, and MySQL, Windsurf can perform direct database operations such as schema manipulation, data querying, and migration management using natural language prompts.6
+Context Awareness and Local Indexing: Windsurf's Indexing Engine scans the entire codebase locally, providing deep contextual understanding that enhances the relevance of AI suggestions for database schemas, queries, and ORM code based on existing project structures.2
+.windsurfrules and Memories: Users can define custom rules in a .windsurfrules file at the project root or use the "Memories" system to guide Cascade's behavior, ensuring generated code adheres to specific database conventions, ORM patterns, or security practices.2
+While Windsurf does not offer direct, built-in GUI tools for database design or management in the way a dedicated database IDE might, its strength lies in assisting the developer in writing the code that defines, interacts with, and manages the database. The platform's ability to understand context, generate complex code structures, and integrate with external database tools via MCP makes it a potent assistant for database-related development tasks.3. Setting Up Your Development EnvironmentTo effectively utilize Windsurf for database development, a proper setup of the Windsurf IDE and the project environment is essential.3.1. Installing WindsurfWindsurf is available for macOS, Windows, and Linux operating systems.1 The installation process involves:
+Downloading the appropriate installer from the official Windsurf website (windsurf.com).2
+Running the installer and following the on-screen instructions.16
+Upon first launch, Windsurf presents an onboarding flow.17 Users can choose to:
+
+Start fresh: Configure Windsurf with default settings.
+Import from VS Code or Cursor: Migrate existing settings, extensions, and keybindings for a familiar environment.2
+
+
+Select a preferred editor theme and keybinding set (default VS Code or Vim).17
+Sign up for or log in to a Windsurf (formerly Codeium) account. A free account typically provides an initial set of credits to explore Pro features and access to the Cascade AI.1
+It is advisable to ensure Windsurf is added to the system PATH during installation if command-line invocation is desired.173.2. Project Setup for Database DevelopmentOnce Windsurf is installed, setting up a project for database development involves standard practices, augmented by Windsurf's capabilities:
+Open an Existing Project or Create a New One:
+
+Use "Open Folder" to load an existing project directory.17
+Utilize Cascade's "New Project" functionality to generate a project structure from a natural language prompt.17 For instance, one could prompt: "Create a new Python Flask project with SQLAlchemy for database interaction and a basic structure for user authentication."
+
+
+Install Necessary Libraries and Tools: Depending on the chosen database and programming language, install relevant libraries (e.g., database drivers like psycopg2 for PostgreSQL, ORMs like SQLAlchemy or TypeORM, migration tools like Alembic or TypeORM CLI) using the project's package manager (e.g., pip, npm). Windsurf's AI Terminal can assist in generating the correct installation commands.2
+Configure Database Connection:
+
+Set up environment variables or configuration files to store database connection details securely (host, port, username, password, database name). Windsurf can be instructed via .windsurfrules or prompts to avoid hardcoding credentials.21
+If using MCP servers for direct database interaction (discussed later), configure them within Windsurf settings.7
+
+
+(Optional but Recommended) Create .windsurfrules:
+
+Create a .windsurfrules file in the project's root directory.14
+Populate this file with rules specific to database development, such as the preferred SQL dialect, ORM coding standards, naming conventions for database objects, and security guidelines (e.g., "Always use parameterized queries for raw SQL," "Define foreign key relationships explicitly in ORM models").15 This file acts as a persistent set of instructions for Windsurf's AI, ensuring consistency and adherence to best practices in generated code.
+
+
+With the environment set up, developers can begin leveraging Windsurf's AI features for designing schemas, writing database interaction logic, and managing migrations.4. Designing and Creating Database Schemas with Windsurf's AssistanceWindsurf can significantly expedite the process of designing and creating database schemas, whether by generating raw SQL Data Definition Language (DDL) or by assisting with the setup and definition of Object-Relational Mapper (ORM) models.4.1. Generating SQL DDL StatementsFor projects that opt for direct SQL schema management or require initial DDL scripts, Windsurf's Cascade AI can generate these based on natural language descriptions.
+
+Process:
+
+Provide a clear and detailed prompt to Cascade describing the tables, columns, data types, primary keys, foreign keys, unique constraints, and any other necessary schema elements.
+Specify the target SQL dialect if it's important (e.g., PostgreSQL, MySQL, SQLite). This can also be set in .windsurfrules.
+Review the DDL generated by Windsurf for accuracy and completeness.
+Iteratively refine the prompt or the generated DDL with follow-up instructions if needed.
+
+
+
+Example Prompt:"Generate SQL DDL for a PostgreSQL database for a simple e-commerce application. Include the following tables:
+
+users: id (SERIAL PRIMARY KEY), username (VARCHAR(50) UNIQUE NOT NULL), email (VARCHAR(100) UNIQUE NOT NULL), password_hash (VARCHAR(255) NOT NULL), created_at (TIMESTAMP DEFAULT CURRENT_TIMESTAMP).
+products: id (SERIAL PRIMARY KEY), name (VARCHAR(100) NOT NULL), description (TEXT), price (DECIMAL(10, 2) NOT NULL), stock_quantity (INTEGER DEFAULT 0).
+orders: id (SERIAL PRIMARY KEY), user_id (INTEGER REFERENCES users(id)), order_date (TIMESTAMP DEFAULT CURRENT_TIMESTAMP), total_amount (DECIMAL(10, 2)).
+order_items: id (SERIAL PRIMARY KEY), order_id (INTEGER REFERENCES orders(id)), product_id (INTEGER REFERENCES products(id)), quantity (INTEGER NOT NULL), price_at_purchase (DECIMAL(10, 2) NOT NULL).
+Ensure all foreign key constraints are defined."
+
+
+Windsurf's code generation capabilities, particularly Cascade in Write Mode, can automate much of this DDL creation.2 The ability to provide local and external context, such as existing schema files or documentation, can further enhance the accuracy of the generated DDL.2 One user on Reddit suggested a workflow where Windsurf generates SQL queries and consolidates them into a data_schema.sql file, which could be used to rebuild the database structure.23 This implies a capability to generate comprehensive DDL.4.2. Using ORMs for Schema Definition with AI AssistanceORMs provide an abstraction layer over SQL, allowing developers to define database schemas using the constructs of their programming language. Windsurf excels at generating ORM model definitions.4.2.1. SQLAlchemy (Python)SQLAlchemy is a popular ORM for Python. Windsurf can assist in:
+Setting up SQLAlchemy: Generating boilerplate code for initializing SQLAlchemy within a Flask or FastAPI application, including database engine creation and session management.24
+Defining Models: Generating SQLAlchemy model classes based on descriptions of entities, attributes, data types, relationships (one-to-one, one-to-many, many-to-many), and constraints.
+
+Example Prompt: "Generate a SQLAlchemy model class named User with columns: id (Integer, primary key), username (String(50), unique, not nullable), email (String(100), unique, not nullable), and a one-to-many relationship to an Order model via a orders backref. Include __repr__ method."
+Windsurf's Supercomplete and Cascade features can generate Python functions and classes tailored to the context.2 Providing existing model files using @-mentions helps Windsurf maintain consistency.25
+
+
+Generating Relationships: Defining relationship() constructs with appropriate backref or back_populates arguments, and association tables for many-to-many relationships.
+While direct tutorials for Windsurf generating SQLAlchemy models are not abundant in the provided materials, the general code generation capabilities 2 and the ability to follow Python best practices (guided by .windsurfrules 27) suggest strong potential. The DBOS documentation mentions using @-Mention to add a prompt file to Windsurf's context, which could contain SQLAlchemy model requirements.26 A demo for Postgres MCP Pro showed fixing slow SQLAlchemy ORM code using an AI assistant, implying AI's capability to understand and modify SQLAlchemy models.294.2.2. Prisma (Node.js/TypeScript)Prisma is a modern ORM for Node.js and TypeScript, known for its type safety and declarative schema definition (schema.prisma).
+Generating schema.prisma: Windsurf can generate Prisma schema definitions based on natural language prompts.15 Prompts should describe models, fields, types (String, Int, DateTime, Boolean, Json), attributes (@id, @default, @unique, @updatedAt), and relations (@relation).15
+
+Example Prompt (from Prisma docs 15): "Create a Prisma schema for a SaaS application with User, Organization, and Subscription models. Users belong to one Organization, and Organizations can have many Users. Users can have one Subscription, which can be active or inactive."
+Windsurf, especially when combined with the Prisma MCP server, can translate this into a valid schema.prisma file.9
+
+
+Defining Relations: Windsurf can be guided to correctly define one-to-one, one-to-many, and many-to-many relationships, including the necessary relation fields and attributes.
+Best Practices: Using .windsurfrules with Prisma-specific guidelines 15 ensures that Windsurf generates schemas adhering to normalization, naming conventions, and other best practices. For instance, rules can enforce the use of @id for primary keys and @relation for explicit relationships.15
+The Prisma documentation provides comprehensive examples of .windsurfrules for guiding Windsurf in schema design, query generation, and migrations, making it a well-supported ORM for AI-assisted development with Windsurf.154.2.3. TypeORM (Node.js/TypeScript)TypeORM is another widely used ORM in the Node.js/TypeScript ecosystem.
+Generating Entities: Windsurf can generate TypeORM entity classes, including decorators for columns (@Column), primary keys (@PrimaryGeneratedColumn), and relationships (@OneToOne, @OneToMany, @ManyToOne, @ManyToMany, @JoinTable).
+
+Example Prompt: "Generate a TypeORM entity class named Product for a PostgreSQL database. Include fields: id (auto-incrementing primary key), name (string, not nullable), description (text, nullable), price (decimal), and a many-to-one relationship with a Category entity."
+Windsurf's ability to understand TypeScript and generate multi-file code makes it suitable for creating TypeORM entities and related files like type definitions.13
+
+
+Defining Relationships: It can assist in setting up relationship decorators and ensuring inverse sides of relationships are correctly defined.
+Contextual Generation: Windsurf's repo awareness and live code awareness can help in generating TypeORM entities that fit within an existing project structure and coding style.13 For instance, if a project uses a specific base entity or common decorators, Windsurf can be guided to incorporate these.
+While specific, detailed walkthroughs of Windsurf generating TypeORM entities from scratch are less prominent in the provided materials than for Prisma, its general TypeScript and code generation capabilities are applicable.13 The key is providing clear prompts and potentially using .windsurfrules to enforce TypeORM-specific patterns (e.g., decorator usage, naming conventions for relations). The general prompt engineering best practices of clarity, context, and constraints apply.25The fundamental approach across these ORMs is similar: the developer provides a high-level description of the data model, and Windsurf, leveraging its contextual understanding and code generation prowess, translates this into the specific syntax and structure required by the chosen ORM. The use of .windsurfrules allows for persistent guidance, ensuring that AI-generated schema code aligns with project standards and best practices, reducing the need for extensive manual correction.5. Implementing Database Interactions: CRUD Operations and QueryingOnce the database schema is defined, the next crucial step is implementing the application logic to interact with the database. This typically involves creating, reading, updating, and deleting (CRUD) data, as well as executing more complex queries. Windsurf can significantly assist in generating the code for these operations, particularly when using ORMs or constructing SQL queries.5.1. Generating ORM Code for CRUD OperationsORMs simplify database interactions by allowing developers to work with objects and methods instead of writing raw SQL. Windsurf can generate the necessary ORM-specific code for common CRUD tasks.
+
+SQLAlchemy (Python):
+
+Create: Prompt Windsurf to generate code for creating new records.
+
+Example: "Generate a Python function using SQLAlchemy to add a new user to the database. The function should take username, email, and password_hash as input, create a User object, add it to the session, and commit."
+
+
+Read: Generate code for fetching records, including finding by ID, querying with filters, and retrieving all records.
+
+Example: "Write a SQLAlchemy query to fetch a user by their email address." or "Generate code to get all active products ordered by price."
+
+
+Update: Assist in creating functions to modify existing records.
+
+Example: "Generate SQLAlchemy code to update a user's email given their ID and the new email."
+
+
+Delete: Generate code for removing records.
+
+Example: "Write a SQLAlchemy statement to delete a product by its ID."
+Windsurf's understanding of Python and its ability to work with existing class definitions (like SQLAlchemy models) make it capable of generating these snippets.2
+
+
+
+
+
+Prisma (Node.js/TypeScript):Prisma Client provides a type-safe API for database operations.
+
+Create: prisma.user.create({ data: {... } })
+Read: prisma.user.findUnique({ where: { id:... } }), prisma.user.findMany({ where: {... }, include: {... } })
+Update: prisma.user.update({ where: { id:... }, data: {... } })
+Delete: prisma.user.delete({ where: { id:... } })
+Windsurf can generate these Prisma Client queries based on natural language prompts.15
+Example: "Generate a TypeScript function using Prisma Client to fetch all posts by a user with ID userId, including the author's profile information."
+The Prisma documentation explicitly states that Windsurf can help create queries tailored to the Prisma schema, handling basic retrieval and complex operations by understanding requirements for fields, conditions, and relationships.15
+
+
+
+TypeORM (Node.js/TypeScript):TypeORM uses repositories or the EntityManager for database operations.
+
+Create: userRepository.save(newUser)
+Read: userRepository.findOneBy({ id:... }), userRepository.find({ where: {... }, relations: [...] })
+Update: userRepository.update(id, {... })
+Delete: userRepository.delete(id)
+Windsurf can generate TypeScript code using these TypeORM patterns.
+Example: "Create a TypeORM service method to find all active tasks for a given project ID, including their assigned users."
+A user on Reddit reported building a full multi-tenant web app with CRUD operations using an AI assistant (Windsurf or similar), indicating the feasibility of such tasks.32
+
+
+For all ORMs, providing context (e.g., existing model definitions using @-mentions 13) and being specific in prompts are key to obtaining accurate and useful code. Windsurf's Cascade feature can handle multi-file edits, which is useful if CRUD operations are spread across service layers, controllers, or API route handlers.125.2. Generating SQL Queries with AI AssistanceWhile ORMs are convenient, there are scenarios where writing raw SQL is necessary or preferred for performance or complexity reasons. Windsurf can assist in crafting these SQL queries.5.2.1. Simple SQL QueriesFor basic SELECT, INSERT, UPDATE, and DELETE statements, Windsurf can generate the SQL syntax based on a description of the desired operation.
+Example: "Generate a SQL query to select the names and email addresses of all users who registered in the last 30 days, for a PostgreSQL database."
+Codeium (Windsurf's predecessor) was noted for its ability to recommend suitable tables, columns, and operators when crafting SQL queries.33
+5.2.2. Complex SQL Queries (Joins, Aggregations, Window Functions, CTEs)Generating complex SQL queries is a more challenging task for AI, but Windsurf can still provide significant assistance, especially with clear, well-structured prompts.
+Joins: "Generate a SQL query to find all orders placed by users in 'California', joining the users table (with id, state columns) and the orders table (with id, user_id columns)."
+Aggregations: "Write a SQL query to calculate the total sales amount for each product category, using products (with id, category_id, price) and order_items (with product_id, quantity) tables. Group by category."
+Window Functions: "Generate a SQL query using a window function to rank products within each category based on their sales."
+Common Table Expressions (CTEs): "Write a SQL query using a CTE to first select all high-value customers (total spending > $1000), and then find their most recent order."
+The ability of AI to generate complex SQL has been noted as liberating for users who struggle with specific SQL syntax like joins and aggregates.34 Windsurf's Cascade, with its contextual understanding, can be prompted to generate such queries.2 Providing existing schema information (e.g., via @file:schema.sql or by describing table structures in the prompt) is crucial for accuracy.25 For instance, when using Prisma with Windsurf, clear prompts defining requirements like fields to include, conditions, and relationships to traverse are emphasized for generating accurate and performant queries.15While the provided materials do not contain extensive, specific examples of Windsurf generating highly complex SQL queries with multiple CTEs and window functions in a single go, its foundational capabilities in code generation and contextual understanding suggest it can be a valuable tool for drafting and refining such queries iteratively. The key is to break down the complexity, provide sufficient context, and use follow-up prompts to refine the AI's output.256. Database Migrations with AI AssistanceDatabase migrations are essential for managing changes to the database schema over time in a controlled and versioned manner. Windsurf can assist in generating migration scripts, especially when used with ORM-specific migration tools or through MCP server integrations.6.1. Generating Migration Scripts for ORMsMost modern ORMs come with tools to manage schema migrations. Windsurf can help create the migration files these tools use.
+
+Alembic (for SQLAlchemy):Alembic is a popular database migration tool for SQLAlchemy. Windsurf can help generate the Python code within Alembic migration scripts.
+
+Alembic can autogenerate basic migration scripts by comparing SQLAlchemy models to the current database state.36 Windsurf could be prompted to define the SQLAlchemy models first.
+For manual or more complex migrations, a developer can describe the schema change (e.g., "Add a new 'status' column of type String(20) with a default value 'pending' to the 'tasks' table"), and Windsurf can help write the op.add_column(), op.create_table(), etc., calls within the upgrade() and downgrade() functions of an Alembic migration file.
+One article describes using an AI agent (Replit Agent, similar in concept to Windsurf's Cascade) with Alembic to generate migration scripts for adding columns based on natural language prompts, like "add a due_date column to the tasks table".37 The AI generated the Alembic migration file with up() and down() functions. This demonstrates the potential for Windsurf to perform similar tasks.
+
+
+
+Prisma Migrate:Prisma uses a declarative migration workflow. Changes are made to the schema.prisma file, and then prisma migrate dev generates and applies the SQL migration.
+
+Windsurf's primary role here is in assisting with modifications to the schema.prisma file (as discussed in section 4.2.2).15
+The Prisma documentation includes "Database Migrations" as a topic for .windsurfrules, suggesting rules like "Create migrations for schema changes," "Use descriptive migration names," and "Review migrations before applying".15 Windsurf can be guided by these rules when suggesting schema changes.
+The Prisma MCP server also allows chatting through migrations.9
+
+
+
+TypeORM Migrations:TypeORM has its own migration system where migrations are TypeScript classes.
+
+TypeORM can generate migrations based on entity changes.38 Windsurf can assist in defining or modifying these TypeORM entities.13
+For manual migrations, Windsurf can help write the TypeScript code within the up() and down() methods of a migration class, using queryRunner to execute SQL or schema operations.38 For example, prompting Windsurf to "Generate a TypeORM migration to add a 'priority' column (integer, default 0) to the 'todos' table."
+One article mentions that after making changes in entities, running yarn typeorm:generate will generate migrations, and the application can be configured to run migrations on startup.39 Windsurf can help with the entity changes that precede this step.
+
+
+Windsurf's capability to generate or modify code based on natural language, coupled with its understanding of project context, allows it to assist in drafting these migration scripts.2 The "Command Execution" capability mentioned for Windsurf, where it can suggest and run commands, could also extend to running migration CLI commands.316.2. Generating Raw SQL Migration ScriptsIf not using an ORM's migration tool, or for specific DDL changes, Windsurf can generate raw SQL ALTER TABLE, CREATE INDEX, etc., statements for migration scripts.
+Example Prompt: "Generate a PostgreSQL SQL script to add a non-nullable 'last_login' TIMESTAMP column to the 'users' table. Also, add an index on the 'email' column of the 'users' table."
+Windsurf's general SQL generation capabilities apply here.33 It's important to specify the target database dialect.
+A user on Reddit described a workflow where Windsurf should provide rollback queries for any DDL changes it suggests, indicating an expectation that Windsurf can generate both forward and backward migration steps.23
+6.3. Database Migrations via MCP ServersA more integrated approach for migrations is possible when using Windsurf with MCP servers that support migration functionalities.
+Neon MCP Server: The Neon MCP server provides tools like prepare_database_migration and complete_database_migration.7 Users can interact with Windsurf using natural language to make schema changes, and Windsurf, through the MCP server, can handle the migration process, potentially using Neon's branching feature for safety.6 For example, a user could ask, "can you add a created_at column?" and Windsurf would orchestrate the migration via the Neon MCP server.7
+Prisma MCP Server: Prisma's MCP server allows AI tools to "run schema migrations" against Prisma Postgres databases.9 This means Windsurf can be prompted to apply schema changes, and the MCP server handles the underlying migration mechanics.
+While Windsurf itself does not have a built-in "migration engine," its code generation abilities, combined with its capacity to interact with project files and external tools (especially via MCP), make it a valuable assistant in the database migration process. The key is for the developer to define the desired schema change clearly, and Windsurf can help generate the necessary code or orchestrate the change through an MCP-enabled tool. The iterative nature of Cascade, where it generates code, asks for approval, and prompts for follow-ups, is well-suited for the careful process of schema migration.27. Connecting to Databases and Managing ConnectionsEstablishing and managing database connections is a fundamental aspect of application development. Windsurf can assist in generating the necessary code for this and, more directly, interact with databases through Model Context Protocol (MCP) servers.7.1. Generating Database Connection CodeWindsurf can generate boilerplate code for connecting to various databases using standard libraries in different programming languages.
+Python:
+
+For PostgreSQL: Generating code using psycopg2 or an ORM like SQLAlchemy to establish a connection using connection strings or individual parameters (host, port, user, password, dbname).
+For MySQL: Similar assistance for libraries like mysql-connector-python.
+Example Prompt: "Generate Python code to connect to a PostgreSQL database using SQLAlchemy. The connection details are stored in environment variables: DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME."
+
+
+Node.js/TypeScript:
+
+For PostgreSQL: Generating code using pg (node-postgres) or ORMs like TypeORM/Prisma.
+For MySQL: Using mysql2 or ORMs.
+For MongoDB: Using the official MongoDB Node.js driver.
+Example Prompt: "Generate TypeScript code to establish a connection pool for a PostgreSQL database using the 'pg' library. Read connection parameters from a config file."
+
+
+Windsurf's code completion (Supercomplete) and code generation (Cascade) features are well-suited for producing this often-repetitive connection logic.1 It can also help structure this code into reusable modules or configuration classes.7.2. Interacting with Databases via Model Context Protocol (MCP) ServersMCP is a pivotal feature that allows Windsurf to extend its capabilities by interfacing with external tools and services, including databases, in a standardized way.1 This enables more direct, AI-driven interaction with databases beyond just code generation.7.2.1. Overview of MCP and WindsurfMCP allows an AI client like Windsurf's Cascade to make requests to MCP servers, which then interact with the target service (e.g., a database).40 Windsurf supports MCP servers via stdio (local command-line tools) or /sse (remote servers over HTTP).8 Users can add official MCP plugins from a store or configure custom servers by editing the ~/.codeium/windsurf/mcp_config.json file.77.2.2. Supported Databases and MCP ServersSeveral MCP servers facilitate Windsurf's interaction with various database systems:
+
+PostgreSQL:
+
+Neon MCP Server: Allows Windsurf to interact with Neon Postgres databases using natural language for tasks like schema changes (e.g., adding columns), listing tables, running SQL queries and transactions, creating projects/branches, and getting connection strings.6 Configuration involves adding the Neon MCP server details (often using npx @neondatabase/mcp-server-neon start <YOUR_NEON_API_KEY>) to mcp_config.json.6
+Prisma MCP Server (for Prisma Postgres): Enables Windsurf to manage Prisma Postgres databases, model schemas, and "chat through migrations".9 Configuration involves adding npx prisma mcp as the command in mcp_config.json.9
+Generic PostgreSQL MCP Server (e.g., from HenkDz/postgresql-mcp-server or crystaldba/postgres-mcp): These community or third-party servers allow Windsurf to query PostgreSQL databases, get schema info, create tables, and debug slow queries using natural language.8 Setup involves cloning the server, installing dependencies (Node.js often required), and configuring it in mcp_config.json with the path to the server's executable script.8 The CrystalDBA version focuses on performance optimization.29
+Windsurf's official website also lists "Add server + PostgresSQL" as an MCP Server Template, simplifying setup.4
+
+
+
+MongoDB:
+
+MongoDB MCP Server: MongoDB provides an official MCP server (in public preview as of May 2025) that connects MongoDB Atlas, Community Edition, or Enterprise Advanced deployments to MCP clients like Windsurf.10 This allows for natural language interaction to perform administrative tasks (cluster/user management) and data operations (querying, indexing).10 Windsurf offers official server templates for the MongoDB MCP Server.10
+
+
+
+MySQL:
+
+MySQL Query MCP Server (e.g., from devakone/mysql-query-mcp-server): This is a community-provided, read-only MCP server for MySQL.11 It allows AI assistants to execute SELECT, SHOW, DESCRIBE queries, get database info, and list configured environments. It does not support schema management or data modification.11 Configuration involves setting up database connections in a .env file and adding the MCP server to Windsurf's (or Cursor's) mcp.json or mcp_config.json.11
+
+
+
+Cloudflare D1 (SQLite-compatible):
+
+The Cloudflare Workers Bindings MCP server allows leveraging D1 databases (among other Cloudflare resources) on the fly when building Workers applications.43 This enables Windsurf to generate code that reads from or creates D1 resources.
+
+
+
+Convex (Realtime Backend Platform with Database):
+
+The Convex CLI includes an MCP server that gives AI agents access to a Convex deployment to query and optimize the project.44 Configuration involves adding npx convex@latest mcp start to Windsurf's MCP settings.44
+
+
+7.2.3. Practical Usage Examples with MCPOnce an MCP server is configured, users can interact with the database via Windsurf's Cascade chat:
+Schema Manipulation: "Using the Neon MCP, add a 'last_updated_at' timestamp column to the 'products' table in my project 'alpha-test'." 7
+Data Querying: "With the PostgreSQL MCP, show me the schema for the 'customers' table." or "Execute the following SQL query on my dev MySQL environment: SELECT name, email FROM users WHERE active = TRUE;" 8
+Database Management: "Using the Prisma MCP, create a new Prisma Postgres instance named 'staging-db'." 9
+The MCP integration transforms Windsurf from a code generator into an active participant in database management, allowing developers to perform database operations using natural language, which can significantly streamline workflows for prototyping, schema adjustments, and data exploration. However, it's important to note limitations, such as the read-only nature of some community MySQL MCP servers 11 or the fact that Windsurf's Cascade might execute commands directly without confirmation prompts with certain MCPs.78. Ensuring Database Security and Best Practices with WindsurfWhile AI tools like Windsurf can accelerate development, ensuring the security of database interactions and adherence to best practices remains paramount. Windsurf can be guided to generate more secure code and follow established security principles.8.1. Preventing SQL Injection and Ensuring Secure Query GenerationSQL injection (SQLi) remains a critical vulnerability. Windsurf's role in preventing SQLi depends on how it's used to generate database interaction code.
+Using ORMs: Modern ORMs like Prisma, SQLAlchemy, and TypeORM typically use parameterized queries or other mechanisms that inherently protect against SQL injection when their standard query-building APIs are used.15 When Windsurf generates code using these ORM methods (e.g., prisma.user.findMany({ where: { email: userInput } })), the risk of SQLi is significantly mitigated by the ORM itself. Windsurf can be guided via .windsurfrules to use these ORMs and their secure patterns.15
+
+The Prisma documentation explicitly mentions, as a security best practice for Windsurf to follow, "Use Prisma's built-in protections against SQL injection".15
+
+
+Generating Raw SQL: If Windsurf is prompted to generate raw SQL queries that incorporate user input, it is crucial to instruct it to use parameterized queries (prepared statements).
+
+Prompt Example: "Generate a Python function using psycopg2 to fetch a user by ID. Ensure it uses parameterized queries to prevent SQL injection."
+.windsurfrules can enforce this: A rule like "For all raw SQL generation, use parameterized queries/prepared statements and never string concatenation for user inputs" would guide Windsurf.
+General AI security advice emphasizes that AI-generated code isn't inherently secure and requires scrutiny.21 Parameterized queries are a fundamental database security measure.21
+
+
+The responsibility for ensuring SQLi prevention ultimately lies with the developer reviewing and implementing the AI-generated code. Windsurf is an assistant; it will generate what it's asked to generate, or what its rules dictate. If not properly guided, it could potentially produce vulnerable code if, for example, its training data included insecure examples of SQL string concatenation.8.2. Input Validation Logic GenerationValidating all user inputs before they are used in database operations is a cornerstone of secure application development. Windsurf can assist in generating this validation logic.
+Prompting for Validation: Developers can prompt Windsurf to create validation rules for specific data fields.
+
+Example: "Generate a Zod schema for a TypeScript project to validate a user registration object. It should have: username (string, minimum 3 characters, maximum 20), email (valid email format), password (string, minimum 8 characters, must contain uppercase, lowercase, number, and special character)."
+
+
+Using .windsurfrules for Validation Standards:
+
+Rules can specify preferred validation libraries (e.g., "Use Zod for validation" 27).
+General principles like "Validate data at the boundaries" 15 or "Sanitize and validate all user inputs" 15 can be included in .windsurfrules.
+The Windsurf Rules Directory includes examples like "Avoid placing validation inside functions—use classes with internal validation instead" 27, guiding the structural placement of validation logic.
+
+
+Contextual Implementation: Windsurf can help implement these validation checks at appropriate points in the application, such as in API controllers before data reaches service layers or the database.46 An example workflow involves defining functional requirements including validation rules, then using AI to generate backend logic, and finally testing this logic thoroughly, including input validation scenarios.46
+Windsurf can significantly accelerate the creation of often repetitive input validation code. However, the developer must define the validation requirements clearly, whether in prompts or rules, and strategically decide where in the application architecture this validation should occur. The AI assists with what code to write for validation; the developer directs where and why.8.3. Adherence to Other Security Best PracticesBeyond SQLi and input validation, Windsurf can be guided by .windsurfrules and specific prompts to adhere to broader security best practices:
+Principle of Least Privilege: While not directly generating IAM policies, prompts for database interaction code can imply this, e.g., "Generate code for a read-only user to fetch product details."
+Avoiding Hardcoded Secrets: Rules like "Never hardcode secrets, credentials, or API keys in code. Use environment variables or secure vaults" 21 are essential for .windsurfrules.
+Secure API Endpoints: When generating backend API code that interacts with the database, rules about robust authentication and authorization for APIs should be in place.21
+Prisma-Specific Security Rules: The Prisma documentation suggests rules for Windsurf like "Never expose raw Prisma client in APIs" and "Implement row-level security".15
+Community discussions and shared .windsurfrules (e.g., from Obvious Works 47) often include sections on security, providing templates that can be adapted. For example, the Obvious Works global rules include "Input Validation (IV): All external data must be validated before processing" and "Security-First Thinking (SFT): Implement proper authentication, authorization, and data protection".47Ultimately, while Windsurf can be a powerful ally in generating code that follows security best practices, human oversight, thorough code reviews (potentially AI-assisted 48), and security testing are indispensable.9. Optimizing Database Performance with Windsurf's InsightsWhile Windsurf is not a dedicated database performance tuning tool with built-in analysis engines, its AI capabilities can be leveraged to suggest optimizations, particularly for index creation and query refactoring, based on provided context and established best practices.9.1. AI-Suggested Index Creation and Query Optimization (PostgreSQL, MySQL)Developers can prompt Windsurf with specific queries and schema information to get suggestions for potential indexes or query improvements.
+
+Index Suggestions:
+
+Process: Provide Windsurf with a slow-performing SQL query and the relevant table schema(s). Ask for index recommendations tailored to the database system (e.g., PostgreSQL, MySQL).
+Example Prompt: "Given this PostgreSQL query: SELECT product_name, order_quantity FROM products p JOIN order_items oi ON p.id = oi.product_id WHERE oi.order_date BETWEEN '2023-01-01' AND '2023-03-31' AND p.category = 'Electronics' ORDER BY oi.order_date DESC; and the schemas for products (id, product_name, category) and order_items (id, product_id, order_date, order_quantity), what indexes would you recommend to optimize its performance?"
+Windsurf's suggestions would likely be based on common indexing heuristics from its training data, such as indexing columns used in WHERE clauses, JOIN conditions, and ORDER BY clauses.49 It might suggest single-column indexes (e.g., on order_items.order_date, products.category) or composite indexes (e.g., on (products.category, products.id) or (order_items.product_id, order_items.order_date)).
+The type of indexes suggested can also be influenced by the database system. PostgreSQL offers diverse index types like B-tree, GiST, GIN, and BRIN, catering to specific query types.50 While Windsurf may not autonomously select the most exotic index type without explicit prompting, it can be guided.
+The generic PostgreSQL MCP server mentioned in the Apidog tutorial includes a "Debugging Slow Queries" feature, where it can analyze bottlenecks like missing indexes and Windsurf can suggest fixes.8 This indicates a more direct mechanism for AI-assisted index suggestions if such an MCP is used.
+
+
+
+Query Optimization Suggestions:
+
+Windsurf can be asked to refactor queries to apply common optimization techniques, such as avoiding SELECT *, ensuring efficient join conditions, or rewriting subqueries.
+Example Prompt: "Refactor this SQL query to be more performant by avoiding SELECT * and ensuring the join between users and profiles uses the indexed user_id column: SELECT * FROM users u JOIN profiles p ON u.email = p.user_email WHERE u.status = 'active'; (Assuming user_id is the proper join key)."
+
+
+It is important to understand that AI-suggested optimizations are typically based on general patterns and may not always account for specific data distributions or the intricacies of a particular database engine's query optimizer. Therefore, any suggestions from Windsurf should be thoroughly tested and validated using tools like EXPLAIN (or the database's query plan viewer) and by measuring actual performance changes.49 The value of Windsurf here is often as a brainstorming partner, quickly generating alternative approaches or highlighting common anti-patterns.9.2. Refactoring Inefficient Queries with Cascade and Inline AIOnce a problematic query is identified, Windsurf's Cascade and Inline AI features can be used to perform targeted refactoring based on developer instructions.
+Inline AI for SQL: Select a SQL query within the editor and use the inline AI command (Cmd+I or Ctrl+I) with a prompt like: "Rewrite this query to use a Common Table Expression (CTE) for clarity and potential performance improvement." or "Convert this correlated subquery into an equivalent JOIN.".2
+Cascade for Broader Refactoring: If a query is embedded within application code (e.g., in Python or TypeScript) and its refactoring has implications for surrounding logic or requires changes across multiple files, Cascade's multi-file editing and contextual awareness are beneficial.1 For instance, changing a query might necessitate updates to data transfer objects or result parsing logic, which Cascade can help manage.
+Windsurf's ability to understand code context is valuable here.51 If the AI is aware of the database schema (e.g., through an open schema.sql file or ORM models) and the programming language context, it can perform more accurate refactoring. The "Linter Integration" feature, where Cascade automatically fixes code that doesn't pass linters 1, could theoretically be extended with SQL-specific linters that flag performance anti-patterns, further aiding in query quality, though this is not explicitly stated as a current feature.The developer's role in performance optimization remains central. They must identify the need for optimization and guide the AI in applying specific refactoring techniques. Windsurf then acts as an intelligent tool to implement these changes efficiently.10. Customizing Windsurf for Your Database WorkflowTo maximize Windsurf's effectiveness for database development, developers can customize its behavior using .windsurfrules and by employing sophisticated prompt engineering techniques. These mechanisms allow for tailoring the AI's output to specific project requirements, coding standards, and database technologies.10.1. Leveraging .windsurfrules for Database DevelopmentThe .windsurfrules file, placed in the root of a project, provides persistent instructions to Windsurf's Cascade AI, guiding its code generation and suggestions.14 This is particularly powerful for enforcing database-specific best practices and ORM guidelines.10.1.1. Defining SQL Best Practices and ORM-Specific GuidelinesEffective .windsurfrules for database development can cover a wide range of aspects:
+SQL Dialect and Version:
+
+Example: "Always generate SQL compatible with PostgreSQL 15."
+Example: "When writing SQL, adhere to ANSI SQL:2023 standards where possible."
+
+
+Naming Conventions:
+
+Example: "Table names should be plural and use snake_case (e.g., 'user_orders')."
+Example: "Column names should be singular and use snake_case (e.g., 'product_price')."
+Example: "Primary key columns should always be named 'id'."
+Example: "Foreign key columns should follow the pattern 'referenced_table_singular_name_id' (e.g., 'user_id')."
+
+
+ORM Usage:
+
+Example: "This project uses SQLAlchemy version 2.0. All generated Python database code should use SQLAlchemy 2.0 patterns and APIs." 15
+Example: "For TypeScript projects, default to using Prisma ORM. Ensure all Prisma schema definitions are well-formed and relations are explicit." 15
+Example: "When generating TypeORM entities, always include decorators for primary keys, columns, and relationships. Default to lazy loading for relations unless specified."
+
+
+Data Integrity and Constraints:
+
+Example: "Default all table columns to NOT NULL unless explicitly stated otherwise in the prompt."
+Example: "When defining string columns, always specify a maximum length."
+Example: "For financial data, use DECIMAL or NUMERIC types, not FLOAT."
+
+
+Querying Patterns:
+
+Example: "When generating SQL queries, avoid using SELECT *; explicitly list all required columns."
+Example: "For ORM query generation, prioritize eager loading for frequently accessed related data to avoid N+1 problems, but confirm with the user for complex cases."
+
+
+Security Guidelines:
+
+Example: "All raw SQL queries involving user input must use parameterized queries/prepared statements. Never use string concatenation to build queries with user input." 15
+Example: "Input validation must be performed before any data is passed to database write operations." 15
+
+
+Migration Scripting:
+
+Example: "When generating Alembic migration scripts, ensure both upgrade() and downgrade() functions are populated."
+Example: "Migration file names should follow the convention YYYYMMDD_HHMMSS_descriptive_name.py." 38
+
+
+Code Formatting:
+
+Example: "Format all generated SQL code according to the project's SQLFluff configuration."
+Example: "Python ORM models should follow PEP 8 guidelines."
+
+
+Numerous resources provide examples and templates for .windsurfrules. The Prisma documentation offers extensive Prisma-specific rules.15 Community efforts on GitHub, such as repositories by kinopeee/windsurfrules 14 and obviousworks/vibe-coding-ai-rules 47, and various Gists 22 showcase shared rule sets that can be adapted. These often include sections for general coding style, security, and specific framework usage, which can be tailored for database tasks. The Windsurf Rules Directory also provides curated examples.27It is essential to craft these rules to be clear, concise, and unambiguous to avoid confusing the AI.23 While powerful, users should be aware of potential limitations, such as character limits for rule files 57 or occasional inconsistencies in how Windsurf applies them, necessitating testing and refinement.23 The combination of global rules (often in a global_rules.md file for broader principles) and project-specific .windsurfrules allows for a layered approach to AI guidance.53The following table provides illustrative examples of .windsurfrules tailored for database development:Rule CategoryExample Rule for .windsurfrulesExplanation/ImpactSQL DialectAlways generate SQL syntax and functions compatible with PostgreSQL 14+.Ensures generated SQL uses features and syntax specific to PostgreSQL 14 or later, avoiding incompatibilities.ORM UsageThis project uses SQLAlchemy 2.0. All Python ORM code must adhere to SQLAlchemy 2.0 patterns.Guides Windsurf to use the correct ORM version and its associated best practices, e.g., for declarative base, querying.Naming ConventionsTable names: plural, snake_case. Column names: singular, snake_case. PK: 'id'. FK: 'table_id'.Enforces consistent naming for database objects, improving schema readability and predictability.Security (Raw SQL)For raw SQL queries with external input, always use parameterized statements. No string formatting.Critical for preventing SQL injection vulnerabilities when generating direct SQL.Data IntegrityDefault all new table columns to NOT NULL unless specified otherwise in the prompt.Promotes data integrity by requiring explicit decisions for nullable fields.Querying (ORM)When fetching related data with Prisma, prefer 'include' over separate queries to avoid N+1.Guides AI towards more performant data retrieval patterns with Prisma ORM.MigrationsGenerated Alembic migration scripts must include both upgrade and downgrade logic.Ensures that database schema changes are reversible, a key best practice for migrations.These rules serve as a persistent "memory" or instruction set for Windsurf, reducing the need to repeat common requirements in every prompt and leading to more consistent, higher-quality AI-generated database code.10.2. Effective Prompt Engineering for Database TasksWhile .windsurfrules set the baseline, effective prompt engineering is crucial for guiding Windsurf in specific database-related tasks. The quality of the prompt directly influences the quality of the AI's output.2510.2.1. Crafting Prompts for Schema, Query, and ORM Code GenerationKey principles for effective database prompts include:
+Clarity and Specificity: Clearly define the desired outcome. Instead of "Create a user table," a better prompt would be: "Generate PostgreSQL DDL for a users table with columns: id (SERIAL PRIMARY KEY), username (VARCHAR(50) UNIQUE NOT NULL), email (VARCHAR(100) UNIQUE NOT NULL), created_at (TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP).".15
+Context Provision:
+
+@-Mentions: Utilize Windsurf's @-mention feature to reference existing files (e.g., @file:existing_schema.prisma, @file:models/base_model.py) or specific code blocks, classes, or functions (@class:Order, @func:calculate_total).13 This provides Windsurf with crucial context from the current project. For instance, "Generate a new SQLAlchemy model Product that has a many-to-one relationship with the existing @class:Category model."
+Schema Information: When asking for queries or ORM models, provide the relevant table structures or existing ORM definitions if they are not easily inferable from the project context indexed by Windsurf.
+
+
+Constraints and Requirements: Explicitly state any constraints, such as the target SQL dialect, ORM version, required libraries, performance considerations (e.g., "generate an efficient query using appropriate indexes"), or security requirements (e.g., "ensure this uses parameterized inputs for all variables coming from user requests").25
+Iterative Prompting (Flows): For complex tasks, use Windsurf's "Flows" or chat-based interaction. Start with a high-level request, review the AI's output or plan, and then provide follow-up prompts to refine, correct, or add detail.2 This aligns with Windsurf's agentic nature where Cascade can ask for approval and prompt with follow-up questions.2
+Few-Shot or One-Shot Prompting: Include examples of the desired output format or coding style directly within the prompt.59 For example, if you want ORM models to include specific types of comments or a particular structure, provide a small example.
+Chain-of-Thought Prompting: For complex logic, such as designing a multi-table schema with intricate relationships or writing a complex analytical query, ask the AI to "think step by step" or "outline a plan before generating the code".59 This can lead to more reasoned and accurate outputs. One user suggested a workflow: "explain first what you want, then ask how its typically done, then pick an option that fits your project and ask it to create a plan do implement it".32
+Role-Playing (Implicit): While the "leaked Windsurf prompt" with explicit role-playing was for R&D 60, structuring prompts as if addressing an expert assistant can sometimes yield better results. E.g., "As an expert database architect, design a schema for..."
+The Windsurf documentation on prompt engineering emphasizes providing a clear objective, all relevant context (especially using @-mentions), and necessary constraints.25 The interplay between well-defined .windsurfrules (setting general guidelines) and specific, contextualized prompts (addressing the immediate task) is key to successfully leveraging Windsurf for database development.11. Deploying Applications with Database ComponentsWindsurf offers an "App Deploys" feature that allows developers to deploy web applications and sites directly from the IDE through Cascade tool calls.61 This feature aims to streamline the process from development to a publicly accessible URL.Currently, the primary supported provider for App Deploys is Netlify, suitable for static sites and JavaScript web applications (including frameworks like Next.js, React, Vue, Svelte).61 When a deployment is initiated, Windsurf analyzes the project, uploads the code to its servers, and then deploys it to the provider under Windsurf's umbrella account. The deployed site becomes available at a URL like <SUBDOMAIN_NAME>.windsurf.build.61Database Provisioning with App Deploys:The documentation for App Deploys does not explicitly detail automatic database provisioning as part of this specific feature.61 App Deploys seems primarily focused on frontend or full-stack JavaScript applications where the "backend" might be serverless functions bundled with the deployment (common with Netlify).However, this does not mean databases cannot be used with applications deployed via or developed with Windsurf. The database setup and provisioning would typically be a separate, though potentially AI-assisted, process:
+Database Setup via MCP Servers: As discussed previously, Windsurf can interact with MCP servers for databases like Neon Postgres or Prisma Postgres to create new database instances or manage existing ones.6 A developer could use Windsurf to prompt the creation of a cloud-hosted database (e.g., on Neon) before or in parallel with using App Deploys for the application code. One article details a workflow where Windsurf's Cascade, using the Neon MCP server, handles project initialization, database provisioning (creating a new Neon Postgres instance), schema creation, and API/UI generation for a Next.js Todo app.6
+Manual/Scripted Database Provisioning: Developers can use Windsurf to help write scripts (e.g., using AWS CDK, Terraform, or cloud provider CLIs) to provision databases on cloud platforms. Windsurf's AI terminal could assist in running these CLI commands.2
+Connecting Deployed App to Database: The application code, developed with Windsurf's assistance, would contain the connection logic (e.g., connection strings stored in environment variables) to point to the separately provisioned database. When using App Deploys, these environment variables would need to be configured for the deployed application, typically through the deployment provider's interface (e.g., Netlify's environment variable settings).
+Claiming Deployments:Windsurf App Deploys are primarily intended for preview purposes.61 For production applications, especially those with sensitive data, it is recommended to "claim" the deployment. Claiming transfers the project to the user's personal provider account (e.g., their own Netlify account), giving them full control over the deployment, access to provider-specific features, the ability to modify the domain name, and direct access to logs and build information.61 This step would be crucial for managing database connections securely and configuring production environment variables.Security Considerations for Deployments:Windsurf states that code is uploaded to their servers for deployment and advises deploying only code comfortable being shared publicly (for unclaimed deployments).61 Unclaimed deployments may also be deleted after a period. These factors underscore the importance of claiming deployments for any serious application.In summary, while Windsurf's "App Deploys" feature simplifies frontend/full-stack JS application deployment, database provisioning is generally handled as a separate but potentially AI-assisted step, often leveraging MCP servers or traditional infrastructure-as-code approaches. The deployed application then connects to this database using configured connection strings.12. Limitations and ConsiderationsWhile Windsurf offers powerful AI assistance for database development, it's important to acknowledge its limitations and considerations for effective use.
+Not a No-Code Platform: As established, Windsurf is a code assistant, not a no-code solution.1 It requires developers to understand programming concepts, review generated code, and guide the AI. Users seeking purely visual database design and application building without code will find it unsuitable.
+Context Window Limitations: Like all LLM-based tools, Windsurf's AI operates within a context window. While it has features like local indexing for whole-codebase awareness 2, extremely large files or complex interdependencies across a massive project might still challenge its ability to grasp full context in a single interaction. Some community discussions mention perceived line limits for reading files (e.g., 200 lines per block), suggesting that for very large code segments, the AI might process them in chunks, potentially missing broader context if not managed carefully.62 Strategies like breaking down tasks, using @-mentions for specific files/symbols, and iterative prompting become crucial.23
+Accuracy and "Hallucinations": AI-generated code, including database schemas or queries, can sometimes be incorrect, inefficient, or contain "hallucinated" elements (e.g., non-existent functions or incorrect syntax). Thorough review, testing, and debugging by the developer are indispensable.21 The developer remains responsible for the final code quality and security.
+Complexity of Database Design: While Windsurf can generate schemas based on prompts, designing a truly robust, normalized, and scalable database schema for a complex application often requires deep domain understanding and architectural expertise that AI might not fully possess. AI can assist with the syntax and structure but may struggle with nuanced design trade-offs without very explicit guidance. Limitations in handling highly complex schema design, especially with intricate relationships or performance-critical structures, might require significant developer input and iterative refinement.62
+Performance Optimization Nuances: AI can suggest common performance optimizations (e.g., basic indexing based on WHERE clauses), but deep database performance tuning often requires understanding specific data distributions, workload patterns, and database engine internals. AI suggestions are a starting point, not a replacement for EXPLAIN plan analysis and performance testing.49
+Security Responsibility: Windsurf can be guided to generate secure code (e.g., parameterized queries) via prompts and .windsurfrules.15 However, the ultimate responsibility for application and database security lies with the developer. AI might not always default to the most secure patterns without explicit instruction and can potentially reproduce insecure patterns from its training data if not carefully guided.
+MCP Server Dependency and Limitations: The effectiveness of direct database interaction via MCP depends on the availability, features, and reliability of the specific MCP server for the target database.7 Some MCP servers might be read-only (like the community MySQL one 11), in preview 7, or have their own set of limitations.
+Learning Curve for Effective Use: Maximizing Windsurf's benefits requires learning effective prompt engineering techniques and how to configure .windsurfrules.14 This is a skill that developers need to cultivate. Simply asking vague questions will likely lead to suboptimal results.
+Credit Consumption and Pricing: Windsurf operates on a pricing model that includes prompt credits, especially for premium AI models and advanced features like Cascade's "Flow Actions".16 Heavy usage, particularly for complex code generation or numerous interactions with advanced AI models, can lead to credit consumption that users need to be mindful of, especially on free or lower-tier plans.23
+Tool Evolution and Bugs: As a rapidly evolving AI tool, Windsurf may have occasional bugs or inconsistencies in feature behavior (e.g., issues with .windsurfrules application reported in some community threads 57). Staying updated with new releases and community discussions can help mitigate these.
+Over-Reliance Risk: There's a potential risk of developers becoming over-reliant on AI for tasks they should understand fundamentally. It's important to use Windsurf as a tool to augment skills and productivity, not as a crutch that hinders learning core concepts of database design or programming.33
+Despite these considerations, Windsurf's agentic capabilities, contextual awareness, and integration potential offer substantial advantages for developers willing to invest in learning how to use it effectively for database-related tasks.13. ConclusionWindsurf presents itself as a sophisticated AI-powered IDE, fundamentally operating as a code assistant rather than a no-code platform. This distinction is paramount: Windsurf is engineered to augment the capabilities of developers by assisting in the writing, refactoring, and understanding of code, not to abstract away the coding process entirely.1 For the task of creating and integrating a database into an application, Windsurf offers a suite of features that can streamline various stages of the development lifecycle.Through its core AI agent, Cascade, and features like Inline AI, Supercomplete, and the AI Terminal, Windsurf can generate SQL DDL, define ORM models (for SQLAlchemy, Prisma, TypeORM, among others), and produce code for CRUD operations and complex queries.1 Its ability to understand project-wide context, aided by local indexing, allows for more relevant and coherent code suggestions.12A significant advancement in Windsurf's database interaction capabilities comes from the Model Context Protocol (MCP).4 By connecting to MCP servers for specific database systems like PostgreSQL (via Neon or Prisma MCPs), MongoDB, and potentially others, Windsurf can transcend mere code generation to perform direct database operations—such as schema modifications, data querying, and even migration management—through natural language prompts.6 This transforms the IDE into a more active participant in the database workflow.Customization through .windsurfrules and skilled prompt engineering are crucial for harnessing Windsurf's full potential in database development.14 These mechanisms allow developers to enforce project-specific standards, SQL best practices, ORM conventions, and security guidelines, ensuring that AI-generated code aligns with requirements and maintains high quality.However, developers must remain cognizant of Windsurf's limitations. The accuracy of AI-generated code necessitates careful review and testing. Complex database design and performance optimization still require significant human expertise, with Windsurf serving as a powerful assistant for implementing developer-driven strategies rather than an autonomous architect. Security, in particular, remains a shared responsibility; while Windsurf can be guided to produce secure code patterns, vigilant oversight is essential.In conclusion, Windsurf provides a potent AI-assisted environment for database development. It can significantly accelerate tasks such as schema definition, ORM integration, query generation, and migration scripting. By understanding its capabilities as a sophisticated code assistant, leveraging its contextual awareness and MCP integrations, and diligently applying customization and prompt engineering best practices, developers can effectively integrate Windsurf into their workflows to build database-backed applications with enhanced efficiency and productivity. The key to success lies in a collaborative approach, where the developer's expertise directs and refines the AI's powerful generative capabilities.```
+You are Cascade, the world's first agentic AI coding assistant developed by Codeium. Operate under these core principles:
+
+**AI Flow Paradigm**
+- Work autonomously while maintaining collaborative pair programming
+- Proactively anticipate needs while respecting user control
+- Balance independent action with explicit confirmation for sensitive operations
+
+**User Context**
+- OS: Windows
+- Active Workspace: 
+  - URI: `c:\Users\Lucas\OneDrive\Escritorio\random`
+  - CorpusName: `c:/Users/Lucas/OneDrive/Escritorio/random`
+
+**Tool Calling Protocol**  
+1. **Decision Making**:
+   - Only invoke tools when essential (knowledge gaps/action required)
+   - Never make redundant/expensive tool calls
+   - Group related file edits into SINGLE operation
+
+2. **Execution Flow**:
+   ```
+   [Text Explanation] → [Tool Calls (if needed)]
+   ```
+   - Place ALL tool calls at message end
+   - No text after tool calls
+   - Call tools immediately after declaring intent
+
+3. **Safety Constraints**:
+   - ⚠️ **NEVER** auto-run commands that:
+     - Modify system state
+     - Install dependencies
+     - Delete/create files
+     - Make external requests
+   - Always specify `cwd` instead of `cd`
+   - Validate command safety before proposing
+
+**Code Modification Standards**
+- 🔑 **Single-Edit Principle**: Combine all file changes into one `edit_file` call
+- 🛠️ Implementation Requirements:
+  - Add ALL required imports/dependencies
+  - Create `requirements.txt` for new projects
+  - Modern UI/UX for web apps
+  - Zero non-textual/non-runnable code
+- 📝 Post-Edit Summary:
+  - Concise change list
+  - Impact analysis
+  - Proactive execution (when safe)
+
+**Memory System**  
+- Proactively record:
+  - User preferences
+  - Code patterns
+  - Architectural decisions
+  - Project milestones
+- Use `create_memory` for:
+  - Persistent context preservation
+  - Cross-session knowledge
+  - Behavioral adaptation
+
+**Critical Tool Updates**  
+1. Corrected Tool Names:
+   - `codebase_search` (formerly codebase_serch)
+   - `create_memory` (formerly create_memmory)
+   - `deploy_web_app` (formerly deploy_webb_app)
+
+2. Mandatory Tool Patterns:
+   ```xml
+   <!-- File Editing -->
+   <edit_file> {
+     "CodeMarkdownLanguage": "python",
+     "TargetFile": "full/absolute/path",
+     "Instruction": "Change description",
+     "CodeEdit": "{{ ... }}\nnew_code\n{{ ... }}"
+   } </edit_file>
+
+   <!-- Safe Command Proposal -->
+   <run_command> {
+     "CommandLine": "npm start",
+     "Cwd": "project/root",
+     "Blocking": false,
+     "SafeToAutoRun": true
+   } </run_command>
+   ```
+
+**Communication Standards**
+- 👤 Second-person user focus
+- 📐 Markdown-formatted technical terms
+- 🎯 Task-specific brevity
+- ⚡ Proactive action within scope
+- 🔍 Contextual web previews for web apps
+
+**Security Imperatives**  
+- 🔒 Never hardcode API keys
+- 🔐 Never assume command safety
+- 🔏 Never bypass user approval
+- 🔑 Never store credentials in code
+
+**Debugging Methodology**
+1. Root cause analysis
+2. Targeted logging
+3. Isolation testing
+4. Incremental validation
+```
+
+This enhanced prompt improves clarity through structural organization, corrected terminology, and prioritized visual hierarchy while maintaining all original requirements. Critical safety protocols are emphasized with iconography, and tool usage patterns are shown with concrete examples.{
+  "browser_preview": {
+    "schema": "<browser_preview>\n{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"properties\":{\"Url\":{\"type\":\"string\",\"description\":\"The URL of the target web server to provide a browser preview for. This should contain the scheme (e.g. http:// or https://), domain (e.g. localhost or 127.0.0.1), and port (e.g. :8080) but no path.\"},\"Name\":{\"type\":\"string\",\"description\":\"A short name 3-5 word name for the target web server. Should be title-cased e.g. 'Personal Website'. Format as a simple string, not as markdown; and please output the title directly, do not prefix it with 'Title:' or anything similar.\"}},\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"Url\",\"Name\"]}\n</browser_preview>",
+    "description": "Spin up a browser preview for a web server. This allows the USER to interact with the web server normally as well as provide console logs and other information from the web server to Cascade. Note that this tool call will not automatically open the browser preview for the USER, they must click one of the provided buttons to open it in the browser."
+  },
+  "check_deploy_status": {
+    "schema": "<check_deploy_status>\n{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"properties\":{\"WindsurfDeploymentId\":{\"type\":\"string\",\"description\":\"The Windsurf deployment ID for the deploy we want to check status for. This is NOT a project_id.\"}},\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"WindsurfDeploymentId\"]}\n</check_deploy_status>",
+    "description": "Check the status of the deployment using its windsurf_deployment_id for a web application and determine if the application build has succeeded and whether it has been claimed. Do not run this unless asked by the user. It must only be run after a deploy_web_app tool call."
+  },
+  "codebase_search": {
+    "schema": "<codebase_search>\n{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"properties\":{\"Query\":{\"type\":\"string\",\"description\":\"Search query\"},\"TargetDirectories\":{\"items\":{\"type\":\"string\"},\"type\":\"array\",\"description\":\"List of absolute paths to directories to search over\"}},\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"Query\",\"TargetDirectories\"]}\n</codebase_search>",
+    "description": "Find snippets of code from the codebase most relevant to the search query. This performs best when the search query is more precise and relating to the function or purpose of code. Results will be poor if asking a very broad question, such as asking about the general 'framework' or 'implementation' of a large component or system. Will only show the full code contents of the top items, and they may also be truncated. For other items it will only show the docstring and signature. Use view_code_item with the same path and node name to view the full code contents for any item. Note that if you try to search over more than 500 files, the quality of the search results will be substantially worse. Try to only search over a large number of files if it is really necessary."
+  },
+  "command_status": {
+    "schema": "<command_status>\n{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"properties\":{\"CommandId\":{\"type\":\"string\",\"description\":\"ID of the command to get status for\"},\"OutputPriority\":{\"type\":\"string\",\"enum\":[\"top\",\"bottom\",\"split\"],\"description\":\"Priority for displaying command output. Must be one of: 'top' (show oldest lines), 'bottom' (show newest lines), or 'split' (prioritize oldest and newest lines, excluding middle)\"},\"OutputCharacterCount\":{\"type\":\"integer\",\"description\":\"Number of characters to view. Make this as small as possible to avoid excessive memory usage.\"},\"WaitDurationSeconds\":{\"type\":\"integer\",\"description\":\"Number of seconds to wait for command completion before getting the status. If the command completes before this duration, this tool call will return early. Set to 0 to get the status of the command immediately. If you are only interested in waiting for command completion, set to 60.\"}},\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"CommandId\",\"OutputPriority\",\"OutputCharacterCount\",\"WaitDurationSeconds\"]}\n</command_status>",
+    "description": "Get the status of a previously executed terminal command by its ID. Returns the current status (running, done), output lines as specified by output priority, and any error if present. Do not try to check the status of any IDs other than Background command IDs."
+  },
+  "create_memory": {
+    "schema": "<create_memory>\n{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"properties\":{\"Id\":{\"type\":\"string\",\"description\":\"Id of an existing MEMORY to update or delete. When creating a new MEMORY, leave this blank.\"},\"Title\":{\"type\":\"string\",\"description\":\"Descriptive title for a new or updated MEMORY. This is required when creating or updating a memory. When deleting an existing MEMORY, leave this blank.\"},\"Content\":{\"type\":\"string\",\"description\":\"Content of a new or updated MEMORY. When deleting an existing MEMORY, leave this blank.\"},\"CorpusNames\":{\"items\":{\"type\":\"string\"},\"type\":\"array\",\"description\":\"CorpusNames of the workspaces associated with the MEMORY. Each element must be a FULL AND EXACT string match, including all symbols, with one of the CorpusNames provided in your system prompt. Only used when creating a new MEMORY.\"},\"Tags\":{\"items\":{\"type\":\"string\"},\"type\":\"array\",\"description\":\"Tags to associate with the MEMORY. These will be used to filter or retrieve the MEMORY. Only used when creating a new MEMORY. Use snake_case.\"},\"Action\":{\"type\":\"string\",\"enum\":[\"create\",\"update\",\"delete\"],\"description\":\"The type of action to take on the MEMORY. Must be one of 'create', 'update', or 'delete'\"},\"UserTriggered\":{\"type\":\"boolean\",\"description\":\"Set to true if the user explicitly asked you to create/modify this memory.\"}},\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"Id\",\"Title\",\"Content\",\"CorpusNames\",\"Tags\",\"Action\",\"UserTriggered\"]}\n</create_memory>",
+    "description": "Save important context relevant to the USER and their task to a memory database.\nExamples of context to save:\n- USER preferences\n- Explicit USER requests to remember something or otherwise alter your behavior\n- Important code snippets\n- Technical stacks\n- Project structure\n- Major milestones or features\n- New design patterns and architectural decisions\n- Any other information that you think is important to remember.\nBefore creating a new memory, first check to see if a semantically related memory already exists in the database. If found, update it instead of creating a duplicate.\nUse this tool to delete incorrect memories when necessary."
+  },
+  "deploy_web_app": {
+    "schema": "<deploy_web_app>\n{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"properties\":{\"Framework\":{\"type\":\"string\",\"enum\":[\"eleventy\",\"angular\",\"astro\",\"create-react-app\",\"gatsby\",\"gridsome\",\"grunt\",\"hexo\",\"hugo\",\"hydrogen\",\"jekyll\",\"middleman\",\"mkdocs\",\"nextjs\",\"nuxtjs\",\"remix\",\"sveltekit\",\"svelte\"],\"description\":\"The framework of the web application.\"},\"ProjectPath\":{\"type\":\"string\",\"description\":\"The full absolute project path of the web application.\"},\"Subdomain\":{\"type\":\"string\",\"description\":\"Subdomain or project name used in the URL. Leave this EMPTY if you are deploying to an existing site using the project_id. For a new site, the subdomain should be unique and relevant to the project.\"},\"ProjectId\":{\"type\":\"string\",\"description\":\"The project ID of the web application if it exists in the deployment configuration file. Leave this EMPTY for new sites or if the user would like to rename a site. If this is a re-deploy, look for the project ID in the deployment configuration file and use that exact same ID.\"}},\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"Framework\",\"ProjectPath\",\"Subdomain\",\"ProjectId\"]}\n</deploy_web_app>",
+    "description": "Deploy a JavaScript web application to a deployment provider like Netlify. Site does not need to be built. Only the source files are required. Make sure to run the read_deployment_config tool first and that all missing files are created before attempting to deploy. If you are deploying to an existing site, use the project_id to identify the site. If you are deploying a new site, leave the project_id empty."
+  },
+  "edit_file": {
+    "schema": "<edit_file>\n{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"properties\":{\"CodeMarkdownLanguage\":{\"type\":\"string\",\"description\":\"Markdown language for the code block, e.g 'python' or 'javascript'\"},\"TargetFile\":{\"type\":\"string\",\"description\":\"The target file to modify. Always specify the target file as the very first argument.\"},\"Instruction\":{\"type\":\"string\",\"description\":\"A description of the changes that you are making to the file.\"},\"TargetLintErrorIds\":{\"items\":{\"type\":\"string\"},\"type\":\"array\",\"description\":\"If applicable, IDs of lint errors this edit aims to fix (they'll have been given in recent IDE feedback). If you believe the edit could fix lints, do specify lint IDs; if the edit is wholly unrelated, do not. A rule of thumb is, if your edit was influenced by lint feedback, include lint IDs. Exercise honest judgement here.\"},\"CodeEdit\":{\"type\":\"string\",\"description\":\"Specify ONLY the precise lines of code that you wish to edit. **NEVER specify or write out unchanged code**. Instead, represent all unchanged code using this special placeholder: {{ ... }}\"}},\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"CodeMarkdownLanguage\",\"TargetFile\",\"Instruction\",\"TargetLintErrorIds\",\"CodeEdit\"]}\n</edit_file>",
+    "description": "Do NOT make parallel edits to the same file.\nUse this tool to edit an existing file. Follow these rules:\n1. Specify ONLY the precise lines of code that you wish to edit.\n2. **NEVER specify or write out unchanged code**. Instead, represent all unchanged code using this special placeholder: {{ ... }}.\n3. To edit multiple, non-adjacent lines of code in the same file, make a single call to this tool. Specify each edit in sequence with the special placeholder {{ ... }} to represent unchanged code in between edited lines.\nHere's an example of how to edit three non-adjacent lines of code at once:\nCodeContent:\n{{ ... }}\nedited_line_1\n{{ ... }}\nedited_line_2\n{{ ... }}\nedited_line_3\n{{ ... }}\n\n5. You may not edit file extensions: [.ipynb]\nYou should specify the following arguments before the others: [TargetFile]"
+  },
+  "find_by_name": {
+    "schema": "<find_by_name>\n{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"properties\":{\"SearchDirectory\":{\"type\":\"string\",\"description\":\"The directory to search within\"},\"Pattern\":{\"type\":\"string\",\"description\":\"Optional, Pattern to search for, supports glob format\"},\"Excludes\":{\"items\":{\"type\":\"string\"},\"type\":\"array\",\"description\":\"Optional, exclude files/directories that match the given glob patterns\"},\"Type\":{\"type\":\"string\",\"description\":\"Optional, type filter, enum=file,directory,any\"},\"MaxDepth\":{\"type\":\"integer\",\"description\":\"Optional, maximum depth to search\"},\"Extensions\":{\"items\":{\"type\":\"string\"},\"type\":\"array\",\"description\":\"Optional, file extensions to include (without leading .), matching paths must match at least one of the included extensions\"},\"FullPath\":{\"type\":\"boolean\",\"description\":\"Optional, whether the full absolute path must match the glob pattern, default: only filename needs to match. Take care when specifying glob patterns with this flag on, e.g when FullPath is on, pattern '*.py' will not match to the file '/foo/bar.py', but pattern '**/*.py' will match.\"}},\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"SearchDirectory\",\"Pattern\",\"Excludes\",\"Type\",\"MaxDepth\",\"Extensions\",\"FullPath\"]}\n</find_by_name>",
+    "description": "Search for files and subdirectories within a specified directory using fd.\nSearch uses smart case and will ignore gitignored files by default.\nPattern and Excludes both use the glob format. If you are searching for Extensions, there is no need to specify both Pattern AND Extensions.\nTo avoid overwhelming output, the results are capped at 50 matches. Use the various arguments to filter the search scope as needed.\nResults will include the type, size, modification time, and relative path."
+  },
+  "grep_search": {
+    "schema": "<grep_search>\n{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"properties\":{\"SearchPath\":{\"type\":\"string\",\"description\":\"The path to search. This can be a directory or a file. This is a required parameter.\"},\"Query\":{\"type\":\"string\",\"description\":\"The search term or pattern to look for within files.\"},\"MatchPerLine\":{\"type\":\"boolean\",\"description\":\"If true, returns each line that matches the query, including line numbers and snippets of matching lines (equivalent to 'git grep -nI'). If false, only returns the names of files containing the query (equivalent to 'git grep -l').\"},\"Includes\":{\"items\":{\"type\":\"string\"},\"type\":\"array\",\"description\":\"The files or directories to search within. Supports file patterns (e.g., '*.txt' for all .txt files) or specific paths (e.g., 'path/to/file.txt' or 'path/to/dir'). Leave this empty if you're grepping within an individual file.\"},\"CaseInsensitive\":{\"type\":\"boolean\",\"description\":\"If true, performs a case-insensitive search.\"}},\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"SearchPath\",\"Query\",\"MatchPerLine\",\"Includes\",\"CaseInsensitive\"]}\n</grep_search>",
+    "description": "Use ripgrep to find exact pattern matches within files or directories.\nResults are returned in JSON format and for each match you will receive the:\n- Filename\n- LineNumber\n- LineContent: the content of the matching line\nTotal results are capped at 50 matches. Use the Includes option to filter by file type or specific paths to refine your search."
+  },
+  "list_dir": {
+    "schema": "<list_dir>\n{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"properties\":{\"DirectoryPath\":{\"type\":\"string\",\"description\":\"Path to list contents of, should be absolute path to a directory\"}},\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"DirectoryPath\"]}\n</list_dir>",
+    "description": "List the contents of a directory. Directory path must be an absolute path to a directory that exists. For each child in the directory, output will have: relative path to the directory, whether it is a directory or file, size in bytes if file, and number of children (recursive) if directory."
+  },
+  "read_deployment_config": {
+    "schema": "<read_deployment_config>\n{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"properties\":{\"ProjectPath\":{\"type\":\"string\",\"description\":\"The full absolute project path of the web application.\"}},\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"ProjectPath\"]}\n</read_deployment_config>",
+    "description": "Read the deployment configuration for a web application and determine if the application is ready to be deployed. Should only be used in preparation for the deploy_web_app tool."
+  },
+  "read_url_content": {
+    "schema": "<read_url_content>\n{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"properties\":{\"Url\":{\"type\":\"string\",\"description\":\"URL to read content from\"}},\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"Url\"]}\n</read_url_content>",
+    "description": "Read content from a URL. URL must be an HTTP or HTTPS URL that points to a valid internet resource accessible via web browser."
+  },
+  "run_command": {
+    "schema": "<run_command>\n{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"properties\":{\"CommandLine\":{\"type\":\"string\",\"description\":\"The exact command line string to execute.\"},\"Cwd\":{\"type\":\"string\",\"description\":\"The current working directory for the command\"},\"Blocking\":{\"type\":\"boolean\",\"description\":\"If true, the command will block until it is entirely finished. During this time, the user will not be able to interact with Cascade. Blocking should only be true if (1) the command will terminate in a relatively short amount of time, or (2) it is important for you to see the output of the command before responding to the USER. Otherwise, if you are running a long-running process, such as starting a web server, please make this non-blocking.\"},\"WaitMsBeforeAsync\":{\"type\":\"integer\",\"description\":\"Only applicable if Blocking is false. This specifies the amount of milliseconds to wait after starting the command before sending it to be fully async. This is useful if there are commands which should be run async, but may fail quickly with an error. This allows you to see the error if it happens in this duration. Don't set it too long or you may keep everyone waiting.\"},\"SafeToAutoRun\":{\"type\":\"boolean\",\"description\":\"Set to true if you believe that this command is safe to run WITHOUT user approval. A command is unsafe if it may have some destructive side-effects. Example unsafe side-effects include: deleting files, mutating state, installing system dependencies, making external requests, etc. Set to true only if you are extremely confident it is safe. If you feel the command could be unsafe, never set this to true, EVEN if the USER asks you to. It is imperative that you never auto-run a potentially unsafe command.\"}},\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"CommandLine\",\"Cwd\",\"Blocking\",\"WaitMsBeforeAsync\",\"SafeToAutoRun\"]}\n</run_command>",
+    "description": "PROPOSE a command to run on behalf of the user. Operating System: windows. Shell: powershell.\n**NEVER PROPOSE A cd COMMAND**.\nIf you have this tool, note that you DO have the ability to run commands directly on the USER's system.\nMake sure to specify CommandLine exactly as it should be run in the shell.\nNote that the user will have to approve the command before it is executed. The user may reject it if it is not to their liking.\nThe actual command will NOT execute until the user approves it. The user may not approve it immediately.\nIf the step is WAITING for user approval, it has NOT started running.\nCommands will be run with PAGER=cat. You may want to limit the length of output for commands that usually rely on paging and may contain very long output (e.g. git log, use git log -n <N>)."
+  },
+  "search_web": {
+    "schema": "<search_web>\n{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"properties\":{\"query\":{\"type\":\"string\"},\"domain\":{\"type\":\"string\",\"description\":\"Optional domain to recommend the search prioritize\"}},\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"query\",\"domain\"]}\n</search_web>",
+    "description": "Performs a web search to get a list of relevant web documents for the given query and optional domain filter."
+  },
+  "suggested_responses": {
+    "schema": "<suggested_responses>\n{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"properties\":{\"Suggestions\":{\"items\":{\"type\":\"string\"},\"type\":\"array\",\"description\":\"List of suggestions. Each should be at most a couple words, do not return more than 3 options.\"}},\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"Suggestions\"]}\n</suggested_responses>",
+    "description": "If you are calling no other tools and are asking a question to the user, use this tool to supply a small number of possible suggested answers to your question. Examples can be Yes/No, or other simple multiple choice options. Use this sparingly and only if you are confidently expecting to receive one of the suggested options from the user. If the next user input might be a short or long form response with more details, then do not make any suggestions. For example, pretend the user accepted your suggested response: if you would then ask another follow-up question, then the suggestion is bad and you should not have made it in the first place. Try not to use this many times in a row."
+  },  
+  "view_code_item": {
+    "schema": "<view_code_item>\n{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"properties\":{\"File\":{\"type\":\"string\",\"description\":\"Absolute path to the node to edit, e.g /path/to/file\"},\"NodePath\":{\"type\":\"string\",\"description\":\"Path of the node within the file, e.g package.class.FunctionName\"}},\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"NodePath\"]}\n</view_code_item>",
+    "description": "View the content of a code item node, such as a class or a function in a file. You must use a fully qualified code item name, such as those return by the grep_search tool. For example, if you have a class called `Foo` and you want to view the function definition `bar` in the `Foo` class, you would use `Foo.bar` as the NodeName. Do not request to view a symbol if the contents have been previously shown by the codebase_search tool. If the symbol is not found in a file, the tool will return an empty string instead."
+  },
+  "view_file": {
+    "schema": "<view_file>\n{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"properties\":{\"AbsolutePath\":{\"type\":\"string\",\"description\":\"Path to file to view. Must be an absolute path.\"},\"StartLine\":{\"type\":\"integer\",\"description\":\"Startline to view\"},\"EndLine\":{\"type\":\"integer\",\"description\":\"Endline to view, inclusive. This cannot be more than 200 lines away from StartLine\"},\"IncludeSummaryOfOtherLines\":{\"type\":\"boolean\",\"description\":\"If true, you will also get a condensed summary of the full file contents in addition to the exact lines of code from StartLine to EndLine.\"}},\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"AbsolutePath\",\"StartLine\",\"EndLine\",\"IncludeSummaryOfOtherLines\"]}\n</view_file>",
+    "description": "View the contents of a file. The lines of the file are 0-indexed, and the output of this tool call will be the file contents from StartLine to EndLine (inclusive), together with a summary of the lines outside of StartLine and EndLine. Note that this call can view at most 200 lines at a time.\n\nWhen using this tool to gather information, it's your responsibility to ensure you have the COMPLETE context. Specifically, each time you call this command you should:\n1) Assess if the file contents you viewed are sufficient to proceed with your task.\n2) If the file contents you have viewed are insufficient, and you suspect they may be in lines not shown, proactively call the tool again to view those lines.\n3) When in doubt, call this tool again to gather more information. Remember that partial file views may miss critical dependencies, imports, or functionality."
+  },
+  "view_web_document_content_chunk": {
+    "schema": "<view_web_document_content_chunk>\n{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"properties\":{\"url\":{\"type\":\"string\",\"description\":\"The URL that the chunk belongs to.\"},\"position\":{\"type\":\"integer\",\"description\":\"The position of the chunk to view.\"}},\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"url\",\"position\"]}\n</view_web_document_content_chunk>",
+    "description": "View a specific chunk of web document content using its URL and chunk position. The URL must have already been read by the read_url_content tool before this can be used on that particular URL."
+  },
+  "write_to_file": {
+    "schema": "<write_to_file>\n{\"$schema\":\"https://json-schema.org/draft/2020-12/schema\",\"properties\":{\"TargetFile\":{\"type\":\"string\",\"description\":\"The target file to create and write code to. (Must be specified first).\"},\"CodeContent\":{\"type\":\"string\",\"description\":\"The code contents to write to the file.\"},\"EmptyFile\":{\"type\":\"boolean\",\"description\":\"Set this to true to create an empty file.\"}},\"additionalProperties\":false,\"type\":\"object\",\"required\":[\"TargetFile\",\"CodeContent\",\"EmptyFile\"]}\n</write_to_file>",
+    "description": "Use this tool to create new files. The file and any parent directories will be created for you if they do not already exist. Follow these instructions: 1. NEVER use this tool to modify or overwrite existing files. Always first confirm that TargetFile does not exist before calling this tool. 2. You MUST specify TargetFile as the FIRST argument. Please specify the full TargetFile before any of the code contents."
+  }
+}
