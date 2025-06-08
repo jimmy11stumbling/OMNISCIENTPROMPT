@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progress Indicator Demo - DeepSeek AI Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/progress-indicator.css">
+    <script src="/js/progress-indicator.js"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-6 py-8">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold mb-4">Animated Progress Indicator Demo</h1>
+            <p class="text-gray-400 mb-6">Experience the enhanced UI during AI processing</p>
+            
+            <div class="flex justify-center space-x-4">
+                <button id="startDemo" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-medium">
+                    Start Demo Progress
+                </button>
+                <button id="startChat" class="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg font-medium">
+                    Chat Demo
+                </button>
+                <button id="startGenerate" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg font-medium">
+                    Generation Demo
+                </button>
+            </div>
+        </div>
+        
+        <div id="demoContainer" class="max-w-4xl mx-auto">
+            <!-- Progress indicators will appear here -->
+        </div>
+        
+        <div class="bg-gray-800 rounded-lg p-6 mt-8">
+            <h2 class="text-xl font-bold mb-4">Features Demonstrated</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <h3 class="font-semibold text-blue-400 mb-2">Visual Elements</h3>
+                    <ul class="space-y-1 text-gray-300">
+                        <li>• Animated progress bar with gradient effect</li>
+                        <li>• 5-stage processing visualization</li>
+                        <li>• Real-time timer and metrics</li>
+                        <li>• Smooth stage transitions</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-purple-400 mb-2">User Experience</h3>
+                    <ul class="space-y-1 text-gray-300">
+                        <li>• Clear progress indication during 20-30s waits</li>
+                        <li>• Context-aware stage descriptions</li>
+                        <li>• Token usage estimation</li>
+                        <li>• Responsive mobile design</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('startDemo').addEventListener('click', () => {
+            const container = document.getElementById('demoContainer');
+            window.ProgressIndicator.show(container, {
+                title: 'Demo: AI Processing Pipeline',
+                platform: 'DeepSeek Demo',
+                query: 'Demonstrating animated progress indicator'
+            });
+            
+            // Auto-complete after realistic duration
+            setTimeout(() => {
+                window.ProgressIndicator.complete({
+                    success: true,
+                    tokensUsed: 485
+                });
+            }, 25000);
+        });
+        
+        document.getElementById('startChat').addEventListener('click', () => {
+            const container = document.getElementById('demoContainer');
+            window.ProgressIndicator.show(container, {
+                title: 'Processing Chat Message',
+                platform: 'Lovable',
+                query: 'Build a social media app with real-time features'
+            });
+            
+            setTimeout(() => {
+                window.ProgressIndicator.complete({
+                    success: true,
+                    tokensUsed: 392
+                });
+            }, 18000);
+        });
+        
+        document.getElementById('startGenerate').addEventListener('click', () => {
+            const container = document.getElementById('demoContainer');
+            window.ProgressIndicator.show(container, {
+                title: 'Generating Full-Stack App Prompt',
+                platform: 'Replit',
+                query: 'E-commerce platform with payment processing'
+            });
+            
+            setTimeout(() => {
+                window.ProgressIndicator.complete({
+                    success: true,
+                    tokensUsed: 627
+                });
+            }, 22000);
+        });
+    </script>
+</body>
+</html>

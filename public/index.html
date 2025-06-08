@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DeepSeek AI Prompt Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/progress-indicator.css">
+    <script src="/js/progress-indicator.js"></script>
     <script src="/js/realtime.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
@@ -128,6 +130,13 @@
             errorSection.classList.add('hidden');
 
             try {
+                // Show progress indicator
+                window.ProgressIndicator.show(document.querySelector('.container'), {
+                    title: 'Generating Full-Stack App Prompt',
+                    platform: platform,
+                    query: query
+                });
+
                 const response = await fetch('/api/generate-prompt', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -140,10 +149,22 @@
                     throw new Error(data.error || 'Failed to generate prompt');
                 }
 
+                // Complete progress indicator
+                window.ProgressIndicator.complete({
+                    success: true,
+                    tokensUsed: data.tokensUsed || 0
+                });
+
                 promptResult.textContent = data.prompt;
                 resultSection.classList.remove('hidden');
 
             } catch (error) {
+                // Complete progress indicator with error
+                window.ProgressIndicator.complete({
+                    success: false,
+                    error: error.message
+                });
+                
                 errorMessage.textContent = error.message;
                 errorSection.classList.remove('hidden');
             } finally {

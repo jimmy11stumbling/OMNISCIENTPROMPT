@@ -199,8 +199,11 @@
                     // Update session ID
                     this.currentSessionId = data.sessionId;
                     
-                    // Remove typing indicator
-                    this.hideTypingIndicator();
+                    // Complete progress indicator
+                    window.ProgressIndicator.complete({
+                        success: true,
+                        tokensUsed: data.tokensUsed || 0
+                    });
                     
                     // Add AI response
                     this.addMessage('ai', data.response, data.reasoning);
@@ -212,7 +215,12 @@
                     this.updateSessionList();
                     
                 } catch (error) {
-                    this.hideTypingIndicator();
+                    // Complete progress indicator with error
+                    window.ProgressIndicator.complete({
+                        success: false,
+                        error: error.message
+                    });
+                    
                     this.addMessage('ai', 'Sorry, I encountered an error. Please try again.', null, true);
                     console.error('Chat error:', error);
                 }
