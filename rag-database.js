@@ -594,7 +594,10 @@ class RAGDatabase {
       // If no cached results, perform async search and return empty for now
       this.performAsyncDatabaseSearch(query, platform, searchTerms, limit);
       return [];
-      
+    } catch (error) {
+      console.error('Database search sync error:', error);
+      return [];
+    }
   }
 
   // Get cached database results
@@ -673,6 +676,16 @@ class RAGDatabase {
           });
         }
       }
+      
+      // Initialize cache if not exists
+      if (!this.dbCache) {
+        this.dbCache = new Map();
+      }
+      
+      // Cache results for future searches
+      const cacheKey = `${query}-${platform || 'all'}`;
+      this.dbCache.set(cacheKey, results);
+      
     } catch (error) {
       console.error('Database search error:', error);
     }
