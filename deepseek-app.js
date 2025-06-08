@@ -174,6 +174,90 @@ app.get('/api/metrics', (req, res) => {
   validator.logApiCall('/api/metrics', startTime, true);
 });
 
+// Analytics data endpoint
+app.get('/api/analytics', async (req, res) => {
+  const { timeRange = '24h' } = req.query;
+  
+  try {
+    let timeCondition = '';
+    switch (timeRange) {
+      case '24h':
+        timeCondition = "created_at >= NOW() - INTERVAL '24 hours'";
+        break;
+      case '7d':
+        timeCondition = "created_at >= NOW() - INTERVAL '7 days'";
+        break;
+      case '30d':
+        timeCondition = "created_at >= NOW() - INTERVAL '30 days'";
+        break;
+      case '90d':
+        timeCondition = "created_at >= NOW() - INTERVAL '90 days'";
+        break;
+      default:
+        timeCondition = "created_at >= NOW() - INTERVAL '24 hours'";
+    }
+
+    // Get prompt generation analytics
+    const promptStats = await pool.query(`
+      SELECT 
+        DATE_TRUNC('hour', created_at) as hour,
+        COUNT(*) as count,
+        AVG(tokens_used) as avg_tokens,
+        AVG(response_time) as avg_response_time,
+        platform
+      FROM saved_prompts 
+      WHERE ${timeCondition}
+      GROUP BY DATE_TRUNC('hour', created_at), platform
+      ORDER BY hour ASC
+    `);
+
+    // Get platform distribution
+    const platformStats = await pool.query(`
+      SELECT platform, COUNT(*) as count
+      FROM saved_prompts 
+      WHERE ${timeCondition}
+      GROUP BY platform
+      ORDER BY count DESC
+    `);
+
+    // Get token usage trends
+    const tokenStats = await pool.query(`
+      SELECT 
+        DATE_TRUNC('day', created_at) as day,
+        SUM(tokens_used) as total_tokens,
+        COUNT(*) as requests
+      FROM saved_prompts 
+      WHERE ${timeCondition} AND tokens_used > 0
+      GROUP BY DATE_TRUNC('day', created_at)
+      ORDER BY day ASC
+    `);
+
+    // Calculate performance metrics
+    const performanceStats = await pool.query(`
+      SELECT 
+        AVG(response_time) as avg_response_time,
+        MIN(response_time) as min_response_time,
+        MAX(response_time) as max_response_time,
+        PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY response_time) as p95_response_time
+      FROM saved_prompts 
+      WHERE ${timeCondition} AND response_time > 0
+    `);
+
+    res.json({
+      timeRange,
+      promptStats: promptStats.rows,
+      platformStats: platformStats.rows,
+      tokenStats: tokenStats.rows,
+      performanceStats: performanceStats.rows[0] || {},
+      realTimeMetrics: validator.metrics,
+      generatedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Analytics query error:', error);
+    res.status(500).json({ error: 'Failed to fetch analytics data' });
+  }
+});
+
 // RAG Search endpoint with real-time validation
 app.post('/api/rag/search', (req, res) => {
   const startTime = Date.now();
@@ -923,6 +1007,145 @@ ${process.env.DEEPSEEK_API_KEY ? '✨ Generated using DeepSeek AI reasoning capa
     res.status(500).json({ 
       error: 'Failed to generate prompt. Please try again.' 
     });
+  }
+});
+
+// Export analytics data endpoint
+app.get('/api/analytics/export', async (req, res) => {
+  const { timeRange = '30d', format = 'json' } = req.query;
+  
+  try {
+    let timeCondition = '';
+    switch (timeRange) {
+      case '24h':
+        timeCondition = "created_at >= NOW() - INTERVAL '24 hours'";
+        break;
+      case '7d':
+        timeCondition = "created_at >= NOW() - INTERVAL '7 days'";
+        break;
+      case '30d':
+        timeCondition = "created_at >= NOW() - INTERVAL '30 days'";
+        break;
+      case '90d':
+        timeCondition = "created_at >= NOW() - INTERVAL '90 days'";
+        break;
+      default:
+        timeCondition = "created_at >= NOW() - INTERVAL '30 days'";
+    }
+
+    const exportData = await pool.query(`
+      SELECT 
+        id,
+        title,
+        platform,
+        tokens_used,
+        response_time,
+        created_at,
+        updated_at
+      FROM saved_prompts 
+      WHERE ${timeCondition}
+      ORDER BY created_at DESC
+    `);
+
+    if (format === 'csv') {
+      const csvHeader = 'ID,Title,Platform,Tokens Used,Response Time (ms),Created At,Updated At\n';
+      const csvData = exportData.rows.map(row => 
+        `${row.id},"${row.title}",${row.platform},${row.tokens_used || 0},${row.response_time || 0},${row.created_at},${row.updated_at || ''}`
+      ).join('\n');
+      
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="deepseek_analytics_${timeRange}_${Date.now()}.csv"`);
+      res.send(csvHeader + csvData);
+    } else {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="deepseek_analytics_${timeRange}_${Date.now()}.json"`);
+      res.json({
+        exportInfo: {
+          timeRange,
+          recordCount: exportData.rows.length,
+          exportedAt: new Date().toISOString()
+        },
+        data: exportData.rows
+      });
+    }
+  } catch (error) {
+    console.error('Export error:', error);
+    res.status(500).json({ error: 'Failed to export data' });
+  }
+});
+
+// Admin configuration endpoints
+app.get('/api/admin/config', (req, res) => {
+  res.json({
+    apiKeyConfigured: !!process.env.DEEPSEEK_API_KEY,
+    databaseConnected: true,
+    ragDocumentCount: ragDB.getAllDocuments ? ragDB.getAllDocuments().length : 0,
+    activeConnections: activeConnections.size,
+    uptime: process.uptime(),
+    memoryUsage: process.memoryUsage(),
+    systemMetrics: validator.metrics
+  });
+});
+
+app.post('/api/admin/test-api', async (req, res) => {
+  if (!process.env.DEEPSEEK_API_KEY) {
+    return res.status(400).json({ 
+      success: false, 
+      error: 'DeepSeek API key not configured' 
+    });
+  }
+
+  try {
+    const fetch = (await import('node-fetch')).default;
+    const response = await fetch('https://api.deepseek.com/v1/models', {
+      headers: {
+        'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
+      }
+    });
+
+    if (response.ok) {
+      res.json({ 
+        success: true, 
+        message: 'DeepSeek API connection successful',
+        status: response.status
+      });
+    } else {
+      res.json({ 
+        success: false, 
+        error: `API returned status ${response.status}`,
+        status: response.status
+      });
+    }
+  } catch (error) {
+    res.json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// Bulk operations for prompts
+app.post('/api/prompts/bulk-delete', async (req, res) => {
+  const { ids } = req.body;
+  
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json({ error: 'Array of IDs is required' });
+  }
+
+  try {
+    const placeholders = ids.map((_, index) => `$${index + 1}`).join(',');
+    const result = await pool.query(
+      `DELETE FROM saved_prompts WHERE id IN (${placeholders}) RETURNING id`,
+      ids
+    );
+
+    res.json({ 
+      message: `Successfully deleted ${result.rows.length} prompts`,
+      deletedIds: result.rows.map(row => row.id)
+    });
+  } catch (error) {
+    console.error('Bulk delete error:', error);
+    res.status(500).json({ error: 'Failed to delete prompts' });
   }
 });
 
