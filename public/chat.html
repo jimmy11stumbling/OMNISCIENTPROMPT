@@ -200,6 +200,10 @@
                         })
                     });
 
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
                     const data = await response.json();
                     // Update session ID
                     this.currentSessionId = data.sessionId;

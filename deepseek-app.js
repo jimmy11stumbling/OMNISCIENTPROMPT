@@ -335,7 +335,13 @@ const heartbeat = setInterval(() => {
       return ws.terminate();
     }
     ws.isAlive = false;
-    ws.ping();
+    try {
+      ws.ping();
+    } catch (error) {
+      console.error('WebSocket ping error:', error);
+      activeConnections.delete(ws);
+      ws.terminate();
+    }
   });
 }, 30000);
 
@@ -667,16 +673,22 @@ app.post('/api/rag/upload', authenticateToken, upload.single('document'), async 
   } catch (error) {
     console.error('Document upload error:', error);
     
-    // Create error notification
-    await pool.query(`
-      INSERT INTO notifications (user_id, title, message, type)
-      VALUES ($1, $2, $3, $4)
-    `, [
-      req.user.id,
-      'Upload Failed',
-      `Failed to upload document: ${error.message}`,
-      'error'
-    ]);
+    // Create error notification if user is authenticated
+    if (req.user) {
+      try {
+        await pool.query(`
+          INSERT INTO notifications (user_id, title, message, type)
+          VALUES ($1, $2, $3, $4)
+        `, [
+          req.user.id,
+          'Upload Failed',
+          `Failed to upload document: ${error.message}`,
+          'error'
+        ]);
+      } catch (notificationError) {
+        console.error('Failed to create error notification:', notificationError);
+      }
+    }
 
     res.status(500).json({ error: 'Document upload failed' });
   }
@@ -749,8 +761,10 @@ app.delete('/api/rag/documents/:id', authenticateToken, async (req, res) => {
 
     const document = result.rows[0];
 
-    // Remove from RAG database
-    ragDB.removeDocument(`rag_${id}`);
+    // Remove from RAG database - only if method exists
+    if (ragDB.removeDocument && typeof ragDB.removeDocument === 'function') {
+      ragDB.removeDocument(`rag_${id}`);
+    }
 
     // Create notification
     await pool.query(`
