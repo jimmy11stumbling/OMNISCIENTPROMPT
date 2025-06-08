@@ -16,17 +16,37 @@ const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'deepseek-ai-secret-key-change-in-production';
 const BCRYPT_ROUNDS = 12;
 
-// PostgreSQL connection with error handling
+// PostgreSQL connection with improved error handling and timeouts
 const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  max: 10,
+  idleTimeoutMillis: 60000,
+  connectionTimeoutMillis: 10000,
+  acquireTimeoutMillis: 10000,
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 0,
 });
 
 pool.on('error', (err) => {
   console.error('PostgreSQL pool error:', err);
 });
+
+pool.on('connect', () => {
+  console.log('PostgreSQL connected successfully');
+});
+
+// Add connection retry wrapper
+async function queryWithRetry(queryText, params = [], retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await pool.query(queryText, params);
+    } catch (error) {
+      console.error(`Database query attempt ${i + 1} failed:`, error.message);
+      if (i === retries - 1) throw error;
+      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+    }
+  }
+}
 
 // WebSocket server for real-time updates
 const wss = new WebSocketServer({ server, path: '/ws' });
@@ -1017,8 +1037,8 @@ app.get('/api/analytics', async (req, res) => {
         timeCondition = "created_at >= NOW() - INTERVAL '24 hours'";
     }
 
-    // Get prompt generation analytics
-    const promptStats = await pool.query(`
+    // Get prompt generation analytics with retry
+    const promptStats = await queryWithRetry(`
       SELECT 
         DATE_TRUNC('hour', created_at) as hour,
         COUNT(*) as count,
@@ -1032,7 +1052,7 @@ app.get('/api/analytics', async (req, res) => {
     `);
 
     // Get platform distribution
-    const platformStats = await pool.query(`
+    const platformStats = await queryWithRetry(`
       SELECT platform, COUNT(*) as count
       FROM saved_prompts 
       WHERE ${timeCondition}
@@ -1041,7 +1061,7 @@ app.get('/api/analytics', async (req, res) => {
     `);
 
     // Get token usage trends
-    const tokenStats = await pool.query(`
+    const tokenStats = await queryWithRetry(`
       SELECT 
         DATE_TRUNC('day', created_at) as day,
         SUM(tokens_used) as total_tokens,
@@ -1053,7 +1073,7 @@ app.get('/api/analytics', async (req, res) => {
     `);
 
     // Calculate performance metrics
-    const performanceStats = await pool.query(`
+    const performanceStats = await queryWithRetry(`
       SELECT 
         AVG(response_time) as avg_response_time,
         MIN(response_time) as min_response_time,
@@ -1074,7 +1094,23 @@ app.get('/api/analytics', async (req, res) => {
     });
   } catch (error) {
     console.error('Analytics query error:', error);
-    res.status(500).json({ error: 'Failed to fetch analytics data' });
+    
+    // Return basic structure with empty data when database fails
+    res.json({
+      timeRange,
+      promptStats: [],
+      platformStats: [],
+      tokenStats: [],
+      performanceStats: {
+        avg_response_time: 0,
+        min_response_time: 0,
+        max_response_time: 0,
+        p95_response_time: 0
+      },
+      realTimeMetrics: validator.metrics,
+      generatedAt: new Date().toISOString(),
+      error: 'Database connection issue - showing cached metrics only'
+    });
   }
 });
 

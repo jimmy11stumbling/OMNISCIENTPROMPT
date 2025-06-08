@@ -196,6 +196,36 @@
                     if (lastUpdatedEl) {
                         lastUpdatedEl.textContent = 'Last updated: ' + new Date().toLocaleTimeString();
                     }
+                } else if (response.status === 500) {
+                    // Try to get the error response for database issues
+                    const errorData = await response.json().catch(() => ({}));
+                    
+                    loadingState.style.display = 'none';
+                    analyticsContent.style.display = 'block';
+                    
+                    // Show empty data with error message
+                    updateCharts({ promptStats: [], platformStats: [], tokenStats: [] });
+                    updateMetrics({ 
+                        promptStats: [], 
+                        tokenStats: [], 
+                        performanceStats: {},
+                        realTimeMetrics: { successRate: 0 }
+                    });
+                    updatePlatformTable({ platformStats: [] });
+                    
+                    // Show error message
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'bg-yellow-900 border border-yellow-600 rounded-lg p-4 mb-6';
+                    errorDiv.innerHTML = `
+                        <div class="flex items-center">
+                            <i class="fas fa-exclamation-triangle text-yellow-400 mr-3"></i>
+                            <div>
+                                <p class="text-yellow-200 font-medium">Database Connection Issue</p>
+                                <p class="text-yellow-300 text-sm">${errorData.error || 'Unable to fetch analytics data. Please try refreshing.'}</p>
+                            </div>
+                        </div>
+                    `;
+                    analyticsContent.insertBefore(errorDiv, analyticsContent.firstChild);
                 } else {
                     throw new Error('Failed to load analytics data');
                 }
@@ -592,16 +622,9 @@
             document.querySelector('.max-w-7xl').appendChild(lastUpdated);
         });
 
-        // Initialize everything (completely manual)
+        // Initialize everything and load initial data
         initializeCharts();
-        // Don't auto-load data on page load - require manual refresh
-        document.getElementById('loadingState').innerHTML = `
-            <div class="text-center py-8">
-                <i class="fas fa-chart-bar text-blue-400 text-4xl mb-4"></i>
-                <p class="text-gray-400 mb-4">Analytics Dashboard Ready</p>
-                <p class="text-sm text-gray-500">Click "Refresh Data" to load analytics</p>
-            </div>
-        `;
+        loadAnalyticsData();
     </script>
 </body>
 </html>
