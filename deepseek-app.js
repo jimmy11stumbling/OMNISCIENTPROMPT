@@ -9,13 +9,28 @@ const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
-// PostgreSQL connection
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+// PostgreSQL connection with error handling
+const pool = new Pool({ 
+  connectionString: process.env.DATABASE_URL,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
+
+pool.on('error', (err) => {
+  console.error('PostgreSQL pool error:', err);
+});
 
 // WebSocket server for real-time updates
 const wss = new WebSocketServer({ server, path: '/ws' });
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ error: 'Invalid JSON payload' });
+  }
+  next();
+});
 app.use(express.static('public'));
 
 // Initialize RAG database with real-time validation

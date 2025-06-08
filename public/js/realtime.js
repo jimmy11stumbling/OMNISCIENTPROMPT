@@ -310,7 +310,9 @@ class RealTimeClient {
             console.log(`[REAL-TIME] Reconnecting... Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
             
             setTimeout(() => {
-                this.connect();
+                if (!this.isConnected) {
+                    this.connect();
+                }
             }, this.reconnectDelay * this.reconnectAttempts);
         } else {
             console.error('[REAL-TIME] Max reconnection attempts reached');
