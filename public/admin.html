@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Portal - DeepSeek AI Platform</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/js/realtime.js"></script>
+    <script src="/js/notifications.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
     <!-- Navigation -->
@@ -16,38 +19,657 @@
                     <a href="/" class="text-gray-300 hover:text-white">Generator</a>
                     <a href="/dashboard.html" class="text-gray-300 hover:text-white">Dashboard</a>
                     <a href="/analytics.html" class="text-gray-300 hover:text-white">Analytics</a>
-                    <a href="/rag-database.html" class="text-gray-300 hover:text-white">RAG Database</a>
-                    <a href="/chat.html" class="text-gray-300 hover:text-white">Chat</a>
                     <a href="/admin.html" class="text-blue-400 font-medium">Admin</a>
                 </div>
             </div>
             <div class="flex items-center space-x-4">
-                <span class="text-sm text-gray-400">Admin User</span>
-                <button class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm">Logout</button>
+                <div id="userInfo" class="text-sm text-gray-400"></div>
+                <button id="logoutBtn" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm">Logout</button>
             </div>
         </div>
     </nav>
 
     <!-- Main Content -->
-    <div class="container mx-auto px-6 py-8">
+    <div class="container mx-auto px-6 py-8 max-w-7xl">
         <!-- Header -->
         <div class="mb-8">
             <h2 class="text-3xl font-bold mb-2">System Administration</h2>
-            <p class="text-gray-400">Manage DeepSeek API settings, RAG database, and system configuration</p>
+            <p class="text-gray-400">Comprehensive system management and monitoring</p>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <button class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 rounded-lg p-6 text-left transition-all">
-                <div class="flex items-center space-x-3 mb-3">
-                    <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.84L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.84l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"/>
+        <!-- System Status Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-gray-800 rounded-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Total Users</p>
+                        <p id="totalUsers" class="text-2xl font-bold text-white">-</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/>
                         </svg>
                     </div>
-                    <h3 class="text-lg font-semibold">API Configuration</h3>
                 </div>
-                <p class="text-blue-100 text-sm">Manage DeepSeek API keys and settings</p>
+                <div class="mt-2">
+                    <span id="activeUsers" class="text-green-400 text-sm">- active</span>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">Total Prompts</p>
+                        <p id="totalPrompts" class="text-2xl font-bold text-white">-</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <span id="prompts24h" class="text-green-400 text-sm">- today</span>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">RAG Documents</p>
+                        <p id="totalDocuments" class="text-2xl font-bold text-white">-</p>
+                    </div>
+                    <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 4a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1V8zm8 0a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 01-1 1h-4a1 1 0 01-1-1V8z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <span id="activeDocuments" class="text-green-400 text-sm">- active</span>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">System Status</p>
+                        <p id="systemStatus" class="text-2xl font-bold text-green-400">Healthy</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <span id="uptime" class="text-green-400 text-sm">- uptime</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Actions -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- User Management -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold">User Management</h3>
+                    <button id="refreshUsers" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">
+                        Refresh
+                    </button>
+                </div>
+
+                <div class="mb-4">
+                    <input type="text" id="userSearch" placeholder="Search users..."
+                           class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white">
+                </div>
+
+                <div id="usersList" class="space-y-3 max-h-96 overflow-y-auto">
+                    <div class="text-center py-4 text-gray-400">Loading users...</div>
+                </div>
+            </div>
+
+            <!-- System Configuration -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h3 class="text-xl font-bold mb-6">System Configuration</h3>
+                
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
+                        <div>
+                            <p class="font-medium">DeepSeek API</p>
+                            <p class="text-sm text-gray-400">AI model integration status</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span id="apiStatus" class="text-green-400">●</span>
+                            <button id="testApi" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm">
+                                Test
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
+                        <div>
+                            <p class="font-medium">Email Service</p>
+                            <p class="text-sm text-gray-400">Notification delivery system</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span id="emailStatus" class="text-gray-400">●</span>
+                            <button id="testEmail" class="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm">
+                                Test
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
+                        <div>
+                            <p class="font-medium">Database</p>
+                            <p class="text-sm text-gray-400">PostgreSQL connection</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span id="dbStatus" class="text-green-400">●</span>
+                            <span class="text-sm text-green-400">Connected</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
+                        <div>
+                            <p class="font-medium">WebSocket Server</p>
+                            <p class="text-sm text-gray-400">Real-time communication</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span id="wsStatus" class="text-green-400">●</span>
+                            <span id="activeConnections" class="text-sm text-green-400">- connections</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Broadcast Notifications -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-8">
+            <h3 class="text-xl font-bold mb-6">Broadcast Notification</h3>
+            
+            <form id="broadcastForm" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="broadcastTitle" class="block text-sm font-medium mb-2">Title</label>
+                        <input type="text" id="broadcastTitle" required
+                               class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white">
+                    </div>
+                    <div>
+                        <label for="broadcastType" class="block text-sm font-medium mb-2">Type</label>
+                        <select id="broadcastType" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white">
+                            <option value="info">Info</option>
+                            <option value="success">Success</option>
+                            <option value="warning">Warning</option>
+                            <option value="error">Error</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="broadcastMessage" class="block text-sm font-medium mb-2">Message</label>
+                    <textarea id="broadcastMessage" rows="3" required
+                              class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="userRole" class="block text-sm font-medium mb-2">Target Users</label>
+                        <select id="userRole" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white">
+                            <option value="">All Users</option>
+                            <option value="user">Regular Users</option>
+                            <option value="admin">Administrators</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="expiresIn" class="block text-sm font-medium mb-2">Expires In (minutes)</label>
+                        <input type="number" id="expiresIn" min="1" placeholder="Leave empty for no expiration"
+                               class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white">
+                    </div>
+                </div>
+
+                <button type="submit" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-md font-medium">
+                    Send Broadcast
+                </button>
+            </form>
+        </div>
+
+        <!-- System Metrics Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h3 class="text-xl font-bold mb-4">API Usage (Last 24h)</h3>
+                <canvas id="apiUsageChart" width="400" height="200"></canvas>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h3 class="text-xl font-bold mb-4">User Activity</h3>
+                <canvas id="userActivityChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Edit Modal -->
+    <div id="userModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold">Edit User</h3>
+                <button id="closeModal" class="text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="userEditForm" class="space-y-4">
+                <input type="hidden" id="editUserId">
+                
+                <div>
+                    <label for="editRole" class="block text-sm font-medium mb-2">Role</label>
+                    <select id="editRole" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white">
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="editApiQuota" class="block text-sm font-medium mb-2">Daily API Quota</label>
+                    <input type="number" id="editApiQuota" min="0" max="10000"
+                           class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md text-white">
+                </div>
+
+                <div class="flex items-center">
+                    <input type="checkbox" id="editIsActive" class="mr-2">
+                    <label for="editIsActive" class="text-sm">Account Active</label>
+                </div>
+
+                <div class="flex space-x-4">
+                    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 py-2 rounded">
+                        Save Changes
+                    </button>
+                    <button type="button" id="cancelEdit" class="flex-1 bg-gray-600 hover:bg-gray-700 py-2 rounded">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let authToken = localStorage.getItem('authToken');
+        let userData = JSON.parse(localStorage.getItem('userData') || '{}');
+
+        if (!authToken || userData.role !== 'admin') {
+            window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
+        }
+
+        document.getElementById('userInfo').textContent = `Admin: ${userData.username || 'User'}`;
+
+        let usersData = [];
+        let apiUsageChart, userActivityChart;
+
+        // Initialize
+        loadSystemConfig();
+        loadUsers();
+        initializeCharts();
+
+        async function loadSystemConfig() {
+            try {
+                const response = await fetch('/api/admin/config', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const config = await response.json();
+                    updateSystemStatus(config);
+                }
+            } catch (error) {
+                console.error('Failed to load system config:', error);
+            }
+        }
+
+        function updateSystemStatus(config) {
+            document.getElementById('totalUsers').textContent = config.userStats.total_users;
+            document.getElementById('activeUsers').textContent = `${config.userStats.active_users} active`;
+            document.getElementById('totalPrompts').textContent = config.promptStats.total_prompts;
+            document.getElementById('prompts24h').textContent = `${config.promptStats.prompts_24h} today`;
+            document.getElementById('totalDocuments').textContent = config.ragStats.total_documents;
+            document.getElementById('activeDocuments').textContent = `${config.ragStats.active_documents} active`;
+            document.getElementById('uptime').textContent = formatUptime(config.uptime);
+            document.getElementById('activeConnections').textContent = `${config.activeConnections} connections`;
+
+            // Update status indicators
+            document.getElementById('apiStatus').className = config.apiKeyConfigured ? 'text-green-400' : 'text-red-400';
+            document.getElementById('emailStatus').className = config.smtpConfigured ? 'text-green-400' : 'text-gray-400';
+        }
+
+        function formatUptime(seconds) {
+            const days = Math.floor(seconds / 86400);
+            const hours = Math.floor((seconds % 86400) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            
+            if (days > 0) return `${days}d ${hours}h`;
+            if (hours > 0) return `${hours}h ${minutes}m`;
+            return `${minutes}m`;
+        }
+
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/admin/users?limit=50', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    usersData = data.users;
+                    displayUsers(usersData);
+                }
+            } catch (error) {
+                console.error('Failed to load users:', error);
+            }
+        }
+
+        function displayUsers(users) {
+            const container = document.getElementById('usersList');
+            
+            if (users.length === 0) {
+                container.innerHTML = '<div class="text-center py-4 text-gray-400">No users found</div>';
+                return;
+            }
+
+            container.innerHTML = users.map(user => `
+                <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-sm">
+                                ${user.username.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <p class="font-medium">${user.username}</p>
+                                <p class="text-sm text-gray-400">${user.email}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="px-2 py-1 rounded text-xs ${user.role === 'admin' ? 'bg-purple-600' : 'bg-gray-600'}">
+                            ${user.role}
+                        </span>
+                        <span class="px-2 py-1 rounded text-xs ${user.is_active ? 'bg-green-600' : 'bg-red-600'}">
+                            ${user.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                        <button onclick="editUser(${user.id})" class="bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-xs">
+                            Edit
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // User search
+        document.getElementById('userSearch').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const filtered = usersData.filter(user => 
+                user.username.toLowerCase().includes(query) ||
+                user.email.toLowerCase().includes(query) ||
+                user.full_name?.toLowerCase().includes(query)
+            );
+            displayUsers(filtered);
+        });
+
+        // Edit user modal
+        function editUser(userId) {
+            const user = usersData.find(u => u.id === userId);
+            if (!user) return;
+
+            document.getElementById('editUserId').value = user.id;
+            document.getElementById('editRole').value = user.role;
+            document.getElementById('editApiQuota').value = user.api_quota_daily;
+            document.getElementById('editIsActive').checked = user.is_active;
+            
+            document.getElementById('userModal').classList.remove('hidden');
+            document.getElementById('userModal').classList.add('flex');
+        }
+
+        function closeModal() {
+            document.getElementById('userModal').classList.add('hidden');
+            document.getElementById('userModal').classList.remove('flex');
+        }
+
+        document.getElementById('closeModal').addEventListener('click', closeModal);
+        document.getElementById('cancelEdit').addEventListener('click', closeModal);
+
+        // User edit form
+        document.getElementById('userEditForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const userId = document.getElementById('editUserId').value;
+            const role = document.getElementById('editRole').value;
+            const apiQuotaDaily = parseInt(document.getElementById('editApiQuota').value);
+            const isActive = document.getElementById('editIsActive').checked;
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ role, apiQuotaDaily, isActive })
+                });
+
+                if (response.ok) {
+                    closeModal();
+                    loadUsers();
+                    if (window.notificationManager) {
+                        window.notificationManager.addNotification('User Updated', 'User settings updated successfully', 'success');
+                    }
+                } else {
+                    const data = await response.json();
+                    alert('Failed to update user: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                alert('Failed to update user: ' + error.message);
+            }
+        });
+
+        // API Testing
+        document.getElementById('testApi').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/api/admin/test-api', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    if (window.notificationManager) {
+                        window.notificationManager.addNotification('API Test', 'DeepSeek API connection successful', 'success');
+                    }
+                } else {
+                    if (window.notificationManager) {
+                        window.notificationManager.addNotification('API Test', 'DeepSeek API test failed: ' + data.error, 'error');
+                    }
+                }
+            } catch (error) {
+                if (window.notificationManager) {
+                    window.notificationManager.addNotification('API Test', 'Network error during API test', 'error');
+                }
+            }
+        });
+
+        // Broadcast form
+        document.getElementById('broadcastForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const title = document.getElementById('broadcastTitle').value;
+            const message = document.getElementById('broadcastMessage').value;
+            const type = document.getElementById('broadcastType').value;
+            const userRole = document.getElementById('userRole').value || null;
+            const expiresIn = parseInt(document.getElementById('expiresIn').value) || null;
+
+            try {
+                const response = await fetch('/api/admin/notifications/broadcast', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ title, message, type, userRole, expiresIn })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('broadcastForm').reset();
+                    if (window.notificationManager) {
+                        window.notificationManager.addNotification('Broadcast Sent', data.message, 'success');
+                    }
+                } else {
+                    const data = await response.json();
+                    if (window.notificationManager) {
+                        window.notificationManager.addNotification('Broadcast Failed', data.error || 'Unknown error', 'error');
+                    }
+                }
+            } catch (error) {
+                if (window.notificationManager) {
+                    window.notificationManager.addNotification('Broadcast Failed', 'Network error', 'error');
+                }
+            }
+        });
+
+        // Initialize charts
+        function initializeCharts() {
+            const chartOptions = {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: { color: '#9CA3AF' }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#9CA3AF' },
+                        grid: { color: '#374151' }
+                    },
+                    y: {
+                        ticks: { color: '#9CA3AF' },
+                        grid: { color: '#374151' }
+                    }
+                }
+            };
+
+            // API Usage Chart
+            const apiCtx = document.getElementById('apiUsageChart').getContext('2d');
+            apiUsageChart = new Chart(apiCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'API Requests',
+                        data: [],
+                        borderColor: '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.1
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // User Activity Chart
+            const userCtx = document.getElementById('userActivityChart').getContext('2d');
+            userActivityChart = new Chart(userCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Active Users', 'Inactive Users'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: ['#10B981', '#6B7280'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            labels: { color: '#9CA3AF' }
+                        }
+                    }
+                }
+            });
+
+            loadChartData();
+        }
+
+        async function loadChartData() {
+            try {
+                const response = await fetch('/api/admin/analytics/usage?timeRange=24h', {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    updateCharts(data);
+                }
+            } catch (error) {
+                console.error('Failed to load chart data:', error);
+            }
+        }
+
+        function updateCharts(data) {
+            // Update API usage chart
+            const hourlyData = data.apiUsage.reduce((acc, item) => {
+                const hour = new Date(item.hour).getHours();
+                acc[hour] = (acc[hour] || 0) + parseInt(item.request_count);
+                return acc;
+            }, {});
+
+            const hours = Array.from({length: 24}, (_, i) => `${i}:00`);
+            const requestCounts = hours.map((_, i) => hourlyData[i] || 0);
+
+            apiUsageChart.data.labels = hours;
+            apiUsageChart.data.datasets[0].data = requestCounts;
+            apiUsageChart.update();
+
+            // Update user activity chart (using system config data)
+            const config = document.getElementById('totalUsers').textContent;
+            const active = parseInt(document.getElementById('activeUsers').textContent.split(' ')[0]);
+            const total = parseInt(config);
+            
+            userActivityChart.data.datasets[0].data = [active, total - active];
+            userActivityChart.update();
+        }
+
+        // Refresh functionality
+        document.getElementById('refreshUsers').addEventListener('click', loadUsers);
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            try {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ sessionToken: localStorage.getItem('sessionToken') })
+                });
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+            
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('sessionToken');
+            localStorage.removeItem('userData');
+            window.location.href = '/login.html';
+        });
+
+        // Auto-refresh data every 30 seconds
+        setInterval(() => {
+            loadSystemConfig();
+            loadChartData();
+        }, 30000);
+    </script>
+</body>
+</html>
             </button>
 
             <button class="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 rounded-lg p-6 text-left transition-all">

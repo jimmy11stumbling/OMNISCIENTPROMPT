@@ -77,6 +77,46 @@ app.use('/api/', rateLimit(60000, 100)); // 100 requests per minute
 app.use('/api/generate-prompt', rateLimit(300000, 10)); // 10 prompts per 5 minutes
 app.use('/api/chat', rateLimit(60000, 20)); // 20 chat messages per minute
 
+// API usage logging middleware
+const logApiUsage = async (req, res, next) => {
+  const startTime = Date.now();
+  
+  res.on('finish', async () => {
+    try {
+      const responseTime = Date.now() - startTime;
+      const userId = req.user ? req.user.id : null;
+      
+      await pool.query(`
+        INSERT INTO api_usage_logs (user_id, endpoint, method, ip_address, user_agent, response_status, response_time, error_message)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      `, [
+        userId,
+        req.originalUrl,
+        req.method,
+        req.ip,
+        req.get('User-Agent'),
+        res.statusCode,
+        responseTime,
+        res.statusCode >= 400 ? `HTTP ${res.statusCode}` : null
+      ]);
+
+      // Update user API quota if authenticated
+      if (userId && req.originalUrl.includes('/api/generate-prompt') || req.originalUrl.includes('/api/chat')) {
+        await pool.query(
+          'UPDATE users SET api_quota_used_today = api_quota_used_today + 1 WHERE id = $1',
+          [userId]
+        );
+      }
+    } catch (error) {
+      console.error('API usage logging error:', error);
+    }
+  });
+  
+  next();
+};
+
+app.use('/api/', logApiUsage);
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -1803,17 +1843,319 @@ app.get('/api/analytics/export', async (req, res) => {
   }
 });
 
+// User management endpoints
+app.get('/api/admin/users', authenticateToken, requireAdmin, async (req, res) => {
+  const { page = 1, limit = 20, search, role, isActive } = req.query;
+  const offset = (page - 1) * limit;
+
+  try {
+    let query = `
+      SELECT u.id, u.username, u.email, u.full_name, u.role, u.is_active, u.email_verified,
+             u.last_login, u.api_quota_daily, u.api_quota_used_today, u.created_at,
+             COUNT(sp.id) as prompt_count,
+             COALESCE(SUM(sp.tokens_used), 0) as total_tokens_used
+      FROM users u
+      LEFT JOIN saved_prompts sp ON u.id = sp.created_by
+      WHERE 1=1
+    `;
+    const params = [];
+    let paramIndex = 1;
+
+    if (search) {
+      query += ` AND (u.username ILIKE $${paramIndex} OR u.email ILIKE $${paramIndex} OR u.full_name ILIKE $${paramIndex})`;
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+
+    if (role) {
+      query += ` AND u.role = $${paramIndex}`;
+      params.push(role);
+      paramIndex++;
+    }
+
+    if (isActive !== undefined) {
+      query += ` AND u.is_active = $${paramIndex}`;
+      params.push(isActive === 'true');
+      paramIndex++;
+    }
+
+    query += ` GROUP BY u.id ORDER BY u.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    params.push(limit, offset);
+
+    const result = await pool.query(query, params);
+
+    // Get total count
+    let countQuery = 'SELECT COUNT(*) FROM users WHERE 1=1';
+    const countParams = [];
+    let countParamIndex = 1;
+
+    if (search) {
+      countQuery += ` AND (username ILIKE $${countParamIndex} OR email ILIKE $${countParamIndex} OR full_name ILIKE $${countParamIndex})`;
+      countParams.push(`%${search}%`);
+      countParamIndex++;
+    }
+
+    if (role) {
+      countQuery += ` AND role = $${countParamIndex}`;
+      countParams.push(role);
+      countParamIndex++;
+    }
+
+    if (isActive !== undefined) {
+      countQuery += ` AND is_active = $${countParamIndex}`;
+      countParams.push(isActive === 'true');
+    }
+
+    const countResult = await pool.query(countQuery, countParams);
+
+    res.json({
+      users: result.rows,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: parseInt(countResult.rows[0].count),
+        pages: Math.ceil(countResult.rows[0].count / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+app.patch('/api/admin/users/:id', authenticateToken, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { role, isActive, apiQuotaDaily } = req.body;
+
+  try {
+    const updates = [];
+    const params = [id];
+    let paramIndex = 2;
+
+    if (role !== undefined) {
+      updates.push(`role = $${paramIndex}`);
+      params.push(role);
+      paramIndex++;
+    }
+
+    if (isActive !== undefined) {
+      updates.push(`is_active = $${paramIndex}`);
+      params.push(isActive);
+      paramIndex++;
+    }
+
+    if (apiQuotaDaily !== undefined) {
+      updates.push(`api_quota_daily = $${paramIndex}`);
+      params.push(apiQuotaDaily);
+      paramIndex++;
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No valid updates provided' });
+    }
+
+    updates.push(`updated_at = CURRENT_TIMESTAMP`);
+
+    const result = await pool.query(
+      `UPDATE users SET ${updates.join(', ')} WHERE id = $1 RETURNING username, email, role, is_active, api_quota_daily`,
+      params
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Create admin notification
+    await pool.query(`
+      INSERT INTO notifications (user_id, title, message, type)
+      VALUES ($1, $2, $3, $4)
+    `, [
+      id,
+      'Account Updated',
+      `Your account settings have been updated by an administrator`,
+      'info'
+    ]);
+
+    res.json({
+      message: 'User updated successfully',
+      user: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
+app.get('/api/admin/analytics/usage', authenticateToken, requireAdmin, async (req, res) => {
+  const { timeRange = '7d' } = req.query;
+
+  try {
+    let timeCondition = '';
+    switch (timeRange) {
+      case '24h':
+        timeCondition = "created_at >= NOW() - INTERVAL '24 hours'";
+        break;
+      case '7d':
+        timeCondition = "created_at >= NOW() - INTERVAL '7 days'";
+        break;
+      case '30d':
+        timeCondition = "created_at >= NOW() - INTERVAL '30 days'";
+        break;
+      default:
+        timeCondition = "created_at >= NOW() - INTERVAL '7 days'";
+    }
+
+    // API usage statistics
+    const apiUsage = await pool.query(`
+      SELECT 
+        DATE_TRUNC('hour', created_at) as hour,
+        endpoint,
+        COUNT(*) as request_count,
+        AVG(response_time) as avg_response_time,
+        COUNT(CASE WHEN response_status >= 400 THEN 1 END) as error_count
+      FROM api_usage_logs 
+      WHERE ${timeCondition}
+      GROUP BY DATE_TRUNC('hour', created_at), endpoint
+      ORDER BY hour DESC
+    `);
+
+    // Top users by API usage
+    const topUsers = await pool.query(`
+      SELECT 
+        u.username,
+        u.email,
+        COUNT(aul.id) as request_count,
+        AVG(aul.response_time) as avg_response_time
+      FROM api_usage_logs aul
+      JOIN users u ON aul.user_id = u.id
+      WHERE aul.${timeCondition}
+      GROUP BY u.id, u.username, u.email
+      ORDER BY request_count DESC
+      LIMIT 10
+    `);
+
+    // Error analysis
+    const errorAnalysis = await pool.query(`
+      SELECT 
+        response_status,
+        endpoint,
+        COUNT(*) as error_count,
+        error_message
+      FROM api_usage_logs 
+      WHERE ${timeCondition} AND response_status >= 400
+      GROUP BY response_status, endpoint, error_message
+      ORDER BY error_count DESC
+      LIMIT 20
+    `);
+
+    res.json({
+      timeRange,
+      apiUsage: apiUsage.rows,
+      topUsers: topUsers.rows,
+      errorAnalysis: errorAnalysis.rows,
+      generatedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Usage analytics error:', error);
+    res.status(500).json({ error: 'Failed to fetch usage analytics' });
+  }
+});
+
+app.post('/api/admin/notifications/broadcast', authenticateToken, requireAdmin, async (req, res) => {
+  const { title, message, type = 'info', userRole, expiresIn } = req.body;
+
+  if (!title || !message) {
+    return res.status(400).json({ error: 'Title and message are required' });
+  }
+
+  try {
+    let userQuery = 'SELECT id FROM users WHERE is_active = true';
+    const params = [];
+
+    if (userRole) {
+      userQuery += ' AND role = $1';
+      params.push(userRole);
+    }
+
+    const users = await pool.query(userQuery, params);
+
+    const expiresAt = expiresIn ? new Date(Date.now() + expiresIn * 60 * 1000) : null;
+
+    // Create notifications for all matching users
+    const insertPromises = users.rows.map(user =>
+      pool.query(`
+        INSERT INTO notifications (user_id, title, message, type, expires_at)
+        VALUES ($1, $2, $3, $4, $5)
+      `, [user.id, title, message, type, expiresAt])
+    );
+
+    await Promise.all(insertPromises);
+
+    // Broadcast to connected clients
+    activeConnections.forEach(ws => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'admin_broadcast',
+          data: { title, message, type }
+        }));
+      }
+    });
+
+    res.json({
+      message: `Broadcast sent to ${users.rows.length} users`,
+      recipientCount: users.rows.length
+    });
+  } catch (error) {
+    console.error('Broadcast notification error:', error);
+    res.status(500).json({ error: 'Failed to send broadcast notification' });
+  }
+});
+
 // Admin configuration endpoints
-app.get('/api/admin/config', (req, res) => {
-  res.json({
-    apiKeyConfigured: !!process.env.DEEPSEEK_API_KEY,
-    databaseConnected: true,
-    ragDocumentCount: ragDB.getAllDocuments ? ragDB.getAllDocuments().length : 0,
-    activeConnections: activeConnections.size,
-    uptime: process.uptime(),
-    memoryUsage: process.memoryUsage(),
-    systemMetrics: validator.metrics
-  });
+app.get('/api/admin/config', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    // Get system statistics
+    const userStats = await pool.query(`
+      SELECT 
+        COUNT(*) as total_users,
+        COUNT(CASE WHEN is_active = true THEN 1 END) as active_users,
+        COUNT(CASE WHEN role = 'admin' THEN 1 END) as admin_users,
+        COUNT(CASE WHEN created_at >= NOW() - INTERVAL '24 hours' THEN 1 END) as new_users_24h
+      FROM users
+    `);
+
+    const promptStats = await pool.query(`
+      SELECT 
+        COUNT(*) as total_prompts,
+        COUNT(CASE WHEN created_at >= NOW() - INTERVAL '24 hours' THEN 1 END) as prompts_24h,
+        COALESCE(SUM(tokens_used), 0) as total_tokens_used
+      FROM saved_prompts
+    `);
+
+    const ragStats = await pool.query(`
+      SELECT 
+        COUNT(*) as total_documents,
+        COUNT(CASE WHEN is_active = true THEN 1 END) as active_documents,
+        COUNT(CASE WHEN created_at >= NOW() - INTERVAL '24 hours' THEN 1 END) as uploaded_24h
+      FROM rag_documents
+    `);
+
+    res.json({
+      apiKeyConfigured: !!process.env.DEEPSEEK_API_KEY,
+      smtpConfigured: !!(process.env.SMTP_USER && process.env.SMTP_PASS),
+      databaseConnected: true,
+      activeConnections: activeConnections.size,
+      uptime: process.uptime(),
+      memoryUsage: process.memoryUsage(),
+      systemMetrics: validator.metrics,
+      userStats: userStats.rows[0],
+      promptStats: promptStats.rows[0],
+      ragStats: ragStats.rows[0]
+    });
+  } catch (error) {
+    console.error('Admin config error:', error);
+    res.status(500).json({ error: 'Failed to fetch admin configuration' });
+  }
 });
 
 app.post('/api/admin/test-api', async (req, res) => {
