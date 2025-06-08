@@ -3,11 +3,18 @@ const path = require('path');
 const { WebSocketServer, WebSocket } = require('ws');
 const http = require('http');
 const { Pool } = require('pg');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const { v4: uuidv4 } = require('uuid');
+const nodemailer = require('nodemailer');
 const RAGDatabase = require('./rag-database');
 
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
+const JWT_SECRET = process.env.JWT_SECRET || 'deepseek-ai-secret-key-change-in-production';
+const BCRYPT_ROUNDS = 12;
 
 // PostgreSQL connection with error handling
 const pool = new Pool({ 
@@ -31,6 +38,132 @@ app.use((err, req, res, next) => {
   }
   next();
 });
+
+// Rate limiting middleware
+const rateLimitStore = new Map();
+const rateLimit = (windowMs = 60000, maxRequests = 100) => {
+  return (req, res, next) => {
+    const clientId = req.ip || req.connection.remoteAddress;
+    const now = Date.now();
+    const windowStart = now - windowMs;
+    
+    if (!rateLimitStore.has(clientId)) {
+      rateLimitStore.set(clientId, []);
+    }
+    
+    const requests = rateLimitStore.get(clientId);
+    const validRequests = requests.filter(timestamp => timestamp > windowStart);
+    
+    if (validRequests.length >= maxRequests) {
+      return res.status(429).json({
+        error: 'Rate limit exceeded',
+        retryAfter: Math.ceil((validRequests[0] + windowMs - now) / 1000)
+      });
+    }
+    
+    validRequests.push(now);
+    rateLimitStore.set(clientId, validRequests);
+    
+    res.setHeader('X-RateLimit-Limit', maxRequests);
+    res.setHeader('X-RateLimit-Remaining', maxRequests - validRequests.length);
+    res.setHeader('X-RateLimit-Reset', Math.ceil((now + windowMs) / 1000));
+    
+    next();
+  };
+};
+
+// Apply rate limiting to API routes
+app.use('/api/', rateLimit(60000, 100)); // 100 requests per minute
+app.use('/api/generate-prompt', rateLimit(300000, 10)); // 10 prompts per 5 minutes
+app.use('/api/chat', rateLimit(60000, 20)); // 20 chat messages per minute
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${uuidv4()}-${file.originalname}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['text/plain', 'application/pdf', 'text/markdown', 'application/json'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only .txt, .pdf, .md, .json allowed'));
+    }
+  }
+});
+
+// Email configuration
+const emailTransporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: process.env.SMTP_PORT || 587,
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
+  }
+});
+
+// Authentication middleware
+const authenticateToken = async (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const userResult = await pool.query('SELECT * FROM users WHERE id = $1 AND is_active = true', [decoded.userId]);
+    
+    if (userResult.rows.length === 0) {
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+
+    req.user = userResult.rows[0];
+    next();
+  } catch (error) {
+    return res.status(403).json({ error: 'Invalid token' });
+  }
+};
+
+// Admin middleware
+const requireAdmin = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  next();
+};
+
+// API quota middleware
+const checkApiQuota = async (req, res, next) => {
+  if (!req.user) return next();
+
+  const today = new Date().toISOString().split('T')[0];
+  
+  if (req.user.api_quota_reset_date !== today) {
+    await pool.query(
+      'UPDATE users SET api_quota_used_today = 0, api_quota_reset_date = $1 WHERE id = $2',
+      [today, req.user.id]
+    );
+    req.user.api_quota_used_today = 0;
+  }
+
+  if (req.user.api_quota_used_today >= req.user.api_quota_daily) {
+    return res.status(429).json({ error: 'Daily API quota exceeded' });
+  }
+
+  next();
+};
+
 app.use(express.static('public'));
 
 // Initialize RAG database with real-time validation
@@ -142,6 +275,602 @@ const heartbeat = setInterval(() => {
 // Root route serves the HTML page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Authentication endpoints
+app.post('/api/auth/register', async (req, res) => {
+  const { username, email, password, fullName } = req.body;
+  
+  if (!username || !email || !password) {
+    return res.status(400).json({ error: 'Username, email, and password are required' });
+  }
+
+  try {
+    // Check if user exists
+    const existingUser = await pool.query(
+      'SELECT id FROM users WHERE username = $1 OR email = $2',
+      [username, email]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(409).json({ error: 'Username or email already exists' });
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+    const verificationToken = uuidv4();
+    const apiKey = `dsk_${uuidv4().replace(/-/g, '')}`;
+
+    // Create user
+    const result = await pool.query(`
+      INSERT INTO users (username, email, password_hash, full_name, verification_token, api_key)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id, username, email, full_name, role, is_active, email_verified, created_at
+    `, [username, email, passwordHash, fullName, verificationToken, apiKey]);
+
+    const user = result.rows[0];
+
+    // Send verification email if configured
+    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+      try {
+        await emailTransporter.sendMail({
+          from: process.env.SMTP_USER,
+          to: email,
+          subject: 'Verify your DeepSeek AI account',
+          html: `
+            <h2>Welcome to DeepSeek AI Platform!</h2>
+            <p>Please verify your email address by clicking the link below:</p>
+            <a href="${req.protocol}://${req.get('host')}/api/auth/verify?token=${verificationToken}">Verify Email</a>
+            <p>Your API key: <code>${apiKey}</code></p>
+          `
+        });
+      } catch (emailError) {
+        console.error('Email sending failed:', emailError);
+      }
+    }
+
+    // Create notification
+    await pool.query(`
+      INSERT INTO notifications (user_id, title, message, type)
+      VALUES ($1, $2, $3, $4)
+    `, [user.id, 'Welcome!', 'Welcome to DeepSeek AI Platform. Your account has been created successfully.', 'success']);
+
+    res.status(201).json({
+      message: 'User registered successfully',
+      user: { ...user, apiKey },
+      requiresVerification: !!(process.env.SMTP_USER && process.env.SMTP_PASS)
+    });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ error: 'Registration failed' });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  const { username, password } = req.body;
+  
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password are required' });
+  }
+
+  try {
+    // Get user
+    const userResult = await pool.query(
+      'SELECT * FROM users WHERE (username = $1 OR email = $1) AND is_active = true',
+      [username]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const user = userResult.rows[0];
+
+    // Check if account is locked
+    if (user.locked_until && new Date() < user.locked_until) {
+      return res.status(423).json({ 
+        error: 'Account temporarily locked due to failed login attempts',
+        lockUntil: user.locked_until
+      });
+    }
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+
+    if (!isValidPassword) {
+      // Increment failed attempts
+      const newFailedAttempts = user.failed_login_attempts + 1;
+      let lockUntil = null;
+
+      if (newFailedAttempts >= 5) {
+        lockUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+      }
+
+      await pool.query(
+        'UPDATE users SET failed_login_attempts = $1, locked_until = $2 WHERE id = $3',
+        [newFailedAttempts, lockUntil, user.id]
+      );
+
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Reset failed attempts and update last login
+    await pool.query(
+      'UPDATE users SET failed_login_attempts = 0, locked_until = NULL, last_login = CURRENT_TIMESTAMP WHERE id = $1',
+      [user.id]
+    );
+
+    // Generate JWT token
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '24h' });
+
+    // Create session
+    const sessionToken = uuidv4();
+    await pool.query(`
+      INSERT INTO user_sessions (user_id, session_token, expires_at, ip_address, user_agent)
+      VALUES ($1, $2, $3, $4, $5)
+    `, [
+      user.id,
+      sessionToken,
+      new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+      req.ip,
+      req.get('User-Agent')
+    ]);
+
+    res.json({
+      message: 'Login successful',
+      token,
+      sessionToken,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        fullName: user.full_name,
+        role: user.role,
+        emailVerified: user.email_verified,
+        apiKey: user.api_key,
+        apiQuotaDaily: user.api_quota_daily,
+        apiQuotaUsed: user.api_quota_used_today
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+app.get('/api/auth/verify', async (req, res) => {
+  const { token } = req.query;
+
+  if (!token) {
+    return res.status(400).json({ error: 'Verification token required' });
+  }
+
+  try {
+    const result = await pool.query(
+      'UPDATE users SET email_verified = true, verification_token = NULL WHERE verification_token = $1 RETURNING id, email',
+      [token]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({ error: 'Invalid or expired verification token' });
+    }
+
+    res.json({ message: 'Email verified successfully' });
+  } catch (error) {
+    console.error('Verification error:', error);
+    res.status(500).json({ error: 'Verification failed' });
+  }
+});
+
+app.post('/api/auth/logout', authenticateToken, async (req, res) => {
+  const { sessionToken } = req.body;
+
+  try {
+    if (sessionToken) {
+      await pool.query(
+        'UPDATE user_sessions SET is_active = false WHERE session_token = $1 AND user_id = $2',
+        [sessionToken, req.user.id]
+      );
+    }
+
+    res.json({ message: 'Logout successful' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ error: 'Logout failed' });
+  }
+});
+
+app.get('/api/auth/me', authenticateToken, async (req, res) => {
+  res.json({
+    user: {
+      id: req.user.id,
+      username: req.user.username,
+      email: req.user.email,
+      fullName: req.user.full_name,
+      role: req.user.role,
+      emailVerified: req.user.email_verified,
+      apiKey: req.user.api_key,
+      apiQuotaDaily: req.user.api_quota_daily,
+      apiQuotaUsed: req.user.api_quota_used_today,
+      lastLogin: req.user.last_login,
+      createdAt: req.user.created_at
+    }
+  });
+});
+
+// Document upload for RAG database
+app.post('/api/rag/upload', authenticateToken, upload.single('document'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No document uploaded' });
+  }
+
+  const { title, platform, documentType, keywords } = req.body;
+  
+  try {
+    // Read file content
+    const fs = require('fs').promises;
+    let content = '';
+    
+    if (req.file.mimetype === 'application/json') {
+      const jsonData = JSON.parse(await fs.readFile(req.file.path, 'utf8'));
+      content = JSON.stringify(jsonData, null, 2);
+    } else {
+      content = await fs.readFile(req.file.path, 'utf8');
+    }
+
+    // Insert into database
+    const result = await pool.query(`
+      INSERT INTO rag_documents (title, content, platform, document_type, keywords, file_path, file_size, mime_type, uploaded_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING *
+    `, [
+      title || req.file.originalname,
+      content,
+      platform,
+      documentType || 'document',
+      keywords ? keywords.split(',').map(k => k.trim()) : [],
+      req.file.path,
+      req.file.size,
+      req.file.mimetype,
+      req.user.id
+    ]);
+
+    const document = result.rows[0];
+
+    // Add to RAG database
+    ragDB.addDocument(platform, {
+      id: `rag_${document.id}`,
+      title: document.title,
+      content: document.content,
+      type: document.document_type,
+      keywords: document.keywords,
+      lastUpdated: document.created_at,
+      platform: document.platform,
+      relevanceScore: 5
+    });
+
+    // Create notification for successful upload
+    await pool.query(`
+      INSERT INTO notifications (user_id, title, message, type, metadata)
+      VALUES ($1, $2, $3, $4, $5)
+    `, [
+      req.user.id,
+      'Document Uploaded',
+      `Successfully uploaded "${document.title}" to ${platform} RAG database`,
+      'success',
+      JSON.stringify({ documentId: document.id, platform, fileSize: req.file.size })
+    ]);
+
+    // Broadcast to connected clients
+    activeConnections.forEach(ws => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'document_uploaded',
+          data: {
+            documentId: document.id,
+            title: document.title,
+            platform: document.platform,
+            uploadedBy: req.user.username
+          }
+        }));
+      }
+    });
+
+    res.json({
+      message: 'Document uploaded successfully',
+      document: {
+        id: document.id,
+        title: document.title,
+        platform: document.platform,
+        documentType: document.document_type,
+        fileSize: document.file_size,
+        createdAt: document.created_at
+      }
+    });
+  } catch (error) {
+    console.error('Document upload error:', error);
+    
+    // Create error notification
+    await pool.query(`
+      INSERT INTO notifications (user_id, title, message, type)
+      VALUES ($1, $2, $3, $4)
+    `, [
+      req.user.id,
+      'Upload Failed',
+      `Failed to upload document: ${error.message}`,
+      'error'
+    ]);
+
+    res.status(500).json({ error: 'Document upload failed' });
+  }
+});
+
+// Get uploaded documents
+app.get('/api/rag/documents', authenticateToken, async (req, res) => {
+  const { platform, page = 1, limit = 20 } = req.query;
+  const offset = (page - 1) * limit;
+
+  try {
+    let query = `
+      SELECT d.*, u.username as uploaded_by_username
+      FROM rag_documents d
+      LEFT JOIN users u ON d.uploaded_by = u.id
+      WHERE d.is_active = true
+    `;
+    const params = [];
+
+    if (platform) {
+      query += ` AND d.platform = $${params.length + 1}`;
+      params.push(platform);
+    }
+
+    query += ` ORDER BY d.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(limit, offset);
+
+    const result = await pool.query(query, params);
+
+    // Get total count
+    let countQuery = 'SELECT COUNT(*) FROM rag_documents WHERE is_active = true';
+    const countParams = [];
+
+    if (platform) {
+      countQuery += ` AND platform = $1`;
+      countParams.push(platform);
+    }
+
+    const countResult = await pool.query(countQuery, countParams);
+    const totalCount = parseInt(countResult.rows[0].count);
+
+    res.json({
+      documents: result.rows,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: totalCount,
+        pages: Math.ceil(totalCount / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get documents error:', error);
+    res.status(500).json({ error: 'Failed to fetch documents' });
+  }
+});
+
+// Delete document
+app.delete('/api/rag/documents/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      'UPDATE rag_documents SET is_active = false WHERE id = $1 AND (uploaded_by = $2 OR $3 = \'admin\') RETURNING title, platform',
+      [id, req.user.id, req.user.role]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Document not found or access denied' });
+    }
+
+    const document = result.rows[0];
+
+    // Remove from RAG database
+    ragDB.removeDocument(`rag_${id}`);
+
+    // Create notification
+    await pool.query(`
+      INSERT INTO notifications (user_id, title, message, type)
+      VALUES ($1, $2, $3, $4)
+    `, [
+      req.user.id,
+      'Document Deleted',
+      `Document "${document.title}" removed from ${document.platform} RAG database`,
+      'info'
+    ]);
+
+    res.json({ message: 'Document deleted successfully' });
+  } catch (error) {
+    console.error('Delete document error:', error);
+    res.status(500).json({ error: 'Failed to delete document' });
+  }
+});
+
+// Notifications system
+app.get('/api/notifications', authenticateToken, async (req, res) => {
+  const { unreadOnly = false, limit = 50 } = req.query;
+
+  try {
+    let query = `
+      SELECT * FROM notifications 
+      WHERE user_id = $1 AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
+    `;
+    const params = [req.user.id];
+
+    if (unreadOnly === 'true') {
+      query += ' AND is_read = false';
+    }
+
+    query += ' ORDER BY created_at DESC LIMIT $2';
+    params.push(limit);
+
+    const result = await pool.query(query, params);
+
+    res.json({
+      notifications: result.rows,
+      unreadCount: result.rows.filter(n => !n.is_read).length
+    });
+  } catch (error) {
+    console.error('Get notifications error:', error);
+    res.status(500).json({ error: 'Failed to fetch notifications' });
+  }
+});
+
+// Mark notification as read
+app.patch('/api/notifications/:id/read', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      'UPDATE notifications SET is_read = true WHERE id = $1 AND user_id = $2 RETURNING id',
+      [id, req.user.id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Notification not found' });
+    }
+
+    res.json({ message: 'Notification marked as read' });
+  } catch (error) {
+    console.error('Mark notification read error:', error);
+    res.status(500).json({ error: 'Failed to mark notification as read' });
+  }
+});
+
+// Mark all notifications as read
+app.patch('/api/notifications/read-all', authenticateToken, async (req, res) => {
+  try {
+    await pool.query(
+      'UPDATE notifications SET is_read = true WHERE user_id = $1 AND is_read = false',
+      [req.user.id]
+    );
+
+    res.json({ message: 'All notifications marked as read' });
+  } catch (error) {
+    console.error('Mark all notifications read error:', error);
+    res.status(500).json({ error: 'Failed to mark all notifications as read' });
+  }
+});
+
+// Advanced search with filters
+app.post('/api/search/advanced', authenticateToken, async (req, res) => {
+  const { 
+    query, 
+    platforms = [], 
+    dateFrom, 
+    dateTo, 
+    minTokens, 
+    maxTokens,
+    responseTimeMin,
+    responseTimeMax,
+    sortBy = 'created_at',
+    sortOrder = 'desc',
+    limit = 20,
+    page = 1
+  } = req.body;
+
+  try {
+    let searchQuery = `
+      SELECT sp.*, u.username as created_by 
+      FROM saved_prompts sp
+      LEFT JOIN users u ON sp.created_by = u.id
+      WHERE 1=1
+    `;
+    const params = [];
+    let paramIndex = 1;
+
+    // Text search
+    if (query) {
+      searchQuery += ` AND (sp.title ILIKE $${paramIndex} OR sp.original_query ILIKE $${paramIndex} OR sp.generated_prompt ILIKE $${paramIndex})`;
+      params.push(`%${query}%`);
+      paramIndex++;
+    }
+
+    // Platform filter
+    if (platforms.length > 0) {
+      searchQuery += ` AND sp.platform = ANY($${paramIndex})`;
+      params.push(platforms);
+      paramIndex++;
+    }
+
+    // Date range
+    if (dateFrom) {
+      searchQuery += ` AND sp.created_at >= $${paramIndex}`;
+      params.push(dateFrom);
+      paramIndex++;
+    }
+
+    if (dateTo) {
+      searchQuery += ` AND sp.created_at <= $${paramIndex}`;
+      params.push(dateTo);
+      paramIndex++;
+    }
+
+    // Token range
+    if (minTokens) {
+      searchQuery += ` AND sp.tokens_used >= $${paramIndex}`;
+      params.push(minTokens);
+      paramIndex++;
+    }
+
+    if (maxTokens) {
+      searchQuery += ` AND sp.tokens_used <= $${paramIndex}`;
+      params.push(maxTokens);
+      paramIndex++;
+    }
+
+    // Response time range
+    if (responseTimeMin) {
+      searchQuery += ` AND sp.response_time >= $${paramIndex}`;
+      params.push(responseTimeMin);
+      paramIndex++;
+    }
+
+    if (responseTimeMax) {
+      searchQuery += ` AND sp.response_time <= $${paramIndex}`;
+      params.push(responseTimeMax);
+      paramIndex++;
+    }
+
+    // Sorting
+    const allowedSortFields = ['created_at', 'updated_at', 'tokens_used', 'response_time', 'title'];
+    const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'created_at';
+    const order = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+    
+    searchQuery += ` ORDER BY sp.${sortField} ${order}`;
+
+    // Pagination
+    const offset = (page - 1) * limit;
+    searchQuery += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    params.push(limit, offset);
+
+    const result = await pool.query(searchQuery, params);
+
+    // Get total count for pagination
+    let countQuery = searchQuery.replace(/SELECT.*?FROM/, 'SELECT COUNT(*) FROM').replace(/ORDER BY.*$/, '');
+    const countParams = params.slice(0, -2); // Remove limit and offset
+    const countResult = await pool.query(countQuery, countParams);
+
+    res.json({
+      results: result.rows,
+      pagination: {
+        page,
+        limit,
+        total: parseInt(countResult.rows[0].count),
+        pages: Math.ceil(countResult.rows[0].count / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Advanced search error:', error);
+    res.status(500).json({ error: 'Advanced search failed' });
+  }
 });
 
 // Health check endpoint with real-time validation
