@@ -63,6 +63,16 @@
                 </div>
 
                 <div class="sidebar-section mt-6">
+                    <h4 class="text-sm font-medium text-gray-400 mb-2">Advanced AI Protocols</h4>
+                    <a href="#rag-2-0" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">RAG 2.0 Systems</a>
+                    <a href="#mcp-protocol" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">Model Context Protocol</a>
+                    <a href="#a2a-communication" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">Agent-to-Agent (A2A)</a>
+                    <a href="#ag-ui-protocol" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">AG-UI Real-Time</a>
+                    <a href="#deepseek-reasoning" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">DeepSeek Reasoning</a>
+                    <a href="#multi-protocol-architecture" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">Multi-Protocol Architecture</a>
+                </div>
+
+                <div class="sidebar-section mt-6">
                     <h4 class="text-sm font-medium text-gray-400 mb-2">Advanced</h4>
                     <a href="#rag-customization" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">RAG Customization</a>
                     <a href="#multi-round-chat" class="sidebar-link block px-3 py-2 rounded text-sm hover:bg-gray-700">Multi-Round Chat</a>
@@ -387,6 +397,623 @@ const results = ragDB.searchDocuments('authentication', 'custom-platform', 10);<
                                 <li>• Monitor token usage and implement rate limiting</li>
                                 <li>• Optimize DeepSeek API parameters for your use case</li>
                             </ul>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- RAG 2.0 Systems Section -->
+                <section id="rag-2-0" class="mb-12">
+                    <h2 class="text-3xl font-bold mb-6">RAG 2.0 Advanced Retrieval Systems</h2>
+                    
+                    <div class="bg-green-900/20 border border-green-800 rounded-lg p-6 mb-8">
+                        <h3 class="text-lg font-semibold text-green-400 mb-2">What is RAG 2.0?</h3>
+                        <p class="text-gray-300">
+                            RAG 2.0 represents the evolution beyond naive RAG implementations, incorporating sophisticated multi-stage pipelines 
+                            with pre-retrieval optimization, hybrid search, re-ranking mechanisms, and advanced chunking strategies.
+                        </p>
+                    </div>
+
+                    <div class="space-y-8">
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h4 class="text-xl font-semibold mb-4">Key Techniques</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <h5 class="font-semibold text-blue-400 mb-2">HyDE (Hypothetical Document Embeddings)</h5>
+                                    <p class="text-gray-300 text-sm">Generate hypothetical documents that would answer the query, then use their embeddings for retrieval.</p>
+                                </div>
+                                <div>
+                                    <h5 class="font-semibold text-blue-400 mb-2">RAG-Fusion</h5>
+                                    <p class="text-gray-300 text-sm">Generate multiple query variants and fuse results for comprehensive retrieval.</p>
+                                </div>
+                                <div>
+                                    <h5 class="font-semibold text-blue-400 mb-2">Self-RAG</h5>
+                                    <p class="text-gray-300 text-sm">Implements self-reflection and critique during generation for enhanced accuracy.</p>
+                                </div>
+                                <div>
+                                    <h5 class="font-semibold text-blue-400 mb-2">Corrective RAG (CRAG)</h5>
+                                    <p class="text-gray-300 text-sm">Uses evaluator to assess retrieved document quality and decide on actions.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h4 class="text-xl font-semibold mb-4">Implementation Pipeline</h4>
+                            <div class="space-y-4">
+                                <div class="border-l-4 border-blue-500 pl-4">
+                                    <h5 class="font-semibold">1. Ingestion Phase</h5>
+                                    <p class="text-gray-300 text-sm">Content preprocessing, optimized chunking with overlapping strategies, metadata enrichment</p>
+                                </div>
+                                <div class="border-l-4 border-green-500 pl-4">
+                                    <h5 class="font-semibold">2. Retrieval Phase</h5>
+                                    <p class="text-gray-300 text-sm">Query transformation, hybrid search with BM25+vector, metadata filtering</p>
+                                </div>
+                                <div class="border-l-4 border-yellow-500 pl-4">
+                                    <h5 class="font-semibold">3. Post-Retrieval Processing</h5>
+                                    <p class="text-gray-300 text-sm">Re-ranking with cross-encoders, contextual compression, quality evaluation</p>
+                                </div>
+                                <div class="border-l-4 border-purple-500 pl-4">
+                                    <h5 class="font-semibold">4. Generation & Validation</h5>
+                                    <p class="text-gray-300 text-sm">Contextual fusion, Chain-of-Thought reasoning, fact checking, citation generation</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="code-block rounded p-4">
+                            <pre class="text-sm"><code>// Example RAG 2.0 search with advanced techniques
+curl -X POST /api/rag/search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "RAG 2.0 advanced retrieval techniques",
+    "platform": "advanced-ai",
+    "techniques": ["hyde", "rag-fusion", "self-rag"],
+    "rerank": true,
+    "compress": true
+  }'</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Model Context Protocol Section -->
+                <section id="mcp-protocol" class="mb-12">
+                    <h2 class="text-3xl font-bold mb-6">Model Context Protocol (MCP)</h2>
+                    
+                    <div class="bg-purple-900/20 border border-purple-800 rounded-lg p-6 mb-8">
+                        <h3 class="text-lg font-semibold text-purple-400 mb-2">Universal AI-External System Bridge</h3>
+                        <p class="text-gray-300">
+                            MCP is an open standard protocol for connecting AI models to external systems, tools, and data sources. 
+                            Often described as "USB-C for AI" - providing standardized connectivity across diverse environments.
+                        </p>
+                    </div>
+
+                    <div class="space-y-8">
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h4 class="text-xl font-semibold mb-4">Core Architecture</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="text-center">
+                                    <div class="bg-blue-600 rounded-lg p-4 mb-2">
+                                        <h5 class="font-semibold text-white">MCP Host</h5>
+                                    </div>
+                                    <p class="text-gray-300 text-sm">AI application managing the overall process</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="bg-green-600 rounded-lg p-4 mb-2">
+                                        <h5 class="font-semibold text-white">MCP Client</h5>
+                                    </div>
+                                    <p class="text-gray-300 text-sm">Connector library facilitating communication</p>
+                                </div>
+                                <div class="text-center">
+                                    <div class="bg-purple-600 rounded-lg p-4 mb-2">
+                                        <h5 class="font-semibold text-white">MCP Server</h5>
+                                    </div>
+                                    <p class="text-gray-300 text-sm">Gateway exposing external capabilities</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h4 class="text-xl font-semibold mb-4">Core Primitives</h4>
+                            <div class="space-y-4">
+                                <div class="bg-gray-700 rounded p-4">
+                                    <h5 class="font-semibold text-blue-400 mb-2">Tools</h5>
+                                    <p class="text-gray-300 text-sm">Executable functions with side effects (analogous to POST requests)</p>
+                                    <code class="text-xs text-green-400">tools/list, tools/call</code>
+                                </div>
+                                <div class="bg-gray-700 rounded p-4">
+                                    <h5 class="font-semibold text-green-400 mb-2">Resources</h5>
+                                    <p class="text-gray-300 text-sm">Contextual read-only data identified by URIs (analogous to GET requests)</p>
+                                    <code class="text-xs text-green-400">resources/read, resources/subscribe</code>
+                                </div>
+                                <div class="bg-gray-700 rounded p-4">
+                                    <h5 class="font-semibold text-yellow-400 mb-2">Prompts</h5>
+                                    <p class="text-gray-300 text-sm">Reusable templates and workflows for user/LLM interactions</p>
+                                    <code class="text-xs text-green-400">prompts/get, prompts/list</code>
+                                </div>
+                                <div class="bg-gray-700 rounded p-4">
+                                    <h5 class="font-semibold text-purple-400 mb-2">Sampling</h5>
+                                    <p class="text-gray-300 text-sm">Client capability allowing servers to request LLM text generation</p>
+                                    <code class="text-xs text-green-400">sampling/createMessage</code>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h4 class="text-xl font-semibold mb-4">Transport Mechanisms</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <h5 class="font-semibold text-blue-400 mb-2">stdio (Local)</h5>
+                                    <p class="text-gray-300 text-sm">Standard input/output for same-machine communication</p>
+                                </div>
+                                <div>
+                                    <h5 class="font-semibold text-green-400 mb-2">SSE (Remote)</h5>
+                                    <p class="text-gray-300 text-sm">Server-Sent Events over HTTPS with OAuth security</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Agent-to-Agent Communication Section -->
+                <section id="a2a-communication" class="mb-12">
+                    <h2 class="text-3xl font-bold mb-6">Agent-to-Agent (A2A) Communication</h2>
+                    
+                    <div class="bg-orange-900/20 border border-orange-800 rounded-lg p-6 mb-8">
+                        <h3 class="text-lg font-semibold text-orange-400 mb-2">Multi-Agent System Coordination</h3>
+                        <p class="text-gray-300">
+                            A2A protocols enable autonomous software agents to interact, coordinate, and collaborate in distributed AI systems 
+                            through standardized Agent Communication Languages (ACLs).
+                        </p>
+                    </div>
+
+                    <div class="space-y-8">
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h4 class="text-xl font-semibold mb-4">Foundational ACLs</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <h5 class="font-semibold text-blue-400 mb-3">KQML (Knowledge Query and Manipulation Language)</h5>
+                                    <ul class="text-gray-300 text-sm space-y-1">
+                                        <li>• DARPA Knowledge Sharing Effort origin</li>
+                                        <li>• Extensible performatives (ask-if, tell, achieve)</li>
+                                        <li>• LISP-like syntax with nested structures</li>
+                                        <li>• Communication facilitators for routing</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h5 class="font-semibold text-green-400 mb-3">FIPA ACL (IEEE Standard)</h5>
+                                    <ul class="text-gray-300 text-sm space-y-1">
+                                        <li>• Formal IEEE specification with semantics</li>
+                                        <li>• Structured message parameters</li>
+                                        <li>• Interaction protocols (request, contract-net)</li>
+                                        <li>• Ontology-based vocabulary support</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h4 class="text-xl font-semibold mb-4">FIPA ACL Message Structure</h4>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm">
+                                    <thead>
+                                        <tr class="border-b border-gray-600">
+                                            <th class="text-left py-2 text-blue-400">Parameter</th>
+                                            <th class="text-left py-2 text-green-400">Category</th>
+                                            <th class="text-left py-2 text-yellow-400">Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-gray-300">
+                                        <tr class="border-b border-gray-700">
+                                            <td class="py-2 font-mono">:performative</td>
+                                            <td class="py-2">Communicative Act</td>
+                                            <td class="py-2">Action intent (request, inform, query-if)</td>
+                                        </tr>
+                                        <tr class="border-b border-gray-700">
+                                            <td class="py-2 font-mono">:sender</td>
+                                            <td class="py-2">Participants</td>
+                                            <td class="py-2">Agent Identifier (AID) of sender</td>
+                                        </tr>
+                                        <tr class="border-b border-gray-700">
+                                            <td class="py-2 font-mono">:receiver</td>
+                                            <td class="py-2">Participants</td>
+                                            <td class="py-2">Set of AIDs for recipients</td>
+                                        </tr>
+                                        <tr class="border-b border-gray-700">
+                                            <td class="py-2 font-mono">:content</td>
+                                            <td class="py-2">Content</td>
+                                            <td class="py-2">Message payload in specified language</td>
+                                        </tr>
+                                        <tr class="border-b border-gray-700">
+                                            <td class="py-2 font-mono">:protocol</td>
+                                            <td class="py-2">Conversation</td>
+                                            <td class="py-2">Interaction protocol identifier</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-2 font-mono">:conversation-id</td>
+                                            <td class="py-2">Conversation</td>
+                                            <td class="py-2">Unique conversation thread ID</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="code-block rounded p-4">
+                            <pre class="text-sm"><code>// Example FIPA ACL message structure
+{
+  "performative": "request",
+  "sender": "(agent-identifier :name trader@market.com)",
+  "receiver": "(set (agent-identifier :name broker@exchange.com))",
+  "content": "(action (quote (buy stock :symbol ACME :quantity 100)))",
+  "language": "FIPA-SL",
+  "protocol": "fipa-request",
+  "conversation-id": "trade-conv-001"
+}</code></pre>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- AG-UI Protocol Section -->
+                <section id="ag-ui-protocol" class="mb-12">
+                    <h2 class="text-3xl font-bold mb-6">AG-UI Real-Time Agent-User Interaction</h2>
+                    
+                    <div class="bg-cyan-900/20 border border-cyan-800 rounded-lg p-6 mb-8">
+                        <h3 class="text-lg font-semibold text-cyan-400 mb-2">Standardized Real-Time UI Communication</h3>
+                        <p class="text-gray-300">
+                            AG-UI is an open-source, lightweight, event-based protocol for standardizing real-time interactions 
+                            between AI agents and frontend applications using Server-Sent Events.
+                        </p>
+                    </div>
+
+                    <div class="space-y-8">
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h4 class="text-xl font-semibold mb-4">16 Standard Event Types</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <h5 class="font-semibold text-blue-400 mb-2">Lifecycle Events</h5>
+                                    <ul class="text-gray-300 text-sm space-y-1">
+                                        <li>• <code>RUN_STARTED</code> - Agent execution begins</li>
+                                        <li>• <code>RUN_FINISHED</code> - Successful completion</li>
+                                        <li>• <code>RUN_ERROR</code> - Error during execution</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h5 class="font-semibold text-green-400 mb-2">Text Streaming</h5>
+                                    <ul class="text-gray-300 text-sm space-y-1">
+                                        <li>• <code>TEXT_MESSAGE_START</code> - Begin text output</li>
+                                        <li>• <code>TEXT_MESSAGE_CONTENT</code> - Complete text chunk</li>
+                                        <li>• <code>TEXT_MESSAGE_CHUNK</code> - Partial text (token-by-token)</li>
+                                        <li>• <code>TEXT_MESSAGE_END</code> - End text output</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h5 class="font-semibold text-yellow-400 mb-2">Tool Interactions</h5>
+                                    <ul class="text-gray-300 text-sm space-y-1">
+                                        <li>• <code>TOOL_CALL_START</code> - Tool invocation begins</li>
+                                        <li>• <code>TOOL_CALL_COMPLETE</code> - Tool execution finished</li>
+                                        <li>• <code>TOOL_CALL_CHUNK</code> - Partial tool results</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h5 class="font-semibold text-purple-400 mb-2">State Management</h5>
+                                    <ul class="text-gray-300 text-sm space-y-1">
+                                        <li>• <code>STATE_SNAPSHOT</code> - Complete state data</li>
+                                        <li>• <code>STATE_DELTA</code> - Incremental state changes</li>
+                                        <li>• <code>MEDIA_FRAME</code> - Media content streaming</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h4 class="text-xl font-semibold mb-4">Implementation Examples</h4>
+                            <div class="space-y-4">
+                                <div class="bg-gray-700 rounded p-4">
+                                    <h5 class="font-semibold text-blue-400 mb-2">Python with FastAPI</h5>
+                                    <div class="code-block rounded p-3">
+                                        <pre class="text-xs"><code>from ag_ui.core import RunAgentInput
+from ag_ui.encoder import EventEncoder
+from fastapi.responses import StreamingResponse
+
+@app.post("/agent")
+async def run_agent(input: RunAgentInput):
+    encoder = EventEncoder()
+    
+    async def event_stream():
+        yield encoder.encode_run_started()
+        yield encoder.encode_text_message_start()
+        yield encoder.encode_text_message_content("Hello from agent!")
+        yield encoder.encode_run_finished()
+    
+    return StreamingResponse(event_stream(), media_type="text/event-stream")</code></pre>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-gray-700 rounded p-4">
+                                    <h5 class="font-semibold text-green-400 mb-2">TypeScript with Express</h5>
+                                    <div class="code-block rounded p-3">
+                                        <pre class="text-xs"><code>import { EventEncoder } from '@ag-ui/encoder';
+import { RunAgentInputSchema } from '@ag-ui/core';
+
+app.post('/agent', (req, res) => {
+  const input = RunAgentInputSchema.parse(req.body);
+  const encoder = new EventEncoder();
+  
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive'
+  });
+  
+  res.write(encoder.encodeRunStarted());
+  res.write(encoder.encodeTextMessageContent('Agent response'));
+  res.write(encoder.encodeRunFinished());
+  res.end();
+});</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h4 class="text-xl font-semibold mb-4">Frontend Integration with CopilotKit</h4>
+                            <div class="code-block rounded p-4">
+                                <pre class="text-sm"><code>import { CopilotKitProvider, CopilotChat } from '@copilotkit/react-core';
+import { HttpAgent } from '@ag-ui/client';
+
+function App() {
+  const agent = new HttpAgent('/api/agent');
+  
+  return (
+    &lt;CopilotKitProvider agent={agent}&gt;
+      &lt;CopilotChat /&gt;
+    &lt;/CopilotKitProvider&gt;
+  );
+}</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- DeepSeek Reasoning Section -->
+                <section id="deepseek-reasoning" class="mb-12">
+                    <h2 class="text-3xl font-bold mb-6">DeepSeek Reasoning Model Integration</h2>
+                    
+                    <div class="bg-red-900/20 border border-red-800 rounded-lg p-6 mb-8">
+                        <h3 class="text-lg font-semibold text-red-400 mb-2">Advanced Chain of Thought Processing</h3>
+                        <p class="text-gray-300">
+                            DeepSeek-reasoner generates explicit Chain of Thought (CoT) before delivering final answers, 
+                            providing transparent reasoning processes with enhanced accuracy.
+                        </p>
+                    </div>
+
+                    <div class="space-y-8">
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h4 class="text-xl font-semibold mb-4">Key Features</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="bg-gray-700 rounded p-4">
+                                    <h5 class="font-semibold text-blue-400 mb-2">64K Context Length</h5>
+                                    <p class="text-gray-300 text-sm">Supports extensive context with reasoning_content separate from final output</p>
+                                </div>
+                                <div class="bg-gray-700 rounded p-4">
+                                    <h5 class="font-semibold text-green-400 mb-2">CoT Transparency</h5>
+                                    <p class="text-gray-300 text-sm">Access to complete reasoning process up to 32K tokens</p>
+                                </div>
+                                <div class="bg-gray-700 rounded p-4">
+                                    <h5 class="font-semibold text-yellow-400 mb-2">Multi-Round Support</h5>
+                                    <p class="text-gray-300 text-sm">CoT excluded from context to prevent contamination</p>
+                                </div>
+                                <div class="bg-gray-700 rounded p-4">
+                                    <h5 class="font-semibold text-purple-400 mb-2">OpenAI Compatible</h5>
+                                    <p class="text-gray-300 text-sm">Requires upgraded OpenAI SDK with new parameters</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h4 class="text-xl font-semibold mb-4">API Usage Example</h4>
+                            <div class="code-block rounded p-4">
+                                <pre class="text-sm"><code>from openai import OpenAI
+
+client = OpenAI(
+    api_key="&lt;DeepSeek API Key&gt;", 
+    base_url="https://api.deepseek.com"
+)
+
+# Generate response with reasoning
+response = client.chat.completions.create(
+    model="deepseek-reasoner",
+    messages=[{"role": "user", "content": "9.11 and 9.8, which is greater?"}],
+    max_tokens=4000  # For final response (CoT can be up to 32K)
+)
+
+# Access both reasoning and final answer
+reasoning = response.choices[0].message.reasoning_content
+final_answer = response.choices[0].message.content
+
+print(f"Reasoning: {reasoning}")
+print(f"Answer: {final_answer}")
+
+# For multi-round conversation, exclude reasoning_content
+messages.append({'role': 'assistant', 'content': final_answer})  # Only content, not reasoning</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h4 class="text-xl font-semibold mb-4">Supported Features</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <h5 class="font-semibold text-green-400 mb-2">✓ Supported</h5>
+                                    <ul class="text-gray-300 text-sm space-y-1">
+                                        <li>• Chat Completion</li>
+                                        <li>• Chat Prefix Completion (Beta)</li>
+                                        <li>• max_tokens control</li>
+                                        <li>• Multi-round conversations</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h5 class="font-semibold text-red-400 mb-2">✗ Not Supported</h5>
+                                    <ul class="text-gray-300 text-sm space-y-1">
+                                        <li>• Function Call</li>
+                                        <li>• JSON Output</li>
+                                        <li>• FIM (Beta)</li>
+                                        <li>• temperature/top_p (ignored)</li>
+                                        <li>• logprobs (triggers error)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Multi-Protocol Architecture Section -->
+                <section id="multi-protocol-architecture" class="mb-12">
+                    <h2 class="text-3xl font-bold mb-6">Multi-Protocol AI Architecture Design</h2>
+                    
+                    <div class="bg-indigo-900/20 border border-indigo-800 rounded-lg p-6 mb-8">
+                        <h3 class="text-lg font-semibold text-indigo-400 mb-2">Integrated Protocol Ecosystem</h3>
+                        <p class="text-gray-300">
+                            Next-generation AI applications integrate multiple protocols for comprehensive functionality, 
+                            creating sophisticated multi-protocol architectures with seamless interoperability.
+                        </p>
+                    </div>
+
+                    <div class="space-y-8">
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h4 class="text-xl font-semibold mb-4">Protocol Integration Matrix</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div class="bg-blue-700 rounded-lg p-4 text-center">
+                                    <h5 class="font-semibold text-white mb-2">AG-UI</h5>
+                                    <p class="text-blue-100 text-sm">Frontend interaction and real-time streaming</p>
+                                </div>
+                                <div class="bg-purple-700 rounded-lg p-4 text-center">
+                                    <h5 class="font-semibold text-white mb-2">MCP</h5>
+                                    <p class="text-purple-100 text-sm">External tool/data access and capability discovery</p>
+                                </div>
+                                <div class="bg-green-700 rounded-lg p-4 text-center">
+                                    <h5 class="font-semibold text-white mb-2">A2A</h5>
+                                    <p class="text-green-100 text-sm">Agent collaboration and coordination</p>
+                                </div>
+                                <div class="bg-orange-700 rounded-lg p-4 text-center">
+                                    <h5 class="font-semibold text-white mb-2">RAG 2.0</h5>
+                                    <p class="text-orange-100 text-sm">Advanced knowledge retrieval and processing</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h4 class="text-xl font-semibold mb-4">Architecture Patterns</h4>
+                            <div class="space-y-4">
+                                <div class="border-l-4 border-blue-500 pl-4">
+                                    <h5 class="font-semibold text-blue-400">Event-Driven Communication</h5>
+                                    <p class="text-gray-300 text-sm">Asynchronous message passing between protocols using standardized event formats</p>
+                                </div>
+                                <div class="border-l-4 border-green-500 pl-4">
+                                    <h5 class="font-semibold text-green-400">State Synchronization</h5>
+                                    <p class="text-gray-300 text-sm">Consistent state management across protocols with delta updates and snapshots</p>
+                                </div>
+                                <div class="border-l-4 border-yellow-500 pl-4">
+                                    <h5 class="font-semibold text-yellow-400">Middleware Translation</h5>
+                                    <p class="text-gray-300 text-sm">Protocol adapters enabling communication between different standard formats</p>
+                                </div>
+                                <div class="border-l-4 border-purple-500 pl-4">
+                                    <h5 class="font-semibold text-purple-400">Security Boundaries</h5>
+                                    <p class="text-gray-300 text-sm">OAuth/authentication layers with role-based access control across protocols</p>
+                                </div>
+                                <div class="border-l-4 border-red-500 pl-4">
+                                    <h5 class="font-semibold text-red-400">Scalable Deployment</h5>
+                                    <p class="text-gray-300 text-sm">Containerization and load balancing supporting protocol-specific scaling requirements</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h4 class="text-xl font-semibold mb-4">Implementation Example</h4>
+                            <div class="code-block rounded p-4">
+                                <pre class="text-sm"><code>// Multi-protocol AI application architecture
+class MultiProtocolAIApp {
+  constructor() {
+    // AG-UI for frontend communication
+    this.agui = new AGUIProtocol({
+      transport: 'sse',
+      events: ['TEXT_MESSAGE_START', 'TOOL_CALL_START', 'STATE_DELTA']
+    });
+    
+    // MCP for external tool access
+    this.mcp = new MCPClient({
+      transport: 'stdio',
+      capabilities: ['tools', 'resources', 'prompts']
+    });
+    
+    // A2A for agent coordination
+    this.a2a = new A2AProtocol({
+      acl: 'fipa',
+      performatives: ['request', 'inform', 'propose']
+    });
+    
+    // RAG 2.0 for knowledge retrieval
+    this.rag = new RAG2System({
+      techniques: ['hyde', 'rag-fusion', 'self-rag'],
+      reranking: true,
+      compression: true
+    });
+  }
+  
+  async processUserQuery(query) {
+    // Use RAG 2.0 for context
+    const context = await this.rag.retrieveContext(query);
+    
+    // Coordinate with other agents via A2A
+    const agentResponse = await this.a2a.requestFromAgent(query, context);
+    
+    // Use MCP tools for external actions
+    const toolResults = await this.mcp.invokeTool('search', query);
+    
+    // Stream response via AG-UI
+    this.agui.streamResponse({
+      content: agentResponse,
+      tools: toolResults,
+      context: context
+    });
+  }
+}</code></pre>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h4 class="text-xl font-semibold mb-4">Best Practices</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <h5 class="font-semibold text-blue-400 mb-2">Protocol Selection</h5>
+                                    <ul class="text-gray-300 text-sm space-y-1">
+                                        <li>• Choose protocols based on use case requirements</li>
+                                        <li>• Consider latency and throughput needs</li>
+                                        <li>• Evaluate security and compliance requirements</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h5 class="font-semibold text-green-400 mb-2">Implementation Strategy</h5>
+                                    <ul class="text-gray-300 text-sm space-y-1">
+                                        <li>• Start with single protocol and expand gradually</li>
+                                        <li>• Use middleware for protocol translation</li>
+                                        <li>• Implement comprehensive error handling</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h5 class="font-semibold text-yellow-400 mb-2">Monitoring & Debugging</h5>
+                                    <ul class="text-gray-300 text-sm space-y-1">
+                                        <li>• Log protocol interactions for debugging</li>
+                                        <li>• Monitor performance across protocols</li>
+                                        <li>• Implement health checks for each protocol</li>
+                                    </ul>
+                                </div>
+                                <div>
+                                    <h5 class="font-semibold text-purple-400 mb-2">Security Considerations</h5>
+                                    <ul class="text-gray-300 text-sm space-y-1">
+                                        <li>• Implement authentication at protocol boundaries</li>
+                                        <li>• Use encryption for sensitive data transfer</li>
+                                        <li>• Validate and sanitize all protocol messages</li>
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
