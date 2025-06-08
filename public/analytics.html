@@ -549,7 +549,7 @@
             window.location.href = '/login.html';
         });
 
-        // Auto-refresh data every 30 seconds
+        // Auto-refresh data every 5 minutes (less frequent to reduce load)
         function refreshData() {
             console.log('Refreshing analytics data...');
             loadAnalyticsData();
@@ -558,7 +558,7 @@
         // Initialize everything
         initializeCharts();
         loadAnalyticsData();
-        setInterval(refreshData, 30000);
+        setInterval(refreshData, 300000); // 5 minutes instead of 30 seconds
     </script>
 </body>
 </html>

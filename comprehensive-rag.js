@@ -8,11 +8,30 @@ class ComprehensiveRAG {
     this.inMemoryDocs = ragInstance.documents || {};
     this.dbDocuments = new Map();
     this.lastDbSync = 0;
-    this.syncInterval = 30000; // 30 seconds
+    this.syncInterval = 300000; // 5 minutes instead of 30 seconds
+    this.lastDocumentCount = 0;
     
     // Initialize database document sync
     this.syncDatabaseDocuments();
-    setInterval(() => this.syncDatabaseDocuments(), this.syncInterval);
+    setInterval(() => this.smartSync(), this.syncInterval);
+  }
+
+  // Smart sync only when changes detected
+  async smartSync() {
+    if (!this.pool) return;
+
+    try {
+      // First check if document count has changed
+      const countResult = await this.pool.query('SELECT COUNT(*) as count FROM rag_documents WHERE is_active = true');
+      const currentCount = parseInt(countResult.rows[0].count);
+      
+      if (currentCount !== this.lastDocumentCount) {
+        await this.syncDatabaseDocuments();
+        this.lastDocumentCount = currentCount;
+      }
+    } catch (error) {
+      console.error('Smart sync check error:', error);
+    }
   }
 
   // Sync database documents to memory for fast access
@@ -48,6 +67,7 @@ class ComprehensiveRAG {
       }
 
       this.lastDbSync = Date.now();
+      this.lastDocumentCount = result.rows.length;
       console.log(`[RAG-SYNC] Synchronized ${result.rows.length} documents from database`);
     } catch (error) {
       console.error('Database sync error:', error);
