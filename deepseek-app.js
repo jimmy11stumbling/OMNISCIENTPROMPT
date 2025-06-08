@@ -39,8 +39,24 @@ app.use((err, req, res, next) => {
   next();
 });
 
-// Rate limiting middleware
+// Rate limiting middleware with cleanup
 const rateLimitStore = new Map();
+
+// Cleanup old rate limit entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  const fiveMinutesAgo = now - 5 * 60 * 1000;
+  
+  for (const [clientId, requests] of rateLimitStore.entries()) {
+    const validRequests = requests.filter(timestamp => timestamp > fiveMinutesAgo);
+    if (validRequests.length === 0) {
+      rateLimitStore.delete(clientId);
+    } else {
+      rateLimitStore.set(clientId, validRequests);
+    }
+  }
+}, 5 * 60 * 1000);
+
 const rateLimit = (windowMs = 60000, maxRequests = 100) => {
   return (req, res, next) => {
     const clientId = req.ip || req.connection.remoteAddress;
@@ -101,7 +117,7 @@ const logApiUsage = async (req, res, next) => {
       ]);
 
       // Update user API quota if authenticated
-      if (userId && req.originalUrl.includes('/api/generate-prompt') || req.originalUrl.includes('/api/chat')) {
+      if (userId && (req.originalUrl.includes('/api/generate-prompt') || req.originalUrl.includes('/api/chat'))) {
         await pool.query(
           'UPDATE users SET api_quota_used_today = api_quota_used_today + 1 WHERE id = $1',
           [userId]
@@ -264,7 +280,12 @@ class RealTimeValidator {
 
     activeConnections.forEach(ws => {
       if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify(data));
+        try {
+          ws.send(JSON.stringify(data));
+        } catch (error) {
+          console.error('WebSocket send error:', error);
+          activeConnections.delete(ws);
+        }
       }
     });
   }
@@ -279,11 +300,16 @@ wss.on('connection', (ws, req) => {
   activeConnections.add(ws);
   
   // Send initial connection confirmation
-  ws.send(JSON.stringify({
-    type: 'connection',
-    status: 'connected',
-    timestamp: new Date().toISOString()
-  }));
+  try {
+    ws.send(JSON.stringify({
+      type: 'connection',
+      status: 'connected',
+      timestamp: new Date().toISOString()
+    }));
+  } catch (error) {
+    console.error('[REAL-TIME] Failed to send connection confirmation:', error);
+    activeConnections.delete(ws);
+  }
 
   ws.on('close', () => {
     console.log('[REAL-TIME] WebSocket connection closed');
@@ -552,8 +578,13 @@ app.post('/api/rag/upload', authenticateToken, upload.single('document'), async 
     let content = '';
     
     if (req.file.mimetype === 'application/json') {
-      const jsonData = JSON.parse(await fs.readFile(req.file.path, 'utf8'));
-      content = JSON.stringify(jsonData, null, 2);
+      try {
+        const fileContent = await fs.readFile(req.file.path, 'utf8');
+        const jsonData = JSON.parse(fileContent);
+        content = JSON.stringify(jsonData, null, 2);
+      } catch (parseError) {
+        return res.status(400).json({ error: 'Invalid JSON file format' });
+      }
     } else {
       content = await fs.readFile(req.file.path, 'utf8');
     }
@@ -1057,15 +1088,20 @@ app.post('/api/rag/search', (req, res) => {
     // Broadcast RAG search results to connected clients
     activeConnections.forEach(ws => {
       if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'rag_search',
-          data: {
-            query,
-            platform: platform || 'all',
-            resultsCount: results.length,
-            searchTime: ragDuration
-          }
-        }));
+        try {
+          ws.send(JSON.stringify({
+            type: 'rag_search',
+            data: {
+              query,
+              platform: platform || 'all',
+              resultsCount: results.length,
+              searchTime: ragDuration
+            }
+          }));
+        } catch (error) {
+          console.error('WebSocket RAG broadcast error:', error);
+          activeConnections.delete(ws);
+        }
       }
     });
     
