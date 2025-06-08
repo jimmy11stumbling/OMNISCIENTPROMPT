@@ -24,6 +24,9 @@
                 </div>
                 <div class="flex items-center space-x-4">
                     <span id="userInfo" class="text-gray-300"></span>
+                    <button id="refreshBtn" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm">
+                        <i class="fas fa-sync-alt mr-2"></i>Refresh
+                    </button>
                     <button id="exportBtn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">
                         <i class="fas fa-download mr-2"></i>Export Data
                     </button>
@@ -549,16 +552,23 @@
             window.location.href = '/login.html';
         });
 
-        // Auto-refresh data every 5 minutes (less frequent to reduce load)
+        // Manual refresh function - only refresh when user clicks refresh button
         function refreshData() {
-            console.log('Refreshing analytics data...');
+            console.log('Manual refresh triggered');
             loadAnalyticsData();
         }
 
-        // Initialize everything
+        // Add refresh button event listener
+        document.addEventListener('DOMContentLoaded', function() {
+            const refreshBtn = document.getElementById('refreshBtn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', refreshData);
+            }
+        });
+
+        // Initialize everything (no auto-refresh)
         initializeCharts();
         loadAnalyticsData();
-        setInterval(refreshData, 300000); // 5 minutes instead of 30 seconds
     </script>
 </body>
 </html>
