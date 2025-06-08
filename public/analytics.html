@@ -21,6 +21,7 @@
                         <option value="7d">Last 7 Days</option>
                         <option value="30d">Last 30 Days</option>
                     </select>
+                    <span class="text-xs text-gray-500">Change time range then click Refresh</span>
                 </div>
                 <div class="flex items-center space-x-4">
                     <span id="userInfo" class="text-gray-300"></span>
@@ -507,10 +508,11 @@
             });
         }
 
-        // Time range selection
+        // Time range selection - manual only
         document.getElementById('timeRange').addEventListener('change', (e) => {
             currentTimeRange = e.target.value;
-            loadAnalyticsData();
+            // Don't auto-refresh, require manual refresh button click
+            console.log('Time range changed to:', currentTimeRange, '- Click Refresh to update data');
         });
 
         // Export functionality
@@ -590,9 +592,16 @@
             document.querySelector('.max-w-7xl').appendChild(lastUpdated);
         });
 
-        // Initialize everything (no auto-refresh)
+        // Initialize everything (completely manual)
         initializeCharts();
-        loadAnalyticsData();
+        // Don't auto-load data on page load - require manual refresh
+        document.getElementById('loadingState').innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-chart-bar text-blue-400 text-4xl mb-4"></i>
+                <p class="text-gray-400 mb-4">Analytics Dashboard Ready</p>
+                <p class="text-sm text-gray-500">Click "Refresh Data" to load analytics</p>
+            </div>
+        `;
     </script>
 </body>
 </html>
