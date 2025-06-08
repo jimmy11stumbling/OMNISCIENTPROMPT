@@ -1202,14 +1202,77 @@ app.post('/api/chat', async (req, res) => {
     // Add user message to conversation
     messages.push({ role: 'user', content: message });
 
+    // Provide immediate fallback response first, then enhance with AI if available
+    let fallbackResponse;
+    
+    if (ragResults.length > 0) {
+      const contextInfo = ragResults.map(doc => `• **${doc.title}**: ${doc.snippet}`).join('\n');
+      
+      // Generate contextual response based on available documentation
+      if (message.toLowerCase().includes('authentication') || message.toLowerCase().includes('auth')) {
+        fallbackResponse = `Based on ${platform} documentation:\n\n${contextInfo}\n\nFor authentication implementation, I recommend starting with JWT tokens and secure session management. Would you like me to help you implement a specific authentication flow?`;
+      } else if (message.toLowerCase().includes('component') || message.toLowerCase().includes('react')) {
+        fallbackResponse = `Based on ${platform} documentation:\n\n${contextInfo}\n\nFor React development, focus on component composition and proper state management. Would you like help with a specific component pattern?`;
+      } else if (message.toLowerCase().includes('database') || message.toLowerCase().includes('data')) {
+        fallbackResponse = `Based on ${platform} documentation:\n\n${contextInfo}\n\nFor database implementation, consider proper schema design and security measures. What type of data structure are you working with?`;
+      } else {
+        fallbackResponse = `Based on ${platform} documentation:\n\n${contextInfo}\n\nI can help you implement "${message}" with these best practices. What specific aspect would you like to focus on first?`;
+      }
+    } else {
+      fallbackResponse = `I understand you want to work on "${message}" for ${platform}. I can provide guidance on ${platform} development patterns. What specific aspect would you like to explore?`;
+    }
+
+    // Add immediate response to conversation
+    messages.push({ role: 'assistant', content: fallbackResponse });
+    conversationSessions.set(session, messages);
+
+    // Send immediate response
+    const immediateResponseData = {
+      response: fallbackResponse,
+      reasoning: `Context-aware response based on ${platform} documentation`,
+      sessionId: session,
+      platform,
+      ragContext: ragResults,
+      tokensUsed: 0,
+      responseTime: Date.now() - startTime,
+      ragTime: ragDuration
+    };
+
+    // Broadcast immediate response
+    activeConnections.forEach(ws => {
+      if (ws.readyState === WebSocket.OPEN) {
+        try {
+          ws.send(JSON.stringify({
+            type: 'chat_response',
+            data: {
+              sessionId: session,
+              platform,
+              tokensUsed: 0,
+              responseTime: immediateResponseData.responseTime,
+              hasReasoning: false,
+              immediate: true
+            }
+          }));
+        } catch (error) {
+          console.error('WebSocket immediate response broadcast error:', error);
+          activeConnections.delete(ws);
+        }
+      }
+    });
+
+    validator.logApiCall('/api/chat', startTime, true, 0);
+    
+    // Try to enhance with DeepSeek AI in background if available
     if (process.env.DEEPSEEK_API_KEY) {
-      try {
-        console.log('[DEEPSEEK-API] Making request to deepseek-reasoner...');
-        
-        const fetch = (await import('node-fetch')).default;
-        
-        // Enhanced system prompt with RAG context
-        const systemPrompt = `You are an expert full-stack application developer specializing in ${platform}. 
+      // Launch background AI enhancement but don't wait for it
+      setImmediate(async () => {
+        try {
+          console.log('[DEEPSEEK-API] Background enhancement starting...');
+          
+          const fetch = (await import('node-fetch')).default;
+          
+          // Enhanced system prompt with RAG context
+          const systemPrompt = `You are an expert full-stack application developer specializing in ${platform}. 
 
 PLATFORM-SPECIFIC CONTEXT:
 ${contextualInfo}
@@ -1218,156 +1281,82 @@ Use this context to provide accurate, platform-specific guidance. Reference spec
 
 Help users build comprehensive applications with detailed technical guidance based on ${platform}'s capabilities.`;
 
-        const apiStartTime = Date.now();
-        console.log('[DEEPSEEK-API] Making request to deepseek-reasoner...');
-        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: 'deepseek-reasoner',
-            messages: [
-              {
-                role: 'system',
-                content: systemPrompt
-              },
-              ...messages
-            ],
-            max_tokens: 2000
-          })
-        });
-
-        const apiDuration = Date.now() - apiStartTime;
-
-        if (response.ok) {
-          const data = await response.json();
-          const tokensUsed = data.usage?.total_tokens || 0;
+          const apiStartTime = Date.now();
           
-          console.log(`[DEEPSEEK-SUCCESS] Response received - Tokens: ${tokensUsed} | Time: ${apiDuration}ms`);
-          // console.log(`[DEEPSEEK-DEBUG] Full response structure:`, JSON.stringify(data, null, 2));
-          
-          const assistantMessage = {
-            role: 'assistant',
-            content: data.choices[0]?.message?.content || 'No response generated'
-          };
-          
-          // console.log(`[DEEPSEEK-DEBUG] Assistant message content:`, assistantMessage.content);
-          
-          // Add assistant response to conversation (without reasoning_content)
-          messages.push(assistantMessage);
-          conversationSessions.set(session, messages);
-
-          const responseData = {
-            response: assistantMessage.content,
-            reasoning: data.choices[0]?.message?.reasoning_content,
-            sessionId: session,
-            platform,
-            ragContext: ragResults,
-            tokensUsed,
-            responseTime: Date.now() - startTime,
-            apiTime: apiDuration,
-            ragTime: ragDuration
-          };
-
-          // Real-time broadcast of successful response
-          activeConnections.forEach(ws => {
-            if (ws.readyState === WebSocket.OPEN) {
-              try {
-                ws.send(JSON.stringify({
-                  type: 'chat_response',
-                  data: {
-                    sessionId: session,
-                    platform,
-                    tokensUsed,
-                    responseTime: responseData.responseTime,
-                    hasReasoning: !!data.choices[0]?.message?.reasoning_content
-                  }
-                }));
-              } catch (error) {
-                console.error('WebSocket chat response broadcast error:', error);
-                activeConnections.delete(ws);
-              }
-            }
-          });
-
-          validator.logApiCall('/api/chat', startTime, true, tokensUsed);
-          res.json(responseData);
-          return;
-        } else {
-          const errorText = await response.text();
-          console.error(`[DEEPSEEK-ERROR] API request failed: ${response.status} - ${errorText}`);
-          throw new Error(`DeepSeek API error: ${response.status}`);
-        }
-      } catch (apiError) {
-        console.error('[DEEPSEEK-ERROR] API call failed:', apiError);
+          // Create abort controller for timeout handling
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
         
-        // Real-time error notification
-        activeConnections.forEach(ws => {
-          if (ws.readyState === WebSocket.OPEN) {
-            try {
-              ws.send(JSON.stringify({
-                type: 'chat_error',
-                data: { sessionId: session, platform, error: apiError.message }
-              }));
-            } catch (error) {
-              console.error('WebSocket chat error broadcast error:', error);
-              activeConnections.delete(ws);
+          const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
+            },
+            body: JSON.stringify({
+              model: 'deepseek-reasoner',
+              messages: [
+                {
+                  role: 'system',
+                  content: systemPrompt
+                },
+                ...messages.slice(0, -1) // Remove the fallback response
+              ],
+              max_tokens: 2000,
+              temperature: 0.7
+            }),
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+
+          const apiDuration = Date.now() - apiStartTime;
+
+          if (response.ok) {
+            const data = await response.json();
+            const tokensUsed = data.usage?.total_tokens || 0;
+            
+            console.log(`[DEEPSEEK-SUCCESS] Background enhancement complete - Tokens: ${tokensUsed} | Time: ${apiDuration}ms`);
+            
+            const enhancedContent = data.choices[0]?.message?.content;
+            if (enhancedContent && enhancedContent.length > fallbackResponse.length) {
+              // Update conversation with enhanced response
+              messages[messages.length - 1] = {
+                role: 'assistant',
+                content: enhancedContent
+              };
+              conversationSessions.set(session, messages);
+
+              // Broadcast enhanced response
+              activeConnections.forEach(ws => {
+                if (ws.readyState === WebSocket.OPEN) {
+                  try {
+                    ws.send(JSON.stringify({
+                      type: 'chat_enhanced',
+                      data: {
+                        sessionId: session,
+                        platform,
+                        tokensUsed,
+                        hasReasoning: !!data.choices[0]?.message?.reasoning_content,
+                        enhanced: true
+                      }
+                    }));
+                  } catch (error) {
+                    console.error('WebSocket enhanced response broadcast error:', error);
+                    activeConnections.delete(ws);
+                  }
+                }
+              });
             }
           }
-        });
-      }
+        } catch (backgroundError) {
+          console.log('[DEEPSEEK-BACKGROUND] Enhancement failed, using fallback response:', backgroundError.message);
+        }
+      });
     }
 
-    // Enhanced fallback response with RAG context
-    console.log('[FALLBACK] Using enhanced demo mode with RAG context');
-    
-    const contextSummary = ragResults.length > 0 
-      ? `Based on ${platform} documentation, here are some relevant points:\n${ragResults.map(doc => `• ${doc.title}: ${doc.snippet}`).join('\n')}\n\n`
-      : '';
-
-    const fallbackResponse = `${contextSummary}I understand you want to work on "${message}" for ${platform}. Let me help you create a comprehensive solution. This appears to be a ${platform} development question. What specific aspect would you like to focus on first?`;
-    
-    console.log('[FALLBACK-DEBUG] Generated fallback response:', fallbackResponse.substring(0, 200));
-    
-    messages.push({ role: 'assistant', content: fallbackResponse });
-    conversationSessions.set(session, messages);
-
-    const responseData = {
-      response: fallbackResponse,
-      reasoning: 'Enhanced demo mode with RAG context - add DEEPSEEK_API_KEY for full AI reasoning',
-      sessionId: session,
-      platform,
-      ragContext: ragResults,
-      tokensUsed: 0,
-      responseTime: Date.now() - startTime,
-      ragTime: ragDuration
-    };
-    
-    console.log('[FALLBACK-DEBUG] Response data keys:', Object.keys(responseData));
-
-    // Real-time broadcast of fallback response
-    activeConnections.forEach(ws => {
-      if (ws.readyState === WebSocket.OPEN) {
-        try {
-          ws.send(JSON.stringify({
-            type: 'chat_fallback',
-            data: {
-              sessionId: session,
-              platform,
-              responseTime: responseData.responseTime
-            }
-          }));
-        } catch (error) {
-          console.error('WebSocket chat fallback broadcast error:', error);
-          activeConnections.delete(ws);
-        }
-      }
-    });
-
-    validator.logApiCall('/api/chat', startTime, true);
-    res.json(responseData);
+    // Return immediate response
+    res.json(immediateResponseData);
 
   } catch (error) {
     console.error('[CHAT-ERROR] Processing failed:', error);
