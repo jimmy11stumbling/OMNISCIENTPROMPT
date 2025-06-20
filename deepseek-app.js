@@ -356,6 +356,37 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Add missing API routes for testing
+app.post('/api/search', async (req, res) => {
+  try {
+    const { query, platform, limit = 5 } = req.body;
+    
+    if (!query) {
+      return res.status(400).json({ 
+        error: 'Search query is required',
+        code: 'MISSING_QUERY'
+      });
+    }
+
+    // Use the RAG system already initialized
+    const results = await ragDB.searchDocuments(query, platform, limit);
+    
+    res.json({
+      query,
+      platform,
+      results,
+      total: results.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({ 
+      error: 'Search failed',
+      code: 'SEARCH_ERROR'
+    });
+  }
+});
+
 // Authentication endpoints
 app.post('/api/auth/register', async (req, res) => {
   const { username, email, password, fullName } = req.body;

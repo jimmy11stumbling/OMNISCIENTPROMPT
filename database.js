@@ -116,6 +116,55 @@ function initializeDatabase() {
       )
     `);
 
+    // Create error_logs table
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS error_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        error_id TEXT UNIQUE NOT NULL,
+        message TEXT NOT NULL,
+        stack_trace TEXT,
+        endpoint TEXT,
+        method TEXT,
+        ip_address TEXT,
+        user_agent TEXT,
+        user_id INTEGER,
+        request_id TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    `);
+
+    // Create performance_logs table
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS performance_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        endpoint TEXT NOT NULL,
+        method TEXT NOT NULL,
+        response_time INTEGER NOT NULL,
+        memory_delta INTEGER,
+        status_code INTEGER,
+        user_id INTEGER,
+        request_id TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    `);
+
+    // Create security_logs table
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS security_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        security_id TEXT UNIQUE NOT NULL,
+        event_type TEXT NOT NULL,
+        details TEXT,
+        ip_address TEXT,
+        user_agent TEXT,
+        user_id INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    `);
+
     // Create indexes for performance
     db.exec(`
       CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
