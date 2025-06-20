@@ -2,13 +2,13 @@ const express = require('express');
 const path = require('path');
 const { WebSocketServer, WebSocket } = require('ws');
 const http = require('http');
-const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
 const RAGDatabase = require('./rag-database');
+const database = require('./database');
 
 const app = express();
 const server = http.createServer(app);
@@ -16,30 +16,14 @@ const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'deepseek-ai-secret-key-change-in-production';
 const BCRYPT_ROUNDS = 12;
 
-// PostgreSQL connection with improved error handling and timeouts
-const pool = new Pool({ 
-  connectionString: process.env.DATABASE_URL,
-  max: 5,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 5000,
-  acquireTimeoutMillis: 5000,
-  keepAlive: true,
-  keepAliveInitialDelayMillis: 0,
-});
+// Database connection using SQLite
+const pool = database;
 
-pool.on('error', (err) => {
-  console.error('PostgreSQL pool error:', err);
-});
-
-pool.on('connect', () => {
-  console.log('PostgreSQL connected successfully');
-});
-
-// Add connection retry wrapper
+// Wrapper function to maintain compatibility
 async function queryWithRetry(queryText, params = [], retries = 3) {
   for (let i = 0; i < retries; i++) {
     try {
-      return await pool.query(queryText, params);
+      return await pool.queryAsync(queryText, params);
     } catch (error) {
       console.error(`Database query attempt ${i + 1} failed:`, error.message);
       if (i === retries - 1) throw error;
@@ -122,15 +106,15 @@ const logApiUsage = async (req, res, next) => {
       const responseTime = Date.now() - startTime;
       const userId = req.user ? req.user.id : null;
       
-      await pool.query(`
+      await queryWithRetry(`
         INSERT INTO api_usage_logs (user_id, endpoint, method, ip_address, user_agent, response_status, response_time, error_message)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `, [
         userId,
         req.originalUrl,
         req.method,
         req.ip,
-        req.get('User-Agent'),
+        req.get('User-Agent') || '',
         res.statusCode,
         responseTime,
         res.statusCode >= 400 ? `HTTP ${res.statusCode}` : null
@@ -138,7 +122,7 @@ const logApiUsage = async (req, res, next) => {
 
       // Update user API quota if authenticated
       if (userId && (req.originalUrl.includes('/api/generate-prompt') || req.originalUrl.includes('/api/chat'))) {
-        await pool.query(
+        await queryWithRetry(
           'UPDATE users SET api_quota_used_today = api_quota_used_today + 1 WHERE id = $1',
           [userId]
         );
@@ -213,7 +197,7 @@ const authenticateToken = async (req, res, next) => {
 
 // Admin middleware
 const requireAdmin = (req, res, next) => {
-  if (req.user.role !== 'admin') {
+  if (!req.user || req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required' });
   }
   next();
@@ -226,7 +210,7 @@ const checkApiQuota = async (req, res, next) => {
   const today = new Date().toISOString().split('T')[0];
   
   if (req.user.api_quota_reset_date !== today) {
-    await pool.query(
+    await queryWithRetry(
       'UPDATE users SET api_quota_used_today = 0, api_quota_reset_date = $1 WHERE id = $2',
       [today, req.user.id]
     );
@@ -245,6 +229,8 @@ app.use(express.static('public'));
 // Initialize comprehensive RAG system with database access
 const ComprehensiveRAG = require('./comprehensive-rag');
 const ragDB = new ComprehensiveRAG(pool);
+
+console.log('✅ Using SQLite database');
 
 // Store conversation sessions and real-time connections
 const conversationSessions = new Map();
@@ -380,8 +366,8 @@ app.post('/api/auth/register', async (req, res) => {
 
   try {
     // Check if user exists
-    const existingUser = await pool.query(
-      'SELECT id FROM users WHERE username = $1 OR email = $2',
+    const existingUser = await queryWithRetry(
+      'SELECT id FROM users WHERE username = ? OR email = ?',
       [username, email]
     );
 
@@ -395,13 +381,19 @@ app.post('/api/auth/register', async (req, res) => {
     const apiKey = `dsk_${uuidv4().replace(/-/g, '')}`;
 
     // Create user
-    const result = await pool.query(`
-      INSERT INTO users (username, email, password, full_name, verification_token, api_key)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING id, username, email, full_name, role, is_active, email_verified, created_at
+    const result = await queryWithRetry(`
+      INSERT INTO users (username, email, password_hash, full_name, verification_token, api_key)
+      VALUES (?, ?, ?, ?, ?, ?)
     `, [username, email, passwordHash, fullName, verificationToken, apiKey]);
+    
+    // Get the created user - SQLite returns lastInsertRowid
+    const userId = result.lastInsertRowid || (result.rows && result.rows[0] ? result.rows[0].id : null);
+    const userResult = await queryWithRetry(`
+      SELECT id, username, email, full_name, role, is_active, email_verified, created_at
+      FROM users WHERE id = ?
+    `, [userId]);
 
-    const user = result.rows[0];
+    const user = userResult.rows[0];
 
     // Send verification email if configured
     if (process.env.SMTP_USER && process.env.SMTP_PASS) {
@@ -423,9 +415,9 @@ app.post('/api/auth/register', async (req, res) => {
     }
 
     // Create notification
-    await pool.query(`
+    await queryWithRetry(`
       INSERT INTO notifications (user_id, title, message, type)
-      VALUES ($1, $2, $3, $4)
+      VALUES (?, ?, ?, ?)
     `, [user.id, 'Welcome!', 'Welcome to DeepSeek AI Platform. Your account has been created successfully.', 'success']);
 
     res.status(201).json({
@@ -448,9 +440,9 @@ app.post('/api/auth/login', async (req, res) => {
 
   try {
     // Get user
-    const userResult = await pool.query(
-      'SELECT * FROM users WHERE (username = $1 OR email = $1) AND is_active = true',
-      [username]
+    const userResult = await queryWithRetry(
+      'SELECT * FROM users WHERE (username = ? OR email = ?) AND is_active = 1',
+      [username, username]
     );
 
     if (userResult.rows.length === 0) {
@@ -479,8 +471,8 @@ app.post('/api/auth/login', async (req, res) => {
         lockUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
       }
 
-      await pool.query(
-        'UPDATE users SET failed_login_attempts = $1, locked_until = $2 WHERE id = $3',
+      await queryWithRetry(
+        'UPDATE users SET failed_login_attempts = ?, locked_until = ? WHERE id = ?',
         [newFailedAttempts, lockUntil, user.id]
       );
 
@@ -488,8 +480,8 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // Reset failed attempts and update last login
-    await pool.query(
-      'UPDATE users SET failed_login_attempts = 0, locked_until = NULL, last_login = CURRENT_TIMESTAMP WHERE id = $1',
+    await queryWithRetry(
+      'UPDATE users SET failed_login_attempts = 0, locked_until = NULL, last_login = CURRENT_TIMESTAMP WHERE id = ?',
       [user.id]
     );
 
@@ -498,15 +490,15 @@ app.post('/api/auth/login', async (req, res) => {
 
     // Create session
     const sessionToken = uuidv4();
-    await pool.query(`
+    await queryWithRetry(`
       INSERT INTO user_sessions (user_id, session_token, expires_at, ip_address, user_agent)
-      VALUES ($1, $2, $3, $4, $5)
+      VALUES (?, ?, ?, ?, ?)
     `, [
       user.id,
       sessionToken,
-      new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+      new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
       req.ip,
-      req.get('User-Agent')
+      req.get('User-Agent') || ''
     ]);
 
     res.json({

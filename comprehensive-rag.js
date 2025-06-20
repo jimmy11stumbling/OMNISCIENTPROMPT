@@ -36,13 +36,19 @@ class ComprehensiveRAG {
 
   // Sync database documents to memory for fast access
   async syncDatabaseDocuments() {
-    if (!this.pool) return;
+    if (!this.pool) {
+      console.log('[RAG-SYNC] Database pool not available, using in-memory documents only');
+      return;
+    }
 
     try {
-      const result = await this.pool.query(`
+      // Test database connection first
+      await this.pool.queryAsync('SELECT 1');
+      
+      const result = await this.pool.queryAsync(`
         SELECT id, title, content, platform, document_type, keywords, created_at
         FROM rag_documents 
-        WHERE is_active = true 
+        WHERE is_active = 1 
         ORDER BY created_at DESC
       `);
 
@@ -70,7 +76,9 @@ class ComprehensiveRAG {
       this.lastDocumentCount = result.rows.length;
       console.log(`[RAG-SYNC] Synchronized ${result.rows.length} documents from database`);
     } catch (error) {
-      console.error('Database sync error:', error);
+      console.log(`[RAG-SYNC] Database unavailable, continuing with in-memory documents only`);
+      // Set flag to indicate database is unavailable
+      this.dbUnavailable = true;
     }
   }
 
