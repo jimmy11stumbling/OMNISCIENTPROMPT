@@ -1,134 +1,123 @@
+/**
+ * DeepSeek AI Platform - Main Application Entry Point
+ * Production-ready modular application with comprehensive features
+ */
+
 const express = require('express');
 const path = require('path');
+const http = require('http');
+const config = require('./config/environment');
+const database = require('./database');
 
-console.log('Starting DeepSeek AI Prompt Generator...');
+// Import middleware
+const { requestLogger, errorLogger, performanceMonitor } = require('./middlewares/logging');
+const { securityHeaders, contentSecurityPolicy, sanitizeInput, xssProtection, sqlInjectionProtection } = require('./middlewares/security');
 
+// Import services
+const { webSocketService } = require('./services/websocketService');
+
+// Import routes
+const apiRoutes = require('./routes/apiRoutes');
+
+// Create Express app and HTTP server
 const app = express();
-app.use(express.json());
+const server = http.createServer(app);
 
-// Serve static files from public directory
-app.use(express.static(path.join(__dirname, 'public')));
+// Apply security middleware first
+app.use(securityHeaders);
+app.use(contentSecurityPolicy);
+app.use(sanitizeInput);
+app.use(xssProtection);
+app.use(sqlInjectionProtection);
 
-// Main route - serve the HTML page
+// Request parsing and logging
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(requestLogger);
+app.use(performanceMonitor);
+
+// Static file serving
+app.use(express.static('public'));
+
+// Handle JSON parsing errors
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ error: 'Invalid JSON payload' });
+  }
+  next();
+});
+
+// API routes
+app.use('/api', apiRoutes);
+
+// Serve main application page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Health check
-app.get('/api/health', (req, res) => {
+// Health check endpoint
+app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
-    service: 'DeepSeek AI Prompt Generator',
     timestamp: new Date().toISOString(),
-    apiConfigured: !!process.env.DEEPSEEK_API_KEY
+    version: '1.0.0',
+    environment: config.NODE_ENV
   });
 });
 
-// Prompt generation endpoint
-app.post('/api/generate-prompt', async (req, res) => {
-  const { query, platform } = req.body;
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    error: 'Not found',
+    path: req.originalUrl,
+    method: req.method
+  });
+});
+
+// Error handling
+app.use(errorLogger);
+
+// Initialize WebSocket service
+webSocketService.initialize(server);
+
+// Graceful shutdown
+process.on('SIGINT', gracefulShutdown);
+process.on('SIGTERM', gracefulShutdown);
+
+function gracefulShutdown() {
+  console.log('Shutting down gracefully...');
   
-  if (!query || !platform) {
-    return res.status(400).json({ 
-      error: 'Query and platform are required' 
-    });
-  }
-
-  try {
-    let optimizedPrompt;
-    let reasoning;
-    let tokensUsed = 250;
-
-    // Check if DeepSeek API key is available
-    if (process.env.DEEPSEEK_API_KEY) {
-      try {
-        // Real DeepSeek API call
-        const fetch = (await import('node-fetch')).default;
-        const response = await fetch('https://api.deepseek.com/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: 'deepseek-reasoner',
-            messages: [
-              {
-                role: 'system',
-                content: `You are an expert prompt engineer specializing in ${platform}. Generate optimized, platform-specific prompts that follow best practices.`
-              },
-              {
-                role: 'user',
-                content: `Generate an optimized prompt for ${platform} based on: "${query}". Make it platform-specific, clear, and actionable.`
-              }
-            ],
-            max_tokens: 1000,
-            temperature: 0.7
-          })
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          optimizedPrompt = data.choices[0]?.message?.content;
-          reasoning = 'Generated using DeepSeek AI reasoning';
-          tokensUsed = data.usage?.total_tokens || 0;
-        }
-      } catch (apiError) {
-        console.error('DeepSeek API error:', apiError);
-      }
+  server.close(() => {
+    console.log('HTTP server closed');
+    
+    webSocketService.shutdown();
+    
+    if (database.db) {
+      database.db.close();
+      console.log('Database connection closed');
     }
+    
+    process.exit(0);
+  });
+  
+  // Force exit after 10 seconds
+  setTimeout(() => {
+    console.log('Force exit');
+    process.exit(1);
+  }, 10000);
+}
 
-    // Fallback response when no API key or API fails
-    if (!optimizedPrompt) {
-      optimizedPrompt = `Optimized ${platform} prompt for: "${query}"
-
-Platform-specific instructions for ${platform}:
-- Use ${platform}'s best practices and conventions
-- Structure the request for optimal ${platform} understanding
-- Include specific ${platform} terminology and concepts
-
-Enhanced prompt:
-${query}
-
-This prompt has been optimized for ${platform} with:
-✓ Clear, actionable instructions
-✓ Platform-specific formatting
-✓ Context-aware language
-✓ Improved clarity and precision
-
-${process.env.DEEPSEEK_API_KEY ? 'Generated using DeepSeek AI reasoning capabilities.' : 'Demo mode - add DEEPSEEK_API_KEY for real AI generation'}`;
-      
-      reasoning = process.env.DEEPSEEK_API_KEY ? 'Generated using DeepSeek AI' : 'Demo mode - add DEEPSEEK_API_KEY for real AI generation';
-    }
-
-    res.json({
-      prompt: optimizedPrompt,
-      platform,
-      reasoning,
-      tokensUsed
-    });
-
-  } catch (error) {
-    console.error('Error generating prompt:', error);
-    res.status(500).json({ 
-      error: 'Failed to generate prompt. Please try again.' 
-    });
-  }
+// Start server
+const PORT = config.PORT;
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ DeepSeek AI Platform running on port ${PORT}`);
+  console.log(`🔑 API Key configured: ${config.DEEPSEEK_API_KEY ? 'Yes' : 'No (Demo mode)'}`);
+  console.log(`🌐 Access at: http://localhost:${PORT}`);
+  console.log(`🔄 WebSocket server running at ws://localhost:${PORT}${config.WEBSOCKET.path}`);
+  console.log(`📊 Real-time features: ${config.FEATURES.enableRealTimeValidation ? 'ACTIVE' : 'DISABLED'}`);
+  console.log(`🤖 RAG System: ${config.FEATURES.enableAdvancedRAG ? 'ENABLED' : 'DISABLED'}`);
+  console.log(`🔗 A2A Protocol: ${config.FEATURES.enableA2AProtocol ? 'READY' : 'DISABLED'}`);
+  console.log(`🌉 MCP Integration: ${config.FEATURES.enableMCPIntegration ? 'ACTIVE' : 'DISABLED'}`);
 });
 
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`DeepSeek AI Prompt Generator running on port ${PORT}`);
-  console.log(`API Key configured: ${process.env.DEEPSEEK_API_KEY ? 'Yes' : 'No (Demo mode)'}`);
-  console.log(`Access at: http://localhost:${PORT}`);
-});
-
-// Handle uncaught exceptions
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-});
+module.exports = app;
