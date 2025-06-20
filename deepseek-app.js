@@ -2747,27 +2747,6 @@ server.listen(PORT, () => {
   console.log(`📊 Real-time validation and monitoring: ACTIVE`);
 
   // Initialize real-time validation system
-  ```tool_code
-// Initialize real-time validation system
-  setupMemoryManagement() {
-    const memoryThreshold = 0.90; // 90% memory usage threshold
-    let lastGCTime = 0;
-
-    setInterval(() => {
-      const memUsage = process.memoryUsage();
-      const heapUsedPercent = memUsage.heapUsed / memUsage.heapTotal;
-
-      if (heapUsedPercent > memoryThreshold) {
-        const now = Date.now();
-        // Only trigger GC if it's been more than 5 minutes since last GC
-        if (now - lastGCTime > 300000 && global.gc) {
-          global.gc();
-          lastGCTime = now;
-          console.log('[PERFORMANCE] Garbage collection triggered at', Math.round(heapUsedPercent * 100) + '%');
-        }
-      }
-    }, 60000); // Check every 60 seconds instead of 30
-  }
   console.log('[REAL-TIME] Validation system initialized');
   console.log('[RAG-SYSTEM] Database loaded with comprehensive platform documentation');
   console.log('[A2A-PROTOCOL] Agent-to-Agent communication ready');
