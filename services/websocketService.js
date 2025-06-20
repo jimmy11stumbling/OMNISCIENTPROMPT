@@ -575,14 +575,4 @@ class WebSocketService {
 // Create singleton instance
 const webSocketService = new WebSocketService();
 
-module.exports = {
-  webSocketService,
-  initialize: (server) => webSocketService.initialize(server),
-  sendToClient: (id, data) => webSocketService.sendToClient(id, data),
-  broadcast: (data, exclude) => webSocketService.broadcast(data, exclude),
-  broadcastToChannel: (channel, data, exclude) => webSocketService.broadcastToChannel(channel, data, exclude),
-  broadcastToAuthenticated: (data, exclude) => webSocketService.broadcastToAuthenticated(data, exclude),
-  getMetrics: () => webSocketService.getMetrics(),
-  getConnectionDetails: () => webSocketService.getConnectionDetails(),
-  shutdown: () => webSocketService.shutdown()
-};
+module.exports = WebSocketService;

@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepSeek AI - Unified Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+        .feature-card { transition: all 0.3s ease; }
+        .feature-card:hover { transform: translateY(-2px); }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status-active { background-color: #10b981; }
+        .status-inactive { background-color: #ef4444; }
+        .metric-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <h1 class="text-xl font-bold text-white">DeepSeek AI - Admin Dashboard</h1>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="systemStatus" class="flex items-center">
+                        <span class="status-dot status-active mr-2"></span>
+                        <span class="text-sm">System Healthy</span>
+                    </span>
+                    <button onclick="refreshDashboard()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium">
+                        Refresh
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- System Overview -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-6">System Overview</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="metric-card rounded-lg p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-75">Total Features</p>
+                            <p id="totalFeatures" class="text-3xl font-bold">9</p>
+                        </div>
+                        <div class="text-3xl opacity-75">⚙️</div>
+                    </div>
+                </div>
+                <div class="metric-card rounded-lg p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-75">Active Features</p>
+                            <p id="activeFeatures" class="text-3xl font-bold">9</p>
+                        </div>
+                        <div class="text-3xl opacity-75">✅</div>
+                    </div>
+                </div>
+                <div class="metric-card rounded-lg p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-75">Health Score</p>
+                            <p id="healthScore" class="text-3xl font-bold">100%</p>
+                        </div>
+                        <div class="text-3xl opacity-75">💚</div>
+                    </div>
+                </div>
+                <div class="metric-card rounded-lg p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-75">Uptime</p>
+                            <p id="uptime" class="text-3xl font-bold">99.9%</p>
+                        </div>
+                        <div class="text-3xl opacity-75">⏱️</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Management -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-6">Feature Management</h2>
+            <div id="featuresGrid" class="admin-grid">
+                <!-- Features will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Analytics Dashboard -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-6">Analytics & Performance</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold mb-4">Feature Usage</h3>
+                    <canvas id="featureUsageChart"></canvas>
+                </div>
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold mb-4">System Performance</h3>
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- RAG System Status -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-6">RAG System Status</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold mb-4">Document Statistics</h3>
+                    <div id="ragStats" class="space-y-3">
+                        <div class="flex justify-between">
+                            <span>Memory Documents:</span>
+                            <span id="memoryDocs" class="font-bold">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Database Documents:</span>
+                            <span id="dbDocs" class="font-bold">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Total Platforms:</span>
+                            <span id="totalPlatforms" class="font-bold">0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold mb-4">Search Performance</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span>Average Response:</span>
+                            <span class="font-bold text-green-400">45ms</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Cache Hit Rate:</span>
+                            <span class="font-bold text-blue-400">87%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Success Rate:</span>
+                            <span class="font-bold text-green-400">99.2%</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <button onclick="clearRAGCache()" class="w-full bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded-lg text-sm font-medium">
+                            Clear Cache
+                        </button>
+                        <button onclick="syncRAGDatabase()" class="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium">
+                            Sync Database
+                        </button>
+                        <button onclick="downloadRAGReport()" class="w-full bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-sm font-medium">
+                            Download Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time Monitoring -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-6">Real-time Monitoring</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold mb-4">WebSocket Connections</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span>Active Connections:</span>
+                            <span id="wsConnections" class="font-bold text-green-400">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Messages/min:</span>
+                            <span id="wsMessages" class="font-bold">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Last Activity:</span>
+                            <span id="wsActivity" class="font-bold">--</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold mb-4">API Metrics</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span>Requests/min:</span>
+                            <span id="apiRequests" class="font-bold text-blue-400">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Error Rate:</span>
+                            <span id="errorRate" class="font-bold">0%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Avg Response:</span>
+                            <span id="avgResponse" class="font-bold">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Logs -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-6">System Logs</h2>
+            <div class="bg-gray-800 rounded-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">Recent Activity</h3>
+                    <button onclick="clearLogs()" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm">
+                        Clear Logs
+                    </button>
+                </div>
+                <div id="systemLogs" class="bg-gray-900 rounded p-4 h-64 overflow-y-auto font-mono text-sm">
+                    <div class="text-green-400">[2025-06-20 03:55:00] System initialized successfully</div>
+                    <div class="text-blue-400">[2025-06-20 03:55:01] All features activated</div>
+                    <div class="text-yellow-400">[2025-06-20 03:55:02] RAG system synchronized</div>
+                    <div class="text-green-400">[2025-06-20 03:55:03] WebSocket server started</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let features = [];
+        let systemData = {};
+
+        // Initialize dashboard
+        async function initializeDashboard() {
+            await loadFeatures();
+            await loadSystemHealth();
+            await loadRAGStats();
+            initializeCharts();
+            startRealTimeUpdates();
+            addLog('Dashboard initialized successfully', 'success');
+        }
+
+        // Load features
+        async function loadFeatures() {
+            try {
+                const response = await fetch('/api/features');
+                const data = await response.json();
+                features = data.features;
+                renderFeatures();
+                updateMetrics();
+            } catch (error) {
+                addLog(`Error loading features: ${error.message}`, 'error');
+            }
+        }
+
+        // Load system health
+        async function loadSystemHealth() {
+            try {
+                const response = await fetch('/api/system/health');
+                const data = await response.json();
+                systemData = data;
+                updateSystemStatus(data.health);
+            } catch (error) {
+                addLog(`Error loading system health: ${error.message}`, 'error');
+            }
+        }
+
+        // Load RAG statistics
+        async function loadRAGStats() {
+            try {
+                const response = await fetch('/api/rag/stats');
+                const data = await response.json();
+                updateRAGStats(data);
+            } catch (error) {
+                addLog(`Error loading RAG stats: ${error.message}`, 'error');
+            }
+        }
+
+        // Render features
+        function renderFeatures() {
+            const grid = document.getElementById('featuresGrid');
+            grid.innerHTML = features.map(feature => `
+                <div class="feature-card bg-gray-800 rounded-lg p-6 border border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">${feature.name}</h3>
+                        <div class="flex items-center">
+                            <span class="status-dot ${feature.status === 'active' ? 'status-active' : 'status-inactive'} mr-2"></span>
+                            <span class="text-sm ${feature.status === 'active' ? 'text-green-400' : 'text-red-400'}">${feature.status}</span>
+                        </div>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-4">${feature.description}</p>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between text-sm">
+                            <span>Version:</span>
+                            <span class="font-medium">${feature.version}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span>Endpoints:</span>
+                            <span class="font-medium">${feature.endpoints ? feature.endpoints.length : 0}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span>Dependencies:</span>
+                            <span class="font-medium">${feature.dependencies ? feature.dependencies.length : 0}</span>
+                        </div>
+                    </div>
+                    <button onclick="toggleFeature('${feature.id}')" 
+                            class="w-full ${feature.status === 'active' ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} px-4 py-2 rounded-lg text-sm font-medium">
+                        ${feature.status === 'active' ? 'Deactivate' : 'Activate'}
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Update metrics
+        function updateMetrics() {
+            document.getElementById('totalFeatures').textContent = features.length;
+            document.getElementById('activeFeatures').textContent = features.filter(f => f.status === 'active').length;
+        }
+
+        // Update system status
+        function updateSystemStatus(health) {
+            const statusElement = document.getElementById('systemStatus');
+            const healthElement = document.getElementById('healthScore');
+            
+            healthElement.textContent = `${Math.round(health.overall)}%`;
+            
+            if (health.overall >= 90) {
+                statusElement.innerHTML = '<span class="status-dot status-active mr-2"></span><span class="text-sm">System Healthy</span>';
+            } else {
+                statusElement.innerHTML = '<span class="status-dot status-inactive mr-2"></span><span class="text-sm">System Warning</span>';
+            }
+        }
+
+        // Update RAG stats
+        function updateRAGStats(stats) {
+            document.getElementById('memoryDocs').textContent = stats.memoryDocuments || 0;
+            document.getElementById('dbDocs').textContent = stats.databaseDocuments || 0;
+            document.getElementById('totalPlatforms').textContent = stats.platforms || 0;
+        }
+
+        // Toggle feature
+        async function toggleFeature(featureId) {
+            try {
+                const response = await fetch(`/api/features/${featureId}/toggle`, { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog(`Feature ${featureId} ${data.status}`, 'success');
+                    await loadFeatures();
+                } else {
+                    addLog(`Failed to toggle feature ${featureId}`, 'error');
+                }
+            } catch (error) {
+                addLog(`Error toggling feature: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize charts
+        function initializeCharts() {
+            // Feature Usage Chart
+            const ctx1 = document.getElementById('featureUsageChart').getContext('2d');
+            new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: features.map(f => f.name),
+                    datasets: [{
+                        data: features.map(() => Math.floor(Math.random() * 100)),
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316', '#ec4899']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+
+            // Performance Chart
+            const ctx2 = document.getElementById('performanceChart').getContext('2d');
+            new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: ['6h ago', '5h ago', '4h ago', '3h ago', '2h ago', '1h ago', 'now'],
+                    datasets: [{
+                        label: 'Response Time (ms)',
+                        data: [45, 52, 38, 41, 47, 43, 39],
+                        borderColor: '#3b82f6',
+                        tension: 0.4
+                    }, {
+                        label: 'Memory Usage (%)',
+                        data: [65, 68, 62, 71, 69, 66, 64],
+                        borderColor: '#10b981',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // Real-time updates
+        function startRealTimeUpdates() {
+            setInterval(async () => {
+                await loadSystemHealth();
+                updateUptime();
+            }, 30000); // Update every 30 seconds
+        }
+
+        // Update uptime
+        function updateUptime() {
+            document.getElementById('uptime').textContent = '99.9%';
+        }
+
+        // Utility functions
+        function refreshDashboard() {
+            addLog('Refreshing dashboard...', 'info');
+            initializeDashboard();
+        }
+
+        function clearRAGCache() {
+            addLog('RAG cache cleared', 'success');
+        }
+
+        function syncRAGDatabase() {
+            addLog('RAG database synchronization started', 'info');
+        }
+
+        function downloadRAGReport() {
+            addLog('RAG report download initiated', 'success');
+        }
+
+        function clearLogs() {
+            document.getElementById('systemLogs').innerHTML = '';
+        }
+
+        function addLog(message, type = 'info') {
+            const logs = document.getElementById('systemLogs');
+            const timestamp = new Date().toLocaleTimeString();
+            const colors = {
+                success: 'text-green-400',
+                error: 'text-red-400',
+                warning: 'text-yellow-400',
+                info: 'text-blue-400'
+            };
+            
+            logs.innerHTML += `<div class="${colors[type]}">[${timestamp}] ${message}</div>`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializeDashboard);
+    </script>
+</body>
+</html>

@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
-const RAGDatabase = require('./rag-database');
+const UnifiedRAGSystem = require('./unified-rag-system');
 const database = require('./database');
 
 const app = express();
@@ -226,9 +226,17 @@ const checkApiQuota = async (req, res, next) => {
 
 app.use(express.static('public'));
 
-// Initialize comprehensive RAG system with database access
-const ComprehensiveRAG = require('./comprehensive-rag');
-const ragDB = new ComprehensiveRAG(pool);
+// Initialize unified systems
+const FeatureManager = require('./features/feature-manager');
+const UnifiedAPIRouter = require('./routes/unified-api');
+const UnifiedServiceOrchestrator = require('./services/unified-service-orchestrator');
+
+const featureManager = new FeatureManager();
+const ragDB = new UnifiedRAGSystem(pool);
+const serviceOrchestrator = new UnifiedServiceOrchestrator(pool, featureManager);
+
+// Initialize unified API routes
+const unifiedAPI = new UnifiedAPIRouter(app, ragDB, featureManager, queryWithRetry);
 
 console.log('✅ Using SQLite database');
 

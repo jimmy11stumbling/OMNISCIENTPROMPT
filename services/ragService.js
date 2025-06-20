@@ -453,12 +453,4 @@ class RAGService {
 
 const ragService = new RAGService();
 
-module.exports = {
-  ragService,
-  searchDocuments: (query, platform, limit) => ragService.searchDocuments(query, platform, limit),
-  addDocument: (document) => ragService.addDocument(document),
-  getPlatformDocuments: (platform) => ragService.getPlatformDocuments(platform),
-  getDocumentStats: () => ragService.getDocumentStats(),
-  getContextualRecommendations: (query, platform) => ragService.getContextualRecommendations(query, platform),
-  clearCaches: () => ragService.clearCaches()
-};
+module.exports = RAGService;

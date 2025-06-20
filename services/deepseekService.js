@@ -256,9 +256,4 @@ Generated using DeepSeek AI reasoning capabilities.`,
 
 const deepSeekService = new DeepSeekService();
 
-module.exports = {
-  deepSeekService,
-  generatePrompt: (query, platform, options) => deepSeekService.generatePrompt(query, platform, options),
-  getServiceStatus: () => deepSeekService.getServiceStatus(),
-  getUsageStats: () => deepSeekService.getUsageStats()
-};
+module.exports = DeepSeekService;
