@@ -84,25 +84,30 @@ class PerformanceOptimizer {
   }
 
   setupMemoryManagement() {
-    const memoryThreshold = 0.85; // 85% memory usage threshold
+    const memoryThreshold = 0.95; // 95% memory usage threshold (less sensitive)
+    let lastWarning = 0;
+    const warningCooldown = 300000; // 5 minutes between warnings
     
     setInterval(() => {
       const memUsage = process.memoryUsage();
       const heapUsedPercent = memUsage.heapUsed / memUsage.heapTotal;
       
       if (heapUsedPercent > memoryThreshold) {
-        console.warn('[PERFORMANCE] High memory usage detected:', {
-          heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024) + 'MB',
-          heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024) + 'MB',
-          percentage: Math.round(heapUsedPercent * 100) + '%'
-        });
+        const now = Date.now();
+        if (now - lastWarning > warningCooldown) {
+          console.warn('[PERFORMANCE] High memory usage detected:', {
+            heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024) + 'MB',
+            heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024) + 'MB',
+            percentage: Math.round(heapUsedPercent * 100) + '%'
+          });
+          lastWarning = now;
+        }
         
         if (global.gc) {
           global.gc();
-          console.log('[PERFORMANCE] Garbage collection triggered');
         }
       }
-    }, 30000); // Check every 30 seconds
+    }, 60000); // Check every 60 seconds instead of 30
   }
 
   trackResponseTime(req, res, responseTime) {

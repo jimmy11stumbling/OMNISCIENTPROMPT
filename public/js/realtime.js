@@ -3,11 +3,12 @@ class RealTimeClient {
     constructor() {
         this.ws = null;
         this.isConnected = false;
+        this.reconnecting = false;
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 5;
         this.reconnectDelay = 1000;
         this.callbacks = new Map();
-        
+
         this.connect();
     }
 
@@ -15,16 +16,16 @@ class RealTimeClient {
         try {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const wsUrl = `${protocol}//${window.location.host}/ws`;
-            
+
             console.log('[REAL-TIME] Connecting to:', wsUrl);
             this.ws = new WebSocket(wsUrl);
-            
+
             this.ws.onopen = () => {
                 console.log('[REAL-TIME] Connected to validation server');
                 this.isConnected = true;
                 this.reconnectAttempts = 0;
                 this.updateConnectionStatus(true);
-                
+
                 // Show connection notification
                 this.showNotification('Real-time monitoring connected', 'success');
             };
@@ -59,7 +60,7 @@ class RealTimeClient {
 
     handleMessage(data) {
         console.log('[REAL-TIME] Received:', data.type, data);
-        
+
         switch (data.type) {
             case 'connection':
                 this.handleConnection(data);
@@ -94,7 +95,7 @@ class RealTimeClient {
             default:
                 console.log('[REAL-TIME] Unknown message type:', data.type);
         }
-        
+
         // Trigger registered callbacks
         if (this.callbacks.has(data.type)) {
             this.callbacks.get(data.type).forEach(callback => {
@@ -136,7 +137,7 @@ class RealTimeClient {
             `RAG search: ${data.resultsCount} results in ${data.searchTime}ms`, 
             'info'
         );
-        
+
         // Update RAG context display if available
         if (document.getElementById('ragContext')) {
             const ragElement = document.getElementById('ragContext');
@@ -159,7 +160,7 @@ class RealTimeClient {
             `Chat response: ${data.tokensUsed} tokens in ${data.responseTime}ms`, 
             'success'
         );
-        
+
         // Update chat metrics
         this.updateChatMetrics(data);
     }
@@ -191,7 +192,7 @@ class RealTimeClient {
             `Prompt generated: ${data.tokensUsed} tokens in ${data.apiTime}ms`, 
             'success'
         );
-        
+
         // Update generation metrics
         this.updatePromptMetrics(data);
     }
@@ -208,7 +209,7 @@ class RealTimeClient {
             if (indicator) {
                 const dot = indicator.querySelector('div');
                 const text = indicator.querySelector('span');
-                
+
                 if (dot && text) {
                     if (connected) {
                         dot.className = 'w-2 h-2 bg-green-500 rounded-full animate-pulse';
@@ -231,7 +232,7 @@ class RealTimeClient {
             indicator.className = 'fixed top-20 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 flex items-center space-x-2';
             document.body.appendChild(indicator);
         }
-        
+
         indicator.innerHTML = `
             <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             <span>${message}</span>
@@ -253,18 +254,18 @@ class RealTimeClient {
             warning: 'bg-yellow-600',
             info: 'bg-blue-600'
         };
-        
+
         const notification = document.createElement('div');
         notification.className = `fixed top-4 right-4 ${colors[type]} text-white px-4 py-2 rounded-lg shadow-lg z-50 transform transition-all duration-300`;
         notification.textContent = message;
-        
+
         document.body.appendChild(notification);
-        
+
         // Animate in
         setTimeout(() => {
             notification.style.transform = 'translateX(0)';
         }, 10);
-        
+
         // Remove after 5 seconds
         setTimeout(() => {
             notification.style.transform = 'translateX(100%)';
@@ -280,7 +281,7 @@ class RealTimeClient {
         // Update chat-specific metrics in the interface
         if (window.chatMetrics) {
             window.chatMetrics.push(data);
-            
+
             // Keep only last 100 entries
             if (window.chatMetrics.length > 100) {
                 window.chatMetrics = window.chatMetrics.slice(-100);
@@ -294,7 +295,7 @@ class RealTimeClient {
         // Update prompt generation metrics
         if (window.promptMetrics) {
             window.promptMetrics.push(data);
-            
+
             // Keep only last 100 entries
             if (window.promptMetrics.length > 100) {
                 window.promptMetrics = window.promptMetrics.slice(-100);
@@ -308,12 +309,16 @@ class RealTimeClient {
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++;
             console.log(`[REAL-TIME] Reconnecting... Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
-            
-            setTimeout(() => {
-                if (!this.isConnected) {
+
+            // Reconnect after 5 seconds, but only if not already connecting
+            if (!this.reconnecting) {
+                this.reconnecting = true;
+                setTimeout(() => {
+                    console.log('[REAL-TIME] Attempting to reconnect...');
+                    this.reconnecting = false;
                     this.connect();
-                }
-            }, this.reconnectDelay * this.reconnectAttempts);
+                }, this.reconnectDelay * this.reconnectAttempts);
+            }
         } else {
             console.error('[REAL-TIME] Max reconnection attempts reached');
             this.showNotification('Real-time monitoring disconnected', 'error');
@@ -352,10 +357,10 @@ class RealTimeClient {
 // Initialize real-time client when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.realTimeClient = new RealTimeClient();
-    
+
     // Global metrics arrays for tracking
     window.chatMetrics = [];
     window.promptMetrics = [];
-    
+
     console.log('[REAL-TIME] Client initialized and validation system active');
 });

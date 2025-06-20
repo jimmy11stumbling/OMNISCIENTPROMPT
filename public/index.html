@@ -119,10 +119,10 @@
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const platform = document.getElementById('platform').value;
             const query = document.getElementById('query').value.trim();
-            
+
             if (!query) return;
 
             generateBtn.disabled = true;
@@ -165,7 +165,7 @@
                     success: false,
                     error: error.message
                 });
-                
+
                 errorMessage.textContent = error.message;
                 errorSection.classList.remove('hidden');
             } finally {

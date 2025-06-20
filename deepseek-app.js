@@ -458,11 +458,22 @@ const heartbeat = setInterval(() => {
     try {
       ws.ping();
     } catch (error) {
-      console.error('WebSocket ping error:', error);
       activeConnections.delete(ws);
       ws.terminate();
     }
   });
+  
+  // Clean up stale connections
+  if (activeConnections.size > 100) {
+    console.warn('[WEBSOCKET] Too many connections, cleaning up stale ones');
+    const connections = Array.from(activeConnections);
+    connections.slice(0, -50).forEach(ws => {
+      if (ws.readyState !== 1) {
+        activeConnections.delete(ws);
+        ws.terminate();
+      }
+    });
+  }
 }, 30000);
 
 // Root route serves the HTML page

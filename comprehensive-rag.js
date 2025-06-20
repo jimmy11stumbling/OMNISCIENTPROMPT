@@ -8,29 +8,45 @@ class ComprehensiveRAG {
     this.inMemoryDocs = ragInstance.documents || {};
     this.dbDocuments = new Map();
     this.lastDbSync = 0;
-    this.syncInterval = 300000; // 5 minutes instead of 30 seconds
+    this.syncInterval = 600000; // 10 minutes
     this.lastDocumentCount = 0;
+    this.lastSyncCheck = 0;
+    this.syncCheckInterval = 120000; // Check for changes every 2 minutes
     
     // Initialize database document sync
     this.syncDatabaseDocuments();
-    setInterval(() => this.smartSync(), this.syncInterval);
+    setInterval(() => this.smartSync(), this.syncCheckInterval);
   }
 
   // Smart sync only when changes detected
   async smartSync() {
     if (!this.pool) return;
+    
+    const now = Date.now();
+    
+    // Only perform full sync every 10 minutes
+    if (now - this.lastSyncCheck < this.syncCheckInterval) {
+      return;
+    }
+    
+    this.lastSyncCheck = now;
 
     try {
       // First check if document count has changed
-      const countResult = await this.pool.query('SELECT COUNT(*) as count FROM rag_documents WHERE is_active = true');
-      const currentCount = parseInt(countResult.rows[0].count);
+      const countResult = await this.pool.queryAsync('SELECT COUNT(*) as count FROM rag_documents WHERE is_active = 1');
+      const currentCount = parseInt(countResult.rows[0]?.count || 0);
       
       if (currentCount !== this.lastDocumentCount) {
+        console.log(`[RAG-SYNC] Document count changed: ${this.lastDocumentCount} -> ${currentCount}`);
         await this.syncDatabaseDocuments();
         this.lastDocumentCount = currentCount;
       }
     } catch (error) {
-      console.error('Smart sync check error:', error);
+      // Silently handle database connection issues
+      if (!this.dbUnavailable) {
+        console.log('[RAG-SYNC] Database temporarily unavailable');
+        this.dbUnavailable = true;
+      }
     }
   }
 

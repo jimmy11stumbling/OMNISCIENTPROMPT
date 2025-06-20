@@ -230,7 +230,7 @@
             }
             const loadingState = document.getElementById('loadingState');
             const analyticsContent = document.getElementById('analyticsContent');
-            
+
             loadingState.style.display = 'block';
             analyticsContent.style.display = 'none';
 
@@ -244,14 +244,14 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    
+
                     loadingState.style.display = 'none';
                     analyticsContent.style.display = 'block';
-                    
+
                     updateCharts(data);
                     updateMetrics(data);
                     updatePlatformTable(data);
-                    
+
                     // Update last refreshed timestamp
                     const lastUpdatedEl = document.getElementById('lastUpdated');
                     if (lastUpdatedEl) {
@@ -260,10 +260,10 @@
                 } else if (response.status === 500) {
                     // Try to get the error response for database issues
                     const errorData = await response.json().catch(() => ({}));
-                    
+
                     loadingState.style.display = 'none';
                     analyticsContent.style.display = 'block';
-                    
+
                     // Show empty data with error message
                     updateCharts({ promptStats: [], platformStats: [], tokenStats: [] });
                     updateMetrics({ 
@@ -273,7 +273,7 @@
                         realTimeMetrics: { successRate: 0 }
                     });
                     updatePlatformTable({ platformStats: [] });
-                    
+
                     // Show error message
                     const errorDiv = document.createElement('div');
                     errorDiv.className = 'bg-yellow-900 border border-yellow-600 rounded-lg p-4 mb-6';
@@ -341,7 +341,7 @@
 
         function processHourlyData(promptStats) {
             const hourlyMap = {};
-            
+
             promptStats.forEach(stat => {
                 if (stat.hour) {
                     const hour = new Date(stat.hour).getHours();
@@ -358,7 +358,7 @@
 
         function processResponseTimeData(promptStats) {
             const responseTimeMap = {};
-            
+
             promptStats.forEach(stat => {
                 if (stat.hour && stat.avg_response_time) {
                     const hour = new Date(stat.hour).getHours();
@@ -378,7 +378,7 @@
             if (!ragStats || ragStats.length === 0) {
                 return { labels: [], hitRate: [], queryTime: [] };
             }
-            
+
             const labels = ragStats.map((_, index) => `Day ${index + 1}`);
             const hitRate = ragStats.map(stat => parseFloat(stat.hit_rate || 0));
             const queryTime = ragStats.map(stat => parseFloat(stat.avg_query_time || 0));
@@ -389,15 +389,15 @@
         function updateMetrics(data) {
             // Calculate total requests
             const totalRequests = (data.promptStats || []).reduce((sum, stat) => sum + parseInt(stat.count || 0), 0);
-            
+
             // Calculate success rate from real-time metrics
             const successRate = data.realTimeMetrics?.successRate ? data.realTimeMetrics.successRate * 100 : 0;
-            
+
             // Calculate average response time
             const avgResponseTime = data.performanceStats?.avg_response_time 
                 ? Math.round(parseFloat(data.performanceStats.avg_response_time))
                 : 0;
-            
+
             // Calculate total tokens
             const totalTokens = (data.tokenStats || []).reduce((sum, stat) => sum + parseInt(stat.total_tokens || 0), 0);
 
@@ -411,7 +411,7 @@
         function updatePlatformTable(data) {
             const platformTable = document.getElementById('platformTable');
             const platformData = data.platformStats || [];
-            
+
             if (platformData.length === 0) {
                 platformTable.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-gray-400">No data available for selected time range</td></tr>';
                 return;
@@ -652,7 +652,7 @@
             } catch (error) {
                 console.error('Logout error:', error);
             }
-            
+
             localStorage.removeItem('authToken');
             localStorage.removeItem('sessionToken');
             localStorage.removeItem('userData');
@@ -665,7 +665,7 @@
             const originalText = refreshBtn.innerHTML;
             refreshBtn.innerHTML = '<i class="fas fa-sync-alt fa-spin mr-2"></i>Refreshing...';
             refreshBtn.disabled = true;
-            
+
             loadAnalyticsData().finally(() => {
                 refreshBtn.innerHTML = originalText;
                 refreshBtn.disabled = false;
@@ -678,7 +678,7 @@
             if (refreshBtn) {
                 refreshBtn.addEventListener('click', refreshData);
             }
-            
+
             // Add last updated timestamp
             const lastUpdated = document.createElement('div');
             lastUpdated.id = 'lastUpdated';
@@ -694,3 +694,4 @@
     </script>
 </body>
 </html>
+```This change replaces the Tailwind CDN link with a local stylesheet link, improving loading times and removing a production warning.
