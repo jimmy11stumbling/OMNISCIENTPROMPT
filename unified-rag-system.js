@@ -59,7 +59,8 @@ class UnifiedRAGSystem {
     this.lastDocumentCount = 0;
     this.lastCacheUpdate = 0;
     this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
-    
+    this.lastSyncTime = 0;
+
     // Initialize if database is available
     if (this.pool) {
       this.initializeDatabase();
@@ -83,7 +84,7 @@ class UnifiedRAGSystem {
     try {
       const countResult = await this.pool.queryAsync('SELECT COUNT(*) as count FROM rag_documents WHERE is_active = true');
       const currentCount = parseInt(countResult.rows[0].count);
-      
+
       if (currentCount !== this.lastDocumentCount) {
         await this.syncDatabaseDocuments();
         this.lastDocumentCount = currentCount;
@@ -98,6 +99,14 @@ class UnifiedRAGSystem {
     if (!this.pool) return;
 
     try {
+      const now = Date.now();
+      // Only sync if it's been more than 10 minutes since last sync
+      if (now - this.lastSyncTime < 10 * 60 * 1000) {
+        return;
+      }
+
+      this.lastSyncTime = now;
+
       const result = await this.pool.queryAsync(`
         SELECT id, title, content, platform, document_type, keywords, created_at
         FROM rag_documents 
@@ -106,16 +115,16 @@ class UnifiedRAGSystem {
       `);
 
       this.dbDocuments.clear();
-      
+
       for (const row of result.rows) {
         const platform = row.platform || 'unknown';
         if (!this.dbDocuments.has(platform)) {
           this.dbDocuments.set(platform, []);
         }
-        
+
         const keywords = Array.isArray(row.keywords) ? row.keywords : 
                         (typeof row.keywords === 'string' ? JSON.parse(row.keywords) : []);
-        
+
         this.dbDocuments.get(platform).push({
           id: `db_${row.id}`,
           title: row.title,
@@ -151,9 +160,9 @@ class UnifiedRAGSystem {
 
     // Combine and rank all results
     const combinedResults = this.rankAndDeduplicateResults(results, limit);
-    
+
     console.log(`[UNIFIED-RAG] Query: "${query}" | Found ${combinedResults.length} documents`);
-    
+
     return combinedResults;
   }
 
@@ -164,10 +173,10 @@ class UnifiedRAGSystem {
 
     for (const platformName of platforms) {
       const docs = this.documents[platformName] || [];
-      
+
       for (const doc of docs) {
         const score = this.calculateRelevanceScore(doc, searchTerms, query);
-        
+
         if (score > 0) {
           results.push({
             ...doc,
@@ -186,11 +195,11 @@ class UnifiedRAGSystem {
   // Search database documents
   async searchDatabaseDocuments(query, platform, searchTerms, limit) {
     const results = [];
-    
+
     // Use cached results if available and recent
     const cacheKey = `${query}_${platform || 'all'}`;
     const cached = this.documentCache.get(cacheKey);
-    
+
     if (cached && (Date.now() - this.lastCacheUpdate) < this.cacheTimeout) {
       return cached;
     }
@@ -199,10 +208,10 @@ class UnifiedRAGSystem {
 
     for (const platformName of platforms) {
       const docs = this.dbDocuments.get(platformName) || [];
-      
+
       for (const doc of docs) {
         const score = this.calculateRelevanceScore(doc, searchTerms, query);
-        
+
         if (score > 0) {
           results.push({
             ...doc,
@@ -226,20 +235,20 @@ class UnifiedRAGSystem {
   calculateRelevanceScore(doc, searchTerms, originalQuery = '') {
     let score = 0;
     const content = (doc.title + ' ' + doc.content + ' ' + (doc.keywords || []).join(' ')).toLowerCase();
-    
+
     // Exact phrase matching (highest weight)
     if (content.includes(originalQuery.toLowerCase())) {
       score += 50;
     }
-    
+
     // Title matching (high weight)
     const titleMatches = searchTerms.filter(term => doc.title.toLowerCase().includes(term)).length;
     score += titleMatches * 15;
-    
+
     // Content matching (medium weight)
     const contentMatches = searchTerms.filter(term => doc.content.toLowerCase().includes(term)).length;
     score += contentMatches * 10;
-    
+
     // Keyword matching (medium weight)
     if (doc.keywords) {
       const keywordMatches = searchTerms.filter(term => 
@@ -247,18 +256,18 @@ class UnifiedRAGSystem {
       ).length;
       score += keywordMatches * 12;
     }
-    
+
     // Type-specific bonuses
     if (doc.type === 'ai-agent' && originalQuery.toLowerCase().includes('ai')) score += 10;
     if (doc.type === 'database' && originalQuery.toLowerCase().includes('data')) score += 10;
     if (doc.type === 'authentication' && originalQuery.toLowerCase().includes('auth')) score += 10;
-    
+
     // Recency bonus for database documents
     if (doc.source === 'database' && doc.lastUpdated) {
       const daysSinceUpdate = (Date.now() - new Date(doc.lastUpdated)) / (1000 * 60 * 60 * 24);
       if (daysSinceUpdate < 7) score += 5;
     }
-    
+
     return Math.max(0, score);
   }
 
@@ -274,7 +283,7 @@ class UnifiedRAGSystem {
       const matches = searchTerms.reduce((count, term) => {
         return count + (section.includes(term) ? 1 : 0);
       }, 0);
-      
+
       if (matches > maxMatches) {
         maxMatches = matches;
         bestStart = i;
@@ -285,7 +294,7 @@ class UnifiedRAGSystem {
     if (snippet.length > maxLength) {
       snippet = snippet.substring(0, maxLength - 3) + '...';
     }
-    
+
     return snippet;
   }
 
@@ -294,7 +303,7 @@ class UnifiedRAGSystem {
     // Remove duplicates based on content similarity
     const uniqueResults = [];
     const seenContent = new Set();
-    
+
     for (const result of results) {
       const contentHash = this.generateContentHash(result.content);
       if (!seenContent.has(contentHash)) {
@@ -336,7 +345,7 @@ class UnifiedRAGSystem {
 
       // Refresh database cache
       await this.syncDatabaseDocuments();
-      
+
       console.log(`[UNIFIED-RAG] Added document: ${document.title}`);
       return result;
     } catch (error) {
@@ -378,7 +387,7 @@ class UnifiedRAGSystem {
   getContextualRecommendations(query, platform) {
     const recommendations = [];
     const queryLower = query.toLowerCase();
-    
+
     // Platform-specific recommendations
     if (platform === 'replit') {
       if (queryLower.includes('deploy') || queryLower.includes('host')) {
@@ -388,7 +397,7 @@ class UnifiedRAGSystem {
         recommendations.push('Replit PostgreSQL provides automated backups and migrations');
       }
     }
-    
+
     // General recommendations based on query content
     if (queryLower.includes('auth') || queryLower.includes('login')) {
       recommendations.push('Implement OAuth for secure user authentication');
@@ -396,7 +405,7 @@ class UnifiedRAGSystem {
     if (queryLower.includes('real-time') || queryLower.includes('live')) {
       recommendations.push('Consider WebSocket integration for real-time features');
     }
-    
+
     return recommendations;
   }
 

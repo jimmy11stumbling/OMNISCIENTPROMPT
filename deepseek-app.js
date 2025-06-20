@@ -50,7 +50,7 @@ const rateLimitStore = new Map();
 setInterval(() => {
   const now = Date.now();
   const fiveMinutesAgo = now - 5 * 60 * 1000;
-  
+
   for (const [clientId, requests] of rateLimitStore.entries()) {
     const validRequests = requests.filter(timestamp => timestamp > fiveMinutesAgo);
     if (validRequests.length === 0) {
@@ -66,28 +66,28 @@ const rateLimit = (windowMs = 60000, maxRequests = 100) => {
     const clientId = req.ip || req.connection.remoteAddress;
     const now = Date.now();
     const windowStart = now - windowMs;
-    
+
     if (!rateLimitStore.has(clientId)) {
       rateLimitStore.set(clientId, []);
     }
-    
+
     const requests = rateLimitStore.get(clientId);
     const validRequests = requests.filter(timestamp => timestamp > windowStart);
-    
+
     if (validRequests.length >= maxRequests) {
       return res.status(429).json({
         error: 'Rate limit exceeded',
         retryAfter: Math.ceil((validRequests[0] + windowMs - now) / 1000)
       });
     }
-    
+
     validRequests.push(now);
     rateLimitStore.set(clientId, validRequests);
-    
+
     res.setHeader('X-RateLimit-Limit', maxRequests);
     res.setHeader('X-RateLimit-Remaining', maxRequests - validRequests.length);
     res.setHeader('X-RateLimit-Reset', Math.ceil((now + windowMs) / 1000));
-    
+
     next();
   };
 };
@@ -100,12 +100,12 @@ app.use('/api/chat', rateLimit(60000, 20)); // 20 chat messages per minute
 // API usage logging middleware
 const logApiUsage = async (req, res, next) => {
   const startTime = Date.now();
-  
+
   res.on('finish', async () => {
     try {
       const responseTime = Date.now() - startTime;
       const userId = req.user ? req.user.id : null;
-      
+
       await queryWithRetry(`
         INSERT INTO api_usage_logs (user_id, endpoint, method, ip_address, user_agent, response_status, response_time, error_message)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -131,7 +131,7 @@ const logApiUsage = async (req, res, next) => {
       console.error('API usage logging error:', error);
     }
   });
-  
+
   next();
 };
 
@@ -183,7 +183,7 @@ const authenticateToken = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const userResult = await pool.query('SELECT * FROM users WHERE id = $1 AND is_active = true', [decoded.userId]);
-    
+
     if (userResult.rows.length === 0) {
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
@@ -208,7 +208,7 @@ const checkApiQuota = async (req, res, next) => {
   if (!req.user) return next();
 
   const today = new Date().toISOString().split('T')[0];
-  
+
   if (req.user.api_quota_reset_date !== today) {
     await queryWithRetry(
       'UPDATE users SET api_quota_used_today = 0, api_quota_reset_date = $1 WHERE id = $2',
@@ -252,13 +252,13 @@ app.use('/api/', (req, res, next) => {
   if (req.method === 'GET') {
     const cacheKey = req.originalUrl;
     const cached = quantumCache.quantumGet(cacheKey, { userAgent: req.get('user-agent') });
-    
+
     if (cached) {
       res.set('X-Quantum-Cache', 'HIT');
       res.set('X-Cache-Coherence', cached.metadata.coherence);
       return res.json(cached.value);
     }
-    
+
     const originalSend = res.json;
     res.json = function(data) {
       if (res.statusCode === 200) {
@@ -301,7 +301,7 @@ app.get('/api/monitoring/dashboard', (req, res) => {
 // Performance optimization endpoint
 app.post('/api/optimize/trigger', (req, res) => {
   const { type = 'auto' } = req.body;
-  
+
   switch (type) {
     case 'quantum':
       quantumCache.performDecoherence();
@@ -315,7 +315,7 @@ app.post('/api/optimize/trigger', (req, res) => {
     default:
       aiOptimizer.emit('manual_optimization', { timestamp: Date.now() });
   }
-  
+
   res.json({ message: `${type} optimization triggered`, timestamp: Date.now() });
 });
 
@@ -366,7 +366,7 @@ class RealTimeValidator {
     const duration = Date.now() - startTime;
     this.metrics.apiCalls++;
     this.metrics.responseTime.push(duration);
-    
+
     if (success) {
       this.metrics.successRate = (this.metrics.successRate * (this.metrics.apiCalls - 1) + 1) / this.metrics.apiCalls;
     } else {
@@ -375,7 +375,7 @@ class RealTimeValidator {
 
     // Real-time console validation
     console.log(`[REAL-TIME] ${endpoint} - ${success ? 'SUCCESS' : 'FAILED'} - ${duration}ms - Tokens: ${tokens}`);
-    
+
     // Broadcast to connected clients
     this.broadcastMetrics();
   }
@@ -383,7 +383,7 @@ class RealTimeValidator {
   logRagQuery(query, platform, results, duration) {
     this.metrics.ragQueries++;
     console.log(`[RAG-VALIDATION] Query: "${query}" | Platform: ${platform} | Results: ${results.length} | Time: ${duration}ms`);
-    
+
     this.broadcastMetrics();
   }
 
@@ -419,7 +419,7 @@ wss.on('connection', (ws, req) => {
   console.log('[REAL-TIME] New WebSocket connection established');
   ws.isAlive = true;
   activeConnections.add(ws);
-  
+
   // Send initial connection confirmation
   try {
     ws.send(JSON.stringify({
@@ -474,7 +474,7 @@ app.get('/', (req, res) => {
 app.post('/api/search', async (req, res) => {
   try {
     const { query, platform, limit = 5 } = req.body;
-    
+
     if (!query) {
       return res.status(400).json({ 
         error: 'Search query is required',
@@ -484,7 +484,7 @@ app.post('/api/search', async (req, res) => {
 
     // Use the RAG system already initialized
     const results = await ragDB.searchDocuments(query, platform, limit);
-    
+
     res.json({
       query,
       platform,
@@ -504,7 +504,7 @@ app.post('/api/search', async (req, res) => {
 // Authentication endpoints
 app.post('/api/auth/register', async (req, res) => {
   const { username, email, password, fullName } = req.body;
-  
+
   if (!username || !email || !password) {
     return res.status(400).json({ error: 'Username, email, and password are required' });
   }
@@ -530,7 +530,7 @@ app.post('/api/auth/register', async (req, res) => {
       INSERT INTO users (username, email, password_hash, full_name, verification_token, api_key)
       VALUES (?, ?, ?, ?, ?, ?)
     `, [username, email, passwordHash, fullName, verificationToken, apiKey]);
-    
+
     // Get the created user - SQLite returns lastInsertRowid
     const userId = result.lastInsertRowid || (result.rows && result.rows[0] ? result.rows[0].id : null);
     const userResult = await queryWithRetry(`
@@ -578,7 +578,7 @@ app.post('/api/auth/register', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body;
-  
+
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required' });
   }
@@ -735,12 +735,12 @@ app.post('/api/rag/upload', authenticateToken, upload.single('document'), async 
   }
 
   const { title, platform, documentType, keywords } = req.body;
-  
+
   try {
     // Read file content
     const fs = require('fs').promises;
     let content = '';
-    
+
     if (req.file.mimetype === 'application/json') {
       try {
         const fileContent = await fs.readFile(req.file.path, 'utf8');
@@ -829,7 +829,7 @@ app.post('/api/rag/upload', authenticateToken, upload.single('document'), async 
     });
   } catch (error) {
     console.error('Document upload error:', error);
-    
+
     // Create error notification if user is authenticated
     if (req.user) {
       try {
@@ -913,7 +913,7 @@ app.delete('/api/rag/documents/:id', authenticateToken, async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Document not found or access denied' });
+      return res.status(404).json({ error:'Document not found or access denied' });
     }
 
     const document = result.rows[0];
@@ -1091,7 +1091,7 @@ app.post('/api/search/advanced', authenticateToken, async (req, res) => {
     const allowedSortFields = ['created_at', 'updated_at', 'tokens_used', 'response_time', 'title'];
     const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'created_at';
     const order = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
-    
+
     searchQuery += ` ORDER BY sp.${sortField} ${order}`;
 
     // Pagination
@@ -1124,7 +1124,7 @@ app.post('/api/search/advanced', authenticateToken, async (req, res) => {
 // Health check endpoint with real-time validation
 app.get('/api/health', (req, res) => {
   const startTime = Date.now();
-  
+
   const healthData = {
     status: 'healthy',
     service: 'DeepSeek AI Prompt Generator',
@@ -1133,7 +1133,7 @@ app.get('/api/health', (req, res) => {
     activeConnections: activeConnections.size,
     metrics: validator.metrics
   };
-  
+
   validator.logApiCall('/api/health', startTime, true);
   res.json(healthData);
 });
@@ -1141,20 +1141,20 @@ app.get('/api/health', (req, res) => {
 // Real-time metrics endpoint
 app.get('/api/metrics', (req, res) => {
   const startTime = Date.now();
-  
+
   res.json({
     metrics: validator.metrics,
     timestamp: new Date().toISOString(),
     activeConnections: activeConnections.size
   });
-  
+
   validator.logApiCall('/api/metrics', startTime, true);
 });
 
 // Analytics data endpoint
 app.get('/api/analytics', async (req, res) => {
   const { timeRange = '24h' } = req.query;
-  
+
   try {
     let timeCondition = '';
     switch (timeRange) {
@@ -1245,7 +1245,7 @@ app.get('/api/analytics', async (req, res) => {
     });
   } catch (error) {
     console.error('Analytics query error:', error);
-    
+
     // Return basic structure with real-time data when database fails
     res.json({
       timeRange,
@@ -1270,7 +1270,7 @@ app.get('/api/analytics', async (req, res) => {
 app.post('/api/rag/search', (req, res) => {
   const startTime = Date.now();
   const { query, platform, limit = 5 } = req.body;
-  
+
   if (!query) {
     validator.logApiCall('/api/rag/search', startTime, false);
     return res.status(400).json({ error: 'Query is required' });
@@ -1280,10 +1280,10 @@ app.post('/api/rag/search', (req, res) => {
     const ragStartTime = Date.now();
     const results = ragDB.searchDocuments(query, platform, limit);
     const ragDuration = Date.now() - ragStartTime;
-    
+
     // Real-time RAG validation
     validator.logRagQuery(query, platform || 'all', results, ragDuration);
-    
+
     const response = {
       query,
       platform: platform || 'all',
@@ -1292,7 +1292,7 @@ app.post('/api/rag/search', (req, res) => {
       searchTime: ragDuration,
       timestamp: new Date().toISOString()
     };
-    
+
     // Broadcast RAG search results to connected clients
     activeConnections.forEach(ws => {
       if (ws.readyState === WebSocket.OPEN) {
@@ -1312,7 +1312,7 @@ app.post('/api/rag/search', (req, res) => {
         }
       }
     });
-    
+
     validator.logApiCall('/api/rag/search', startTime, true);
     res.json(response);
   } catch (error) {
@@ -1325,7 +1325,7 @@ app.post('/api/rag/search', (req, res) => {
 // Get platform documentation
 app.get('/api/rag/platform/:platform', (req, res) => {
   const { platform } = req.params;
-  
+
   try {
     // Use the correct method name from rag-database.js
     const docs = ragDB.getPlatformDocs ? ragDB.getPlatformDocs(platform) : [];
@@ -1348,7 +1348,7 @@ app.get('/api/rag/platform/:platform', (req, res) => {
 // Get contextual recommendations
 app.post('/api/rag/recommendations', (req, res) => {
   const { query, platform } = req.body;
-  
+
   if (!query || !platform) {
     return res.status(400).json({ error: 'Query and platform are required' });
   }
@@ -1374,7 +1374,7 @@ app.post('/api/chat', async (req, res) => {
   try {
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     console.log(`[CHAT-START] Session: ${sessionId.split('_')[1]} | Platform: ${platform} | Message: "${message}"`);
-    
+
     // Real-time notification of chat start
     activeConnections.forEach(ws => {
       if (ws.readyState === WebSocket.OPEN) {
@@ -1394,9 +1394,9 @@ app.post('/api/chat', async (req, res) => {
     const ragStartTime = Date.now();
     const ragResults = ragDB.searchDocuments(message, platform, 3);
     const ragDuration = Date.now() - ragStartTime;
-    
+
     validator.logRagQuery(message, platform, ragResults, ragDuration);
-    
+
     const contextualInfo = ragResults.map(doc => 
       `${doc.title}: ${doc.snippet}`
     ).join('\n');
@@ -1409,10 +1409,10 @@ app.post('/api/chat', async (req, res) => {
 
     // Generate contextual response based on available documentation
     let contextualResponse;
-    
+
     if (ragResults.length > 0) {
       const contextInfo = ragResults.map(doc => `• **${doc.title}**: ${doc.snippet}`).join('\n');
-      
+
       if (message.toLowerCase().includes('authentication') || message.toLowerCase().includes('auth')) {
         contextualResponse = `Based on ${platform} documentation:\n\n${contextInfo}\n\nFor authentication implementation, I recommend starting with JWT tokens and secure session management. Would you like me to help you implement a specific authentication flow?`;
       } else if (message.toLowerCase().includes('component') || message.toLowerCase().includes('react')) {
@@ -1468,7 +1468,7 @@ app.post('/api/chat', async (req, res) => {
 
   } catch (error) {
     console.error('[CHAT-ERROR] Processing failed:', error);
-    
+
     activeConnections.forEach(ws => {
       if (ws.readyState === WebSocket.OPEN) {
         try {
@@ -1482,7 +1482,7 @@ app.post('/api/chat', async (req, res) => {
         }
       }
     });
-    
+
     validator.logApiCall('/api/chat', startTime, false);
     res.status(500).json({ 
       error: 'Failed to process chat message' 
@@ -1493,7 +1493,7 @@ app.post('/api/chat', async (req, res) => {
 // Save generated prompt to database
 app.post('/api/prompts/save', async (req, res) => {
   const { title, originalQuery, platform, generatedPrompt, reasoning, ragContext, tokensUsed, responseTime } = req.body;
-  
+
   if (!title || !originalQuery || !platform || !generatedPrompt) {
     return res.status(400).json({ error: 'Title, originalQuery, platform, and generatedPrompt are required' });
   }
@@ -1527,14 +1527,14 @@ app.get('/api/prompts', async (req, res) => {
 // Get saved prompt by ID
 app.get('/api/prompts/:id', async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const result = await queryWithRetry('SELECT * FROM saved_prompts WHERE id = ?', [id]);
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Prompt not found' });
     }
-    
+
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Get prompt error:', error);
@@ -1545,14 +1545,14 @@ app.get('/api/prompts/:id', async (req, res) => {
 // Delete saved prompt
 app.delete('/api/prompts/:id', async (req, res) => {
   const { id } = req.params;
-  
+
   try {
     const result = await queryWithRetry('DELETE FROM saved_prompts WHERE id = ?', [id]);
-    
+
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Prompt not found' });
     }
-    
+
     console.log(`[PROMPT-DELETED] ID: ${id}`);
     res.json({ message: 'Prompt deleted successfully' });
   } catch (error) {
@@ -1564,7 +1564,7 @@ app.delete('/api/prompts/:id', async (req, res) => {
 // Search saved prompts
 app.post('/api/prompts/search', async (req, res) => {
   const { query } = req.body;
-  
+
   if (!query) {
     return res.status(400).json({ error: 'Search query is required' });
   }
@@ -1586,7 +1586,7 @@ app.post('/api/prompts/search', async (req, res) => {
 // Main prompt generation endpoint with advanced DeepSeek integration
 app.post('/api/generate-prompt', async (req, res) => {
   const { query, platform } = req.body;
-  
+
   if (!query || !platform) {
     return res.status(400).json({ 
       error: 'Both query and platform are required' 
@@ -1834,7 +1834,7 @@ NO GENERIC RESPONSES. Every detail must be ACTIONABLE and IMPLEMENTATION-READY.`
           optimizedPrompt = data.choices[0]?.message?.content;
           reasoning = data.choices[0]?.message?.reasoning_content || 'Generated using DeepSeek AI reasoning';
           tokensUsed = data.usage?.total_tokens || 0;
-          
+
           console.log('DeepSeek API Response:', {
             hasContent: !!optimizedPrompt,
             hasReasoning: !!reasoning,
@@ -1946,7 +1946,7 @@ ${process.env.DEEPSEEK_API_KEY ? '✨ Generated using DeepSeek AI reasoning capa
 // Export analytics data endpoint
 app.get('/api/analytics/export', async (req, res) => {
   const { timeRange = '30d', format = 'json' } = req.query;
-  
+
   try {
     let timeCondition = '';
     switch (timeRange) {
@@ -1985,7 +1985,7 @@ app.get('/api/analytics/export', async (req, res) => {
       const csvData = exportData.rows.map(row => 
         `${row.id},"${row.title}",${row.platform},${row.tokens_used || 0},${row.response_time || 0},${row.created_at},${row.updated_at || ''}`
       ).join('\n');
-      
+
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename="deepseek_analytics_${timeRange}_${Date.now()}.csv"`);
       res.send(csvHeader + csvData);
@@ -2291,7 +2291,7 @@ app.get('/api/admin/config', async (req, res) => {
     try {
       const userCount = await pool.query('SELECT COUNT(*) as total_users FROM users');
       userStats.total_users = parseInt(userCount.rows[0].total_users) || 0;
-      
+
       const adminCount = await pool.query('SELECT COUNT(*) as admin_users FROM users WHERE role = $1', ['admin']);
       userStats.admin_users = parseInt(adminCount.rows[0].admin_users) || 0;
     } catch (e) {
@@ -2302,7 +2302,7 @@ app.get('/api/admin/config', async (req, res) => {
       const promptCount = await pool.query('SELECT COUNT(*) as total_prompts, COALESCE(SUM(tokens_used), 0) as total_tokens_used FROM saved_prompts');
       promptStats.total_prompts = parseInt(promptCount.rows[0].total_prompts) || 0;
       promptStats.total_tokens_used = parseInt(promptCount.rows[0].total_tokens_used) || 0;
-      
+
       const recentPrompts = await pool.query('SELECT COUNT(*) as prompts_24h FROM saved_prompts WHERE created_at >= NOW() - INTERVAL \'24 hours\'');
       promptStats.prompts_24h = parseInt(recentPrompts.rows[0].prompts_24h) || 0;
     } catch (e) {
@@ -2367,7 +2367,7 @@ app.post('/api/admin/test-api', async (req, res) => {
 // Bulk operations for prompts
 app.post('/api/prompts/bulk-delete', async (req, res) => {
   const { ids } = req.body;
-  
+
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: 'Array of IDs is required' });
   }
@@ -2396,28 +2396,28 @@ function generatePlatformOptimizations(platform) {
 - Leverage Replit's real-time collaboration features
 - Optimize for Replit's container-based deployment
 - Use Replit's package management and version control`,
-    
+
     lovable: `- Implement Lovable's AI-assisted development patterns
 - Utilize Lovable's component generation capabilities
 - Optimize for rapid prototyping and iteration
 - Leverage Lovable's design-to-code workflow`,
-    
+
     bolt: `- Use Bolt's instant deployment capabilities
 - Implement Bolt's real-time preview features
 - Optimize for Bolt's collaborative development environment
 - Leverage Bolt's integrated development tools`,
-    
+
     cursor: `- Utilize Cursor's AI-powered code completion
 - Implement Cursor's intelligent refactoring suggestions
 - Optimize for Cursor's context-aware development
 - Leverage Cursor's automated testing capabilities`,
-    
+
     windsurf: `- Use Windsurf's collaborative coding features
 - Implement Windsurf's real-time synchronization
 - Optimize for Windsurf's team development workflow
 - Leverage Windsurf's integrated project management`
   };
-  
+
   return optimizations[platform] || '- Follow platform-specific best practices and conventions';
 }
 
@@ -2426,24 +2426,24 @@ function generateDeploymentStrategy(platform) {
     replit: `- Configure Replit deployment settings and environment variables
 - Set up custom domains and SSL certificates
 - Implement Replit's scaling and monitoring features`,
-    
+
     lovable: `- Deploy using Lovable's automated build and deployment pipeline
 - Configure production environment variables and secrets
 - Set up monitoring and analytics integration`,
-    
+
     bolt: `- Use Bolt's instant deployment with custom configuration
 - Configure production-ready environment settings
 - Implement proper error tracking and monitoring`,
-    
+
     cursor: `- Deploy using Cursor's integrated deployment tools
 - Set up automated testing and deployment pipeline
 - Configure monitoring and performance optimization`,
-    
+
     windsurf: `- Utilize Windsurf's team deployment capabilities
 - Configure collaborative deployment workflows
 - Set up proper staging and production environments`
   };
-  
+
   return strategies[platform] || '- Follow platform-specific deployment best practices';
 }
 
@@ -2456,7 +2456,7 @@ function generateSpecificPurpose(query) {
     'chat': 'A real-time messaging application supporting one-on-one conversations, group chats, file sharing, and multimedia communication',
     'blog': 'A content management system allowing writers to publish articles, readers to engage through comments, and administrators to moderate content'
   };
-  
+
   for (const [key, purpose] of Object.entries(purposes)) {
     if (query.toLowerCase().includes(key)) return purpose;
   }
@@ -2471,7 +2471,7 @@ function generateSpecificUsers(query) {
     'chat': 'Remote teams, customer service representatives, community moderators, and individuals seeking secure communication',
     'blog': 'Professional writers, thought leaders, marketing teams, and content consumers seeking quality articles'
   };
-  
+
   for (const [key, userBase] of Object.entries(users)) {
     if (query.toLowerCase().includes(key)) return userBase;
   }
@@ -2486,7 +2486,7 @@ function generateSpecificFeatures(query) {
     'chat': 'Real-time messaging, group chat creation, file/image sharing, message encryption, user status indicators, notification system, message history',
     'blog': 'Article creation with rich text editor, category/tag management, comment system, user authentication, content moderation, SEO optimization, analytics dashboard'
   };
-  
+
   for (const [key, featureSet] of Object.entries(features)) {
     if (query.toLowerCase().includes(key)) return featureSet;
   }
@@ -2501,7 +2501,7 @@ function generateEntityFromQuery(query) {
     'chat': 'Message',
     'blog': 'Article'
   };
-  
+
   for (const [key, entity] of Object.entries(entities)) {
     if (query.toLowerCase().includes(key)) return entity;
   }
@@ -2516,7 +2516,7 @@ function generateRouteFromQuery(query) {
     'chat': 'messages',
     'blog': 'articles'
   };
-  
+
   for (const [key, route] of Object.entries(routes)) {
     if (query.toLowerCase().includes(key)) return route;
   }
@@ -2526,7 +2526,7 @@ function generateRouteFromQuery(query) {
 function generateSpecificTables(query) {
   const entity = generateEntityFromQuery(query);
   const tableName = entity.toLowerCase() + 's';
-  
+
   if (query.toLowerCase().includes('social media')) {
     return `\`\`\`sql
 -- Users table
@@ -2576,7 +2576,7 @@ CREATE TABLE likes (
 );
 \`\`\``;
   }
-  
+
   if (query.toLowerCase().includes('e-commerce')) {
     return `\`\`\`sql
 -- Users table
@@ -2624,7 +2624,7 @@ CREATE TABLE order_items (
 );
 \`\`\``;
   }
-  
+
   return `\`\`\`sql
 -- Generic table structure for ${entity.toLowerCase()}s
 CREATE TABLE ${tableName} (
@@ -2642,7 +2642,7 @@ CREATE TABLE ${tableName} (
 function generateSpecificEndpoints(query) {
   const entity = generateEntityFromQuery(query);
   const route = generateRouteFromQuery(query);
-  
+
   return `\`\`\`
 ### Core API Endpoints:
 POST /api/${route} - Create new ${entity.toLowerCase()}
@@ -2677,7 +2677,7 @@ Response:
 
 function generateSpecificComponents(query) {
   const entity = generateEntityFromQuery(query);
-  
+
   return `\`\`\`tsx
 // ${entity}List.tsx
 interface ${entity}ListProps {
@@ -2709,7 +2709,7 @@ interface ${entity}FormProps {
 
 export function ${entity}Form({ onSubmit, initialData }: ${entity}FormProps) {
   const { register, handleSubmit, formState: { errors } } = useForm<${entity}FormData>();
-  
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <Input 
@@ -2734,8 +2734,29 @@ server.listen(PORT, () => {
   console.log(`🌐 Access at: http://localhost:${PORT}`);
   console.log(`🔄 WebSocket server running at ws://localhost:${PORT}/ws`);
   console.log(`📊 Real-time validation and monitoring: ACTIVE`);
-  
+
   // Initialize real-time validation system
+  ```tool_code
+// Initialize real-time validation system
+  setupMemoryManagement() {
+    const memoryThreshold = 0.90; // 90% memory usage threshold
+    let lastGCTime = 0;
+
+    setInterval(() => {
+      const memUsage = process.memoryUsage();
+      const heapUsedPercent = memUsage.heapUsed / memUsage.heapTotal;
+
+      if (heapUsedPercent > memoryThreshold) {
+        const now = Date.now();
+        // Only trigger GC if it's been more than 5 minutes since last GC
+        if (now - lastGCTime > 300000 && global.gc) {
+          global.gc();
+          lastGCTime = now;
+          console.log('[PERFORMANCE] Garbage collection triggered at', Math.round(heapUsedPercent * 100) + '%');
+        }
+      }
+    }, 60000); // Check every 60 seconds instead of 30
+  }
   console.log('[REAL-TIME] Validation system initialized');
   console.log('[RAG-SYSTEM] Database loaded with comprehensive platform documentation');
   console.log('[A2A-PROTOCOL] Agent-to-Agent communication ready');
