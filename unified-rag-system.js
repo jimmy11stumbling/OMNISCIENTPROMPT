@@ -1,7 +1,3 @@
-The code has been modified to ensure that the searchDocuments and performSemanticSearch methods always return an array, handling potential errors and invalid inputs gracefully.
-```
-
-```replit_final_file
 // Unified RAG 2.0 System - Consolidating all RAG functionality into one comprehensive system
 const platformDocuments = {
   replit: [
@@ -11,7 +7,9 @@ const platformDocuments = {
       content: 'Replit Agent is an AI system that builds full-stack applications from natural language prompts. It creates complete project structures, implements databases, handles authentication, and manages deployments. Agent can work with PostgreSQL, Redis, and various APIs while providing real-time collaboration features.',
       type: 'ai-agent',
       keywords: ['agent', 'ai', 'fullstack', 'prompt', 'natural-language'],
-      lastUpdated: '2025-06-08'
+      lastUpdated: '2025-06-08',
+      platform: 'replit',
+      relevanceScore: 5
     },
     {
       id: 'repl_2',
@@ -19,7 +17,9 @@ const platformDocuments = {
       content: 'Replit provides comprehensive database solutions including PostgreSQL with automated backups, ReplDB for key-value storage, and Object Storage for file management. Environment variables are auto-configured. Supports schema design, migrations, and real-time data sync.',
       type: 'database',
       keywords: ['database', 'postgresql', 'repldb', 'storage', 'migrations'],
-      lastUpdated: '2025-06-08'
+      lastUpdated: '2025-06-08',
+      platform: 'replit',
+      relevanceScore: 5
     },
     {
       id: 'repl_3',
@@ -27,7 +27,9 @@ const platformDocuments = {
       content: 'Replit Auth provides OAuth integration with GitHub, Google, email, and custom providers. Includes session management, user profiles, role-based access control, and security scanning. Supports JWT tokens and encrypted password storage.',
       type: 'authentication',
       keywords: ['auth', 'oauth', 'security', 'jwt', 'encryption'],
-      lastUpdated: '2025-06-08'
+      lastUpdated: '2025-06-08',
+      platform: 'replit',
+      relevanceScore: 5
     }
   ],
   cursor: [
@@ -37,7 +39,9 @@ const platformDocuments = {
       content: 'Cursor is an AI-first code editor built on VS Code. Features include AI autocomplete, code generation from natural language, real-time AI pair programming, and context-aware suggestions. Supports all major programming languages with advanced refactoring capabilities.',
       type: 'editor',
       keywords: ['cursor', 'ai-editor', 'vscode', 'autocomplete', 'pair-programming'],
-      lastUpdated: '2025-06-08'
+      lastUpdated: '2025-06-08',
+      platform: 'cursor',
+      relevanceScore: 5
     }
   ],
   lovable: [
@@ -47,7 +51,33 @@ const platformDocuments = {
       content: 'Lovable is an AI-powered platform for building full-stack web applications. Uses React, TypeScript, Node.js, and Supabase. Features include real-time collaboration, AI code generation, component libraries, and automated deployment.',
       type: 'fullstack',
       keywords: ['lovable', 'react', 'typescript', 'supabase', 'fullstack'],
-      lastUpdated: '2025-06-08'
+      lastUpdated: '2025-06-08',
+      platform: 'lovable',
+      relevanceScore: 5
+    }
+  ],
+  bolt: [
+    {
+      id: 'bolt_1',
+      title: 'Bolt AI Development Platform',
+      content: 'Bolt provides instant full-stack application development with AI assistance. Features real-time preview, collaborative coding, and instant deployment capabilities.',
+      type: 'platform',
+      keywords: ['bolt', 'ai-development', 'instant-preview', 'collaboration'],
+      lastUpdated: '2025-06-08',
+      platform: 'bolt',
+      relevanceScore: 5
+    }
+  ],
+  windsurf: [
+    {
+      id: 'windsurf_1',
+      title: 'Windsurf Collaborative Development',
+      content: 'Windsurf offers team-based development environments with real-time collaboration, shared workspaces, and integrated project management tools.',
+      type: 'collaboration',
+      keywords: ['windsurf', 'team-development', 'collaboration', 'workspaces'],
+      lastUpdated: '2025-06-08',
+      platform: 'windsurf',
+      relevanceScore: 5
     }
   ]
 };
@@ -203,71 +233,6 @@ class UnifiedRAGSystem {
     }
   }
 
-  // Search in-memory platform documentation
-  searchInMemoryDocuments(query, platform, searchTerms) {
-    const results = [];
-    const platforms = platform ? [platform] : Object.keys(this.documents);
-
-    for (const platformName of platforms) {
-      const docs = this.documents[platformName] || [];
-
-      for (const doc of docs) {
-        const score = this.calculateRelevanceScore(doc, searchTerms, query);
-
-        if (score > 0) {
-          results.push({
-            ...doc,
-            platform: platformName,
-            relevanceScore: score,
-            snippet: this.generateSnippet(doc.content, searchTerms),
-            source: 'platform'
-          });
-        }
-      }
-    }
-
-    return results;
-  }
-
-  // Search database documents
-  async searchDatabaseDocuments(query, platform, searchTerms, limit) {
-    const results = [];
-
-    // Use cached results if available and recent
-    const cacheKey = `${query}_${platform || 'all'}`;
-    const cached = this.documentCache.get(cacheKey);
-
-    if (cached && (Date.now() - this.lastCacheUpdate) < this.cacheTimeout) {
-      return cached;
-    }
-
-    const platforms = platform ? [platform] : Array.from(this.dbDocuments.keys());
-
-    for (const platformName of platforms) {
-      const docs = this.dbDocuments.get(platformName) || [];
-
-      for (const doc of docs) {
-        const score = this.calculateRelevanceScore(doc, searchTerms, query);
-
-        if (score > 0) {
-          results.push({
-            ...doc,
-            platform: platformName,
-            relevanceScore: score,
-            snippet: this.generateSnippet(doc.content, searchTerms),
-            source: 'database'
-          });
-        }
-      }
-    }
-
-    // Cache results
-    this.documentCache.set(cacheKey, results);
-    this.lastCacheUpdate = Date.now();
-
-    return results;
-  }
-
   // Calculate relevance score with enhanced scoring
   calculateRelevanceScore(doc, searchTerms, originalQuery = '') {
     let score = 0;
@@ -299,25 +264,22 @@ class UnifiedRAGSystem {
     if (doc.type === 'database' && originalQuery.toLowerCase().includes('data')) score += 10;
     if (doc.type === 'authentication' && originalQuery.toLowerCase().includes('auth')) score += 10;
 
-    // Recency bonus for database documents
-    if (doc.source === 'database' && doc.lastUpdated) {
-      const daysSinceUpdate = (Date.now() - new Date(doc.lastUpdated)) / (1000 * 60 * 60 * 24);
-      if (daysSinceUpdate < 7) score += 5;
-    }
-
     return Math.max(0, score);
   }
 
   // Generate contextual snippet
-  generateSnippet(content, searchTerms, maxLength = 200) {
+  generateSnippet(content, query, maxLength = 200) {
+    if (!content) return '';
+
     const words = content.split(' ');
     let bestStart = 0;
     let maxMatches = 0;
+    const queryTerms = this.extractKeywords(query.toLowerCase());
 
     // Find section with most search term matches
     for (let i = 0; i < words.length - 20; i++) {
       const section = words.slice(i, i + 20).join(' ').toLowerCase();
-      const matches = searchTerms.reduce((count, term) => {
+      const matches = queryTerms.reduce((count, term) => {
         return count + (section.includes(term) ? 1 : 0);
       }, 0);
 
@@ -333,31 +295,6 @@ class UnifiedRAGSystem {
     }
 
     return snippet;
-  }
-
-  // Rank and deduplicate results
-  rankAndDeduplicateResults(results, limit) {
-    // Remove duplicates based on content similarity
-    const uniqueResults = [];
-    const seenContent = new Set();
-
-    for (const result of results) {
-      const contentHash = this.generateContentHash(result.content);
-      if (!seenContent.has(contentHash)) {
-        seenContent.add(contentHash);
-        uniqueResults.push(result);
-      }
-    }
-
-    // Sort by relevance score and return top results
-    return uniqueResults
-      .sort((a, b) => b.relevanceScore - a.relevanceScore)
-      .slice(0, limit);
-  }
-
-  // Generate content hash for deduplication
-  generateContentHash(content) {
-    return content.substring(0, 100).replace(/\s+/g, '').toLowerCase();
   }
 
   // Add document to database
