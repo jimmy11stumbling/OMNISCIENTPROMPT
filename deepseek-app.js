@@ -230,13 +230,119 @@ app.use(express.static('public'));
 const FeatureManager = require('./features/feature-manager');
 const UnifiedAPIRouter = require('./routes/unified-api');
 const UnifiedServiceOrchestrator = require('./services/unified-service-orchestrator');
+const PerformanceOptimizer = require('./optimization/performance-optimizer');
+const AdvancedPerformanceOptimizer = require('./optimization/advanced-performance');
+const QuantumCachingSystem = require('./optimization/quantum-caching');
+const AIPerformanceOptimizer = require('./optimization/ai-performance-optimizer');
+const productionConfig = require('./config/production');
 
 const featureManager = new FeatureManager();
 const ragDB = new UnifiedRAGSystem(pool);
 const serviceOrchestrator = new UnifiedServiceOrchestrator(pool, featureManager);
+const performanceOptimizer = new PerformanceOptimizer(app, productionConfig);
+const advancedOptimizer = new AdvancedPerformanceOptimizer(app, productionConfig);
+const quantumCache = new QuantumCachingSystem({ maxSize: 5000, quantumDepth: 8 });
+const aiOptimizer = new AIPerformanceOptimizer(app, productionConfig);
+
+// Optimize database performance
+performanceOptimizer.optimizeDatabase(pool);
+
+// Initialize quantum caching for ultra-fast response times
+app.use('/api/', (req, res, next) => {
+  if (req.method === 'GET') {
+    const cacheKey = req.originalUrl;
+    const cached = quantumCache.quantumGet(cacheKey, { userAgent: req.get('user-agent') });
+    
+    if (cached) {
+      res.set('X-Quantum-Cache', 'HIT');
+      res.set('X-Cache-Coherence', cached.metadata.coherence);
+      return res.json(cached.value);
+    }
+    
+    const originalSend = res.json;
+    res.json = function(data) {
+      if (res.statusCode === 200) {
+        quantumCache.quantumSet(cacheKey, data, { userAgent: req.get('user-agent') });
+        res.set('X-Quantum-Cache', 'MISS');
+      }
+      originalSend.call(this, data);
+    };
+  }
+  next();
+});
+
+// Initialize production monitoring
+const ProductionMonitoringSystem = require('./deployment/production-monitoring');
+const productionMonitor = new ProductionMonitoringSystem(app, productionConfig);
 
 // Initialize unified API routes
 const unifiedAPI = new UnifiedAPIRouter(app, ragDB, featureManager, queryWithRetry);
+
+// Advanced monitoring endpoints
+app.get('/api/monitoring/health', (req, res) => {
+  const report = productionMonitor.getMonitoringReport();
+  res.json(report);
+});
+
+app.get('/api/monitoring/metrics', (req, res) => {
+  const metrics = {
+    quantum: quantumCache.getQuantumMetrics(),
+    ai: aiOptimizer.getAIOptimizationReport(),
+    performance: performanceOptimizer.getPerformanceMetrics(),
+    advanced: advancedOptimizer.getAdvancedMetrics()
+  };
+  res.json(metrics);
+});
+
+app.get('/api/monitoring/dashboard', (req, res) => {
+  res.json(productionMonitor.dashboardData);
+});
+
+// Performance optimization endpoint
+app.post('/api/optimize/trigger', (req, res) => {
+  const { type = 'auto' } = req.body;
+  
+  switch (type) {
+    case 'quantum':
+      quantumCache.performDecoherence();
+      break;
+    case 'memory':
+      if (global.gc) global.gc();
+      break;
+    case 'cache':
+      quantumCache.quantumReset();
+      break;
+    default:
+      aiOptimizer.emit('manual_optimization', { timestamp: Date.now() });
+  }
+  
+  res.json({ message: `${type} optimization triggered`, timestamp: Date.now() });
+});
+
+// Production validation and testing endpoints
+app.post('/api/production/validate', async (req, res) => {
+  try {
+    const ProductionValidator = require('./deployment/production-validator');
+    const validator = new ProductionValidator(productionConfig);
+    const report = await validator.validateForProduction();
+    res.json(report);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/production/stress-test', async (req, res) => {
+  try {
+    const ProductionStressTester = require('./deployment/stress-test');
+    const tester = new ProductionStressTester({
+      baseUrl: `http://localhost:${PORT || 5000}`
+    });
+    const results = await tester.runFullStressTest();
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 console.log('✅ Using SQLite database');
 
