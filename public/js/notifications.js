@@ -170,9 +170,13 @@ class NotificationManager {
                 }
 
                 // Handle action URL if present
-                const notification = this.notifications.find(n => n.id == id);
+                const notification = this.notifications && this.notifications.find(n => n.id == id);
                 if (notification && notification.action_url) {
-                    window.location.href = notification.action_url;
+                    try {
+                        window.location.href = notification.action_url;
+                    } catch (error) {
+                        console.error('Navigation error:', error);
+                    }
                 }
             });
         });

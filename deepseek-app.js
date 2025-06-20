@@ -491,11 +491,11 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password || user.password_hash);
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
 
     if (!isValidPassword) {
       // Increment failed attempts
-      const newFailedAttempts = user.failed_login_attempts + 1;
+      const newFailedAttempts = (user.failed_login_attempts || 0) + 1;
       let lockUntil = null;
 
       if (newFailedAttempts >= 5) {
@@ -1402,7 +1402,7 @@ app.post('/api/prompts/save', async (req, res) => {
 // Get all saved prompts
 app.get('/api/prompts', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM saved_prompts ORDER BY created_at DESC');
+    const result = await queryWithRetry('SELECT * FROM saved_prompts ORDER BY created_at DESC');
     res.json(result.rows);
   } catch (error) {
     console.error('Get prompts error:', error);
@@ -1415,7 +1415,7 @@ app.get('/api/prompts/:id', async (req, res) => {
   const { id } = req.params;
   
   try {
-    const result = await pool.query('SELECT * FROM saved_prompts WHERE id = $1', [id]);
+    const result = await queryWithRetry('SELECT * FROM saved_prompts WHERE id = ?', [id]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Prompt not found' });
@@ -1433,9 +1433,9 @@ app.delete('/api/prompts/:id', async (req, res) => {
   const { id } = req.params;
   
   try {
-    const result = await pool.query('DELETE FROM saved_prompts WHERE id = $1 RETURNING id', [id]);
+    const result = await queryWithRetry('DELETE FROM saved_prompts WHERE id = ?', [id]);
     
-    if (result.rows.length === 0) {
+    if (result.changes === 0) {
       return res.status(404).json({ error: 'Prompt not found' });
     }
     
@@ -1456,11 +1456,11 @@ app.post('/api/prompts/search', async (req, res) => {
   }
 
   try {
-    const result = await pool.query(`
+    const result = await queryWithRetry(`
       SELECT * FROM saved_prompts 
-      WHERE title ILIKE $1 OR original_query ILIKE $1 OR generated_prompt ILIKE $1
+      WHERE title LIKE ? OR original_query LIKE ? OR generated_prompt LIKE ?
       ORDER BY created_at DESC
-    `, [`%${query}%`]);
+    `, [`%${query}%`, `%${query}%`, `%${query}%`]);
 
     res.json(result.rows);
   } catch (error) {
@@ -2006,8 +2006,8 @@ app.patch('/api/admin/users/:id', authenticateToken, requireAdmin, async (req, r
 
     updates.push(`updated_at = CURRENT_TIMESTAMP`);
 
-    const result = await pool.query(
-      `UPDATE users SET ${updates.join(', ')} WHERE id = $1 RETURNING username, email, role, is_active, api_quota_daily`,
+    const result = await queryWithRetry(
+      `UPDATE users SET ${updates.join(', ')} WHERE id = ? RETURNING username, email, role, is_active, api_quota_daily`,
       params
     );
 
@@ -2016,9 +2016,9 @@ app.patch('/api/admin/users/:id', authenticateToken, requireAdmin, async (req, r
     }
 
     // Create admin notification
-    await pool.query(`
+    await queryWithRetry(`
       INSERT INTO notifications (user_id, title, message, type)
-      VALUES ($1, $2, $3, $4)
+      VALUES (?, ?, ?, ?)
     `, [
       id,
       'Account Updated',
@@ -2043,34 +2043,34 @@ app.get('/api/admin/analytics/usage', authenticateToken, requireAdmin, async (re
     let timeCondition = '';
     switch (timeRange) {
       case '24h':
-        timeCondition = "created_at >= NOW() - INTERVAL '24 hours'";
+        timeCondition = "created_at >= datetime('now', '-24 hours')";
         break;
       case '7d':
-        timeCondition = "created_at >= NOW() - INTERVAL '7 days'";
+        timeCondition = "created_at >= datetime('now', '-7 days')";
         break;
       case '30d':
-        timeCondition = "created_at >= NOW() - INTERVAL '30 days'";
+        timeCondition = "created_at >= datetime('now', '-30 days')";
         break;
       default:
-        timeCondition = "created_at >= NOW() - INTERVAL '7 days'";
+        timeCondition = "created_at >= datetime('now', '-7 days')";
     }
 
     // API usage statistics
-    const apiUsage = await pool.query(`
+    const apiUsage = await queryWithRetry(`
       SELECT 
-        DATE_TRUNC('hour', created_at) as hour,
+        strftime('%Y-%m-%d %H:00:00', created_at) as hour,
         endpoint,
         COUNT(*) as request_count,
         AVG(response_time) as avg_response_time,
         COUNT(CASE WHEN response_status >= 400 THEN 1 END) as error_count
       FROM api_usage_logs 
       WHERE ${timeCondition}
-      GROUP BY DATE_TRUNC('hour', created_at), endpoint
+      GROUP BY strftime('%Y-%m-%d %H:00:00', created_at), endpoint
       ORDER BY hour DESC
     `);
 
     // Top users by API usage
-    const topUsers = await pool.query(`
+    const topUsers = await queryWithRetry(`
       SELECT 
         u.username,
         u.email,
@@ -2085,7 +2085,7 @@ app.get('/api/admin/analytics/usage', authenticateToken, requireAdmin, async (re
     `);
 
     // Error analysis
-    const errorAnalysis = await pool.query(`
+    const errorAnalysis = await queryWithRetry(`
       SELECT 
         response_status,
         endpoint,
@@ -2634,14 +2634,20 @@ server.on('error', (err) => {
 
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully');
-  clearInterval(heartbeat);
+  if (typeof heartbeat !== 'undefined') {
+    clearInterval(heartbeat);
+  }
   wss.clients.forEach((ws) => {
     ws.close();
   });
   server.close(() => {
-    pool.end(() => {
+    if (pool && pool.end) {
+      pool.end(() => {
+        console.log('Process terminated');
+      });
+    } else {
       console.log('Process terminated');
-    });
+    }
   });
 });
 

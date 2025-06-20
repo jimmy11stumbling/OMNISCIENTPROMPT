@@ -269,8 +269,8 @@ class RealTimeClient {
         setTimeout(() => {
             notification.style.transform = 'translateX(100%)';
             setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
+                if (notification && notification.parentNode) {
+                    document.body.removeChild(notification);
                 }
             }, 300);
         }, 5000);
