@@ -28,20 +28,7 @@ class AIPerformanceOptimizer extends EventEmitter {
   }
 
   setupNeuralNetworkLayers() {
-    // Simplified neural network for performance optimization
-    this.neuralNetwork = {
-      inputLayer: new Map(),
-      hiddenLayers: [new Map(), new Map(), new Map()],
-      outputLayer: new Map(),
-      weights: new Map(),
-      biases: new Map(),
-      learningRate: 0.01
-    };
-
-    // Initialize random weights and biases
-    this.initializeWeights();
-    
-    // Performance metric inputs
+    // Performance metric inputs - must be defined BEFORE initializeWeights()
     this.performanceInputs = [
       'responseTime', 'memoryUsage', 'cpuUsage', 'requestRate',
       'errorRate', 'cacheHitRate', 'dbQueryTime', 'networkLatency'
@@ -52,6 +39,19 @@ class AIPerformanceOptimizer extends EventEmitter {
       'cacheStrategy', 'compressionLevel', 'threadPoolSize',
       'connectionPoolSize', 'garbageCollectionFreq', 'requestPriority'
     ];
+
+    // Simplified neural network for performance optimization
+    this.neuralNetwork = {
+      inputLayer: new Map(),
+      hiddenLayers: [new Map(), new Map(), new Map()],
+      outputLayer: new Map(),
+      weights: new Map(),
+      biases: new Map(),
+      learningRate: 0.01
+    };
+
+    // Initialize random weights and biases - now that inputs/outputs are defined
+    this.initializeWeights();
   }
 
   initializeWeights() {
