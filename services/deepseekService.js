@@ -3,12 +3,10 @@
  * Production-ready AI prompt generation with advanced reasoning
  */
 
-const config = require('../config/environment');
-
 class DeepSeekService {
   constructor() {
-    this.apiUrl = config.DEEPSEEK_API_URL;
-    this.apiKey = config.DEEPSEEK_API_KEY;
+    this.apiUrl = 'https://api.deepseek.com/chat/completions';
+    this.apiKey = process.env.DEEPSEEK_API_KEY;
     this.isConfigured = !!this.apiKey;
   }
 

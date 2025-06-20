@@ -1403,13 +1403,19 @@ app.post('/api/chat', async (req, res) => {
 
     // Get relevant documentation from RAG database with timing
     const ragStartTime = Date.now();
-    const ragResults = ragDB.searchDocuments(message, platform, 3);
+    let ragResults = [];
+    try {
+      ragResults = await ragDB.searchDocuments(message, platform, 3) || [];
+    } catch (error) {
+      console.error('[RAG-ERROR] Search failed:', error);
+      ragResults = [];
+    }
     const ragDuration = Date.now() - ragStartTime;
 
     validator.logRagQuery(message, platform, ragResults, ragDuration);
 
     const contextualInfo = ragResults.map(doc => 
-      `${doc.title}: ${doc.snippet}`
+      `${doc.title}: ${doc.snippet || doc.content?.substring(0, 200) || ''}`
     ).join('\n');
 
     // Get or create conversation session
@@ -1610,9 +1616,16 @@ app.post('/api/generate-prompt', async (req, res) => {
     let tokensUsed = 0;
 
     // Get RAG context for enhanced prompt generation
-    const ragResults = ragDB.searchDocuments(query, platform, 5);
+    let ragResults = [];
+    try {
+      ragResults = await ragDB.searchDocuments(query, platform, 5) || [];
+    } catch (error) {
+      console.error('[RAG-ERROR] Search failed:', error);
+      ragResults = [];
+    }
+    
     const ragContext = ragResults.map(doc => 
-      `${doc.title}: ${doc.content}`
+      `${doc.title}: ${doc.content || doc.snippet || ''}`
     ).join('\n\n');
 
     // Ultra-specific system prompt for detailed full-stack applications
@@ -1803,7 +1816,7 @@ Response:
       try {
         // Real DeepSeek API integration with advanced reasoning
         const fetch = (await import('node-fetch')).default;
-        const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        const response = await fetch('https://api.deepseek.com/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -2745,6 +2758,19 @@ server.listen(PORT, () => {
   console.log(`🌐 Access at: http://localhost:${PORT}`);
   console.log(`🔄 WebSocket server running at ws://localhost:${PORT}/ws`);
   console.log(`📊 Real-time validation and monitoring: ACTIVE`);
+
+  // Memory optimization and garbage collection
+  if (global.gc) {
+    setInterval(() => {
+      const memUsage = process.memoryUsage();
+      const heapUsedPercent = (memUsage.heapUsed / memUsage.heapTotal) * 100;
+      
+      if (heapUsedPercent > 85) {
+        console.log(`[MEMORY] High usage detected: ${heapUsedPercent.toFixed(2)}% - Running GC`);
+        global.gc();
+      }
+    }, 30000);
+  }
 
   // Initialize real-time validation system
   console.log('[REAL-TIME] Validation system initialized');

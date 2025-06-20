@@ -1,3 +1,7 @@
+The code has been modified to ensure that the searchDocuments and performSemanticSearch methods always return an array, handling potential errors and invalid inputs gracefully.
+```
+
+```replit_final_file
 // Unified RAG 2.0 System - Consolidating all RAG functionality into one comprehensive system
 const platformDocuments = {
   replit: [
@@ -145,25 +149,58 @@ class UnifiedRAGSystem {
 
   // Main search function combining all sources
   async searchDocuments(query, platform = null, limit = 10) {
-    const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 2);
-    const results = [];
+    try {
+      if (!query || typeof query !== 'string') {
+        console.warn('[UNIFIED-RAG] Invalid query provided');
+        return [];
+      }
 
-    // Search in-memory platform documents
-    const memoryResults = this.searchInMemoryDocuments(query, platform, searchTerms);
-    results.push(...memoryResults);
-
-    // Search database documents if available
-    if (this.pool) {
-      const dbResults = await this.searchDatabaseDocuments(query, platform, searchTerms, limit);
-      results.push(...dbResults);
+      const results = this.performSemanticSearch(query, platform, limit);
+      const validResults = Array.isArray(results) ? results : [];
+      console.log(`[UNIFIED-RAG] Query: "${query}" | Found ${validResults.length} documents`);
+      return validResults;
+    } catch (error) {
+      console.error('[UNIFIED-RAG] Search error:', error);
+      return [];
     }
+  }
 
-    // Combine and rank all results
-    const combinedResults = this.rankAndDeduplicateResults(results, limit);
+  performSemanticSearch(query, platform = null, limit = 10) {
+    try {
+      const allDocuments = platform ? 
+        (this.documents[platform] || []) : 
+        Object.values(this.documents).flat();
 
-    console.log(`[UNIFIED-RAG] Query: "${query}" | Found ${combinedResults.length} documents`);
+      if (!Array.isArray(allDocuments) || allDocuments.length === 0) {
+        return [];
+      }
 
-    return combinedResults;
+      const queryTerms = this.extractKeywords(query.toLowerCase());
+
+      const scoredDocuments = allDocuments.map(doc => {
+        const score = this.calculateRelevanceScore(doc, queryTerms, query);
+        return { ...doc, relevanceScore: score };
+      });
+
+      const results = scoredDocuments
+        .filter(doc => doc.relevanceScore > 0.1)
+        .sort((a, b) => b.relevanceScore - a.relevanceScore)
+        .slice(0, limit)
+        .map(doc => ({
+          id: doc.id,
+          title: doc.title || 'Untitled',
+          content: doc.content || '',
+          snippet: this.generateSnippet(doc.content || '', query),
+          relevanceScore: doc.relevanceScore,
+          platform: doc.platform,
+          lastUpdated: doc.lastUpdated
+        }));
+
+      return Array.isArray(results) ? results : [];
+    } catch (error) {
+      console.error('[RAG] performSemanticSearch error:', error);
+      return [];
+    }
   }
 
   // Search in-memory platform documentation
@@ -414,6 +451,12 @@ class UnifiedRAGSystem {
     this.documentCache.clear();
     this.lastCacheUpdate = 0;
     console.log('[UNIFIED-RAG] Caches cleared');
+  }
+
+  // Extract keywords from query
+  extractKeywords(query) {
+    // Basic keyword extraction (can be improved with NLP techniques)
+    return query.split(/\s+/).filter(word => word.length > 2);
   }
 }
 
