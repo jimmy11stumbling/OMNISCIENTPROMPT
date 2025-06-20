@@ -72,6 +72,7 @@ function initializeDatabase() {
     db.exec(`
       CREATE TABLE IF NOT EXISTS saved_prompts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
         title TEXT NOT NULL,
         original_query TEXT NOT NULL,
         platform TEXT NOT NULL,
@@ -81,7 +82,8 @@ function initializeDatabase() {
         tokens_used INTEGER DEFAULT 0,
         response_time INTEGER DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
       )
     `);
 

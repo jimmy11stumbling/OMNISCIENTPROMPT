@@ -113,8 +113,13 @@
         const resultSection = document.getElementById('resultSection');
         const errorSection = document.getElementById('errorSection');
         const promptResult = document.getElementById('promptResult');
-        const copyBtn = document.getElementById('copyBtn');
         const saveBtn = document.getElementById('saveBtn');
+
+        // Track current prompt data for saving
+        let currentReasoning = null;
+        let currentRagContext = [];
+        let currentTokensUsed = 0;
+        let currentResponseTime = 0;
         const errorMessage = document.getElementById('errorMessage');
 
         form.addEventListener('submit', async (e) => {
@@ -146,18 +151,26 @@
 
                 const data = await response.json();
 
-                if (!response.ok) {
-                    throw new Error(data.error || 'Failed to generate prompt');
+                if (data.prompt) {
+                    promptResult.textContent = data.prompt;
+                    saveBtn.style.display = 'block';
+
+                    // Store current prompt data for saving
+                    currentReasoning = data.reasoning;
+                    currentRagContext = data.ragContext || [];
+                    currentTokensUsed = data.tokensUsed || 0;
+                    currentResponseTime = Date.now() - startTime;
+
+                    // Update statistics
+                    updateStats({
+                        tokensUsed: data.tokensUsed || 0,
+                        responseTime: currentResponseTime,
+                        hasReasoning: !!data.reasoning,
+                        ragResults: data.ragContext ? data.ragContext.length : 0
+                    });
+                } else {
+                    promptResult.textContent = 'Error: No prompt generated';
                 }
-
-                // Complete progress indicator
-                window.ProgressIndicator.complete({
-                    success: true,
-                    tokensUsed: data.tokensUsed || 0
-                });
-
-                promptResult.textContent = data.prompt;
-                resultSection.classList.remove('hidden');
 
             } catch (error) {
                 // Complete progress indicator with error
@@ -221,4 +234,3 @@
     </script>
 </body>
 </html>
-```Here's the complete file with the Tailwind CDN replaced by a link to the local CSS file:

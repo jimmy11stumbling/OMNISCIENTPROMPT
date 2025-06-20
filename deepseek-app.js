@@ -1516,14 +1516,17 @@ app.post('/api/prompts/save', async (req, res) => {
   }
 
   try {
-    const result = await pool.query(`
+    const result = await queryWithRetry(`
       INSERT INTO saved_prompts (title, original_query, platform, generated_prompt, reasoning, rag_context, tokens_used, response_time, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
-      RETURNING *
-    `, [title, originalQuery, platform, generatedPrompt, reasoning, ragContext, tokensUsed || 0, responseTime || 0]);
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `, [title, originalQuery, platform, generatedPrompt, reasoning, JSON.stringify(ragContext), tokensUsed || 0, responseTime || 0]);
 
-    console.log(`[PROMPT-SAVED] ID: ${result.rows[0].id} | Platform: ${platform} | Title: "${title}"`);
-    res.json(result.rows[0]);
+    console.log(`[PROMPT-SAVED] ID: ${result.lastInsertRowid} | Platform: ${platform} | Title: "${title}"`);
+    
+    // Get the saved prompt to return
+    const savedPrompt = await queryWithRetry('SELECT * FROM saved_prompts WHERE id = ?', [result.lastInsertRowid]);
+    
+    res.json(savedPrompt.rows[0]);
   } catch (error) {
     console.error('Save prompt error:', error);
     res.status(500).json({ error: 'Failed to save prompt' });
