@@ -143,33 +143,64 @@
                     query: query
                 });
 
-                const response = await fetch('/api/generate-prompt', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ platform, query })
-                });
+                try {
+                    // Add timeout controller
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
-                const data = await response.json();
-
-                if (data.prompt) {
-                    promptResult.textContent = data.prompt;
-                    saveBtn.style.display = 'block';
-
-                    // Store current prompt data for saving
-                    currentReasoning = data.reasoning;
-                    currentRagContext = data.ragContext || [];
-                    currentTokensUsed = data.tokensUsed || 0;
-                    currentResponseTime = Date.now() - startTime;
-
-                    // Update statistics
-                    updateStats({
-                        tokensUsed: data.tokensUsed || 0,
-                        responseTime: currentResponseTime,
-                        hasReasoning: !!data.reasoning,
-                        ragResults: data.ragContext ? data.ragContext.length : 0
+                    const response = await fetch('/api/generate-prompt', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            query: query,
+                            platform: platform
+                        }),
+                        signal: controller.signal
                     });
-                } else {
-                    promptResult.textContent = 'Error: No prompt generated';
+
+                    clearTimeout(timeoutId);
+
+                    const data = await response.json();
+
+                    if (data.prompt) {
+                        promptResult.textContent = data.prompt;
+                        saveBtn.style.display = 'block';
+
+                        // Store current prompt data for saving
+                        currentReasoning = data.reasoning;
+                        currentRagContext = data.ragContext || [];
+                        currentTokensUsed = data.tokensUsed || 0;
+                        currentResponseTime = Date.now() - startTime;
+
+                        // Update statistics
+                        updateStats({
+                            tokensUsed: data.tokensUsed || 0,
+                            responseTime: currentResponseTime,
+                            hasReasoning: !!data.reasoning,
+                            ragResults: data.ragContext ? data.ragContext.length : 0
+                        });
+                    } else {
+                        promptResult.textContent = 'Error: No prompt generated';
+                    }
+
+                } catch (error) {
+                    console.error('Error:', error);
+                    if (error.name === 'AbortError') {
+                        errorMessage.textContent = 'Request timed out. The server might be overloaded. Please try again.';
+                        errorSection.classList.remove('hidden');
+                    } else if (error.message.includes('Failed to fetch')) {
+                        errorMessage.textContent = 'Connection error. Please check your internet connection and try again.';
+                        errorSection.classList.remove('hidden');
+                    } else {
+                        errorMessage.textContent = 'Failed to generate prompt. Please try again.';
+                        errorSection.classList.remove('hidden');
+                    }
+                } finally {
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = 'Generate Full-Stack App Prompt';
+                    window.ProgressIndicator.complete();
                 }
 
             } catch (error) {

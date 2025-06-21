@@ -42,4 +42,4 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "node deepseek-app.js"
+args = "node --max-old-space-size=512 --expose-gc deepseek-app.js"

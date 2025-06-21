@@ -395,6 +395,15 @@ class UnifiedRAGSystem {
     // Basic keyword extraction (can be improved with NLP techniques)
     return query.split(/\s+/).filter(word => word.length > 2);
   }
+  
+  // Sync every 2 minutes to reduce memory pressure
+    setInterval(async () => {
+      try {
+        await this.syncDatabaseDocuments();
+      } catch (error) {
+        console.error('[UNIFIED-RAG] Sync error:', error.message);
+      }
+    }, 120000);
 }
 
 module.exports = UnifiedRAGSystem;

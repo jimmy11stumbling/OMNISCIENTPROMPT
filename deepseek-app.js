@@ -463,18 +463,23 @@ const heartbeat = setInterval(() => {
     }
   });
   
-  // Clean up stale connections
-  if (activeConnections.size > 100) {
+  // Clean up stale connections more aggressively
+  if (activeConnections.size > 50) {
     console.warn('[WEBSOCKET] Too many connections, cleaning up stale ones');
     const connections = Array.from(activeConnections);
-    connections.slice(0, -50).forEach(ws => {
+    connections.slice(0, -25).forEach(ws => {
       if (ws.readyState !== 1) {
         activeConnections.delete(ws);
         ws.terminate();
       }
     });
   }
-}, 30000);
+  
+  // Force garbage collection during cleanup
+  if (global.gc && activeConnections.size > 20) {
+    global.gc();
+  }
+}, 20000);
 
 // Root route serves the HTML page
 app.get('/', (req, res) => {
@@ -1142,11 +1147,21 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     apiConfigured: !!process.env.DEEPSEEK_API_KEY,
     activeConnections: activeConnections.size,
-    metrics: validator.metrics
+    metrics: validator.metrics,
+    memory: process.memoryUsage()
   };
 
   validator.logApiCall('/api/health', startTime, true);
   res.json(healthData);
+});
+
+// Simple test endpoint
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    message: 'Server is responding'
+  });
 });
 
 // Real-time metrics endpoint
@@ -2768,11 +2783,16 @@ server.listen(PORT, () => {
       const memUsage = process.memoryUsage();
       const heapUsedPercent = (memUsage.heapUsed / memUsage.heapTotal) * 100;
       
-      if (heapUsedPercent > 85) {
+      if (heapUsedPercent > 70) {
         console.log(`[MEMORY] High usage detected: ${heapUsedPercent.toFixed(2)}% - Running GC`);
         global.gc();
       }
-    }, 30000);
+    }, 15000);
+  }
+
+  // Force garbage collection on startup
+  if (global.gc) {
+    global.gc();
   }
 
   // Initialize real-time validation system
