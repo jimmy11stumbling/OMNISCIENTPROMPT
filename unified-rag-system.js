@@ -214,9 +214,24 @@ class UnifiedRAGSystem {
 
   performSemanticSearch(query, platform = null, limit = 10) {
     try {
-      const allDocuments = platform ? 
-        (this.documents[platform] || []) : 
-        Object.values(this.documents).flat();
+      // Combine in-memory and database documents
+      let allDocuments = [];
+      
+      // Add in-memory documents
+      if (platform) {
+        allDocuments = [...(this.documents[platform] || [])];
+        // Add database documents for the platform
+        if (this.dbDocuments.has(platform)) {
+          allDocuments = [...allDocuments, ...this.dbDocuments.get(platform)];
+        }
+      } else {
+        // All platforms
+        allDocuments = Object.values(this.documents).flat();
+        // Add all database documents
+        for (const docs of this.dbDocuments.values()) {
+          allDocuments = [...allDocuments, ...docs];
+        }
+      }
 
       if (!Array.isArray(allDocuments) || allDocuments.length === 0) {
         return [];
@@ -372,6 +387,23 @@ class UnifiedRAGSystem {
     stats.totalDocuments = stats.memoryDocuments + stats.databaseDocuments;
 
     return stats;
+  }
+
+  // Get total document count for quick access
+  getTotalDocumentCount() {
+    let total = 0;
+    
+    // Count in-memory documents
+    for (const platform of Object.keys(this.documents)) {
+      total += this.documents[platform].length;
+    }
+    
+    // Count database documents
+    for (const docs of this.dbDocuments.values()) {
+      total += docs.length;
+    }
+    
+    return total;
   }
 
   // Get contextual recommendations

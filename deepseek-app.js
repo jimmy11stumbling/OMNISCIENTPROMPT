@@ -292,6 +292,27 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// RAG system status
+app.get('/api/rag/status', async (req, res) => {
+  try {
+    const stats = await ragDB.getDocumentStats();
+    const totalCount = ragDB.getTotalDocumentCount();
+    
+    res.json({
+      status: 'operational',
+      totalDocuments: totalCount,
+      platforms: stats.platforms,
+      memoryDocuments: stats.memoryDocuments,
+      databaseDocuments: stats.databaseDocuments,
+      lastSync: ragDB.lastSyncTime,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('RAG status error:', error);
+    res.status(500).json({ error: 'Failed to get RAG status' });
+  }
+});
+
 // Simple memory cleanup endpoint
 app.post('/api/cleanup', (req, res) => {
   try {
@@ -310,6 +331,77 @@ app.post('/api/cleanup', (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Seed RAG database with initial documents
+app.post('/api/rag/seed', async (req, res) => {
+  try {
+    // Check if database already has documents
+    const existingDocs = await queryWithRetry('SELECT COUNT(*) as count FROM rag_documents WHERE is_active = 1');
+    const count = parseInt(existingDocs.rows[0]?.count || 0);
+    
+    if (count > 0) {
+      return res.json({ 
+        message: 'Database already contains documents',
+        documentCount: count
+      });
+    }
+
+    // Seed with some initial documents
+    const seedDocuments = [
+      {
+        title: 'Replit Authentication Guide',
+        content: 'Replit provides comprehensive authentication solutions including OAuth integration, session management, and user profiles. Use Replit Auth for secure user authentication with GitHub, Google, and email providers.',
+        platform: 'replit',
+        document_type: 'guide',
+        keywords: JSON.stringify(['auth', 'oauth', 'authentication', 'security', 'login'])
+      },
+      {
+        title: 'Replit Database Setup',
+        content: 'Set up PostgreSQL databases on Replit with automated backups, migrations, and real-time data sync. Environment variables are auto-configured for seamless database integration.',
+        platform: 'replit',
+        document_type: 'tutorial',
+        keywords: JSON.stringify(['database', 'postgresql', 'setup', 'migration', 'backup'])
+      },
+      {
+        title: 'Cursor AI Development',
+        content: 'Cursor AI provides intelligent code completion, real-time pair programming, and context-aware suggestions. Built on VS Code with advanced AI capabilities for faster development.',
+        platform: 'cursor',
+        document_type: 'overview',
+        keywords: JSON.stringify(['ai', 'cursor', 'development', 'vscode', 'autocomplete'])
+      },
+      {
+        title: 'Lovable Full-Stack Framework',
+        content: 'Lovable enables rapid full-stack development with React, TypeScript, and Supabase. Features include AI code generation, component libraries, and automated deployment.',
+        platform: 'lovable',
+        document_type: 'framework',
+        keywords: JSON.stringify(['fullstack', 'react', 'typescript', 'supabase', 'deployment'])
+      }
+    ];
+
+    // Insert seed documents
+    const insertPromises = seedDocuments.map(doc => 
+      queryWithRetry(`
+        INSERT INTO rag_documents (title, content, platform, document_type, keywords, uploaded_by, is_active)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `, [doc.title, doc.content, doc.platform, doc.document_type, doc.keywords, null, 1])
+    );
+
+    await Promise.all(insertPromises);
+
+    // Refresh RAG system cache
+    await ragDB.syncDatabaseDocuments();
+
+    res.json({
+      message: 'RAG database seeded successfully',
+      documentsAdded: seedDocuments.length,
+      totalDocuments: ragDB.getTotalDocumentCount()
+    });
+
+  } catch (error) {
+    console.error('Seed database error:', error);
+    res.status(500).json({ error: 'Failed to seed database' });
   }
 });
 
