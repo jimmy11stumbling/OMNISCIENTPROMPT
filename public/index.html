@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/css/progress-indicator.css">
     <script src="/js/progress-indicator.js"></script>
     <script src="/js/realtime.js"></script>
+    <script src="/js/blueprint.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
     <!-- Navigation -->
@@ -40,8 +41,13 @@
 
     <div class="container mx-auto px-4 py-8 max-w-4xl">
         <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold mb-2">DeepSeek AI Prompt Generator</h1>
-            <p class="text-gray-400 text-lg">Transform vague ideas into comprehensive full-stack application prompts</p>
+            <h1 class="text-4xl font-bold mb-2">Master Blueprint Generator</h1>
+            <p class="text-gray-400 text-lg">Transform your app ideas into comprehensive, production-ready master blueprints</p>
+            <div class="mt-4 text-sm text-gray-500">
+                <span class="inline-block bg-blue-900 px-3 py-1 rounded-full mr-2">🏗️ Complete Architecture</span>
+                <span class="inline-block bg-green-900 px-3 py-1 rounded-full mr-2">📋 Detailed Specifications</span>
+                <span class="inline-block bg-purple-900 px-3 py-1 rounded-full">🚀 Deploy-Ready Plans</span>
+            </div>
         </header>
 
         <div class="bg-gray-800 rounded-lg p-6 mb-6">
@@ -58,14 +64,14 @@
                 </div>
 
                 <div>
-                    <label for="query" class="block text-sm font-medium mb-2">Your Request</label>
+                    <label for="query" class="block text-sm font-medium mb-2">Application Concept</label>
                     <textarea 
                         id="query" 
-                        placeholder="Describe your app idea (can be vague - AI will expand it into a full specification)..."
+                        placeholder="Describe your application or website idea - AI will create a comprehensive master blueprint with complete specifications..."
                         class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md h-32"
                         required
                     ></textarea>
-                    <p class="text-sm text-gray-400 mt-2">💡 Examples: "social media app", "todo manager", "ecommerce store", "dashboard with charts"</p>
+                    <p class="text-sm text-gray-400 mt-2">💡 Examples: "social media platform", "e-commerce marketplace", "project management tool", "real-time chat application", "fitness tracking app"</p>
                 </div>
 
                 <button 
@@ -73,16 +79,24 @@
                     id="generateBtn"
                     class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 p-3 rounded-md font-medium"
                 >
-                    Generate Full-Stack App Prompt
+                    🎯 Generate Master Blueprint
                 </button>
             </form>
         </div>
 
         <div id="resultSection" class="hidden bg-gray-800 rounded-lg p-6">
-            <h3 class="text-lg font-medium mb-3">Full-Stack Application Prompt</h3>
-            <div class="bg-gray-900 p-4 rounded-md">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium">📋 Master Application Blueprint</h3>
+                <button id="copyBlueprint" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm">
+                    📋 Copy Blueprint
+                </button>
+            </div>
+            <div class="bg-gray-900 p-4 rounded-md max-h-96 overflow-y-auto">
                 <pre id="promptResult" class="whitespace-pre-wrap text-sm text-gray-300"></pre>
             </div>
+            <div class="mt-4 text-center">
+                <p class="text-sm text-gray-400">This master blueprint contains everything needed to build and deploy your application</p>
+            </div></div>
             <div class="mt-4 flex space-x-3">
                 <button 
                     id="copyBtn"
