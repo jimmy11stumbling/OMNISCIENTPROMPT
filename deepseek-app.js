@@ -226,44 +226,33 @@ const checkApiQuota = async (req, res, next) => {
 
 app.use(express.static('public'));
 
-// Initialize unified systems
+// Initialize unified systems with memory optimization
 const FeatureManager = require('./features/feature-manager');
 const UnifiedAPIRouter = require('./routes/unified-api');
-const UnifiedServiceOrchestrator = require('./services/unified-service-orchestrator');
-const PerformanceOptimizer = require('./optimization/performance-optimizer');
-const AdvancedPerformanceOptimizer = require('./optimization/advanced-performance');
-const QuantumCachingSystem = require('./optimization/quantum-caching');
-const AIPerformanceOptimizer = require('./optimization/ai-performance-optimizer');
-const productionConfig = require('./config/production');
 
 const featureManager = new FeatureManager();
 const ragDB = new UnifiedRAGSystem(pool);
-const serviceOrchestrator = new UnifiedServiceOrchestrator(pool, featureManager);
-const performanceOptimizer = new PerformanceOptimizer(app, productionConfig);
-const advancedOptimizer = new AdvancedPerformanceOptimizer(app, productionConfig);
-const quantumCache = new QuantumCachingSystem({ maxSize: 5000, quantumDepth: 8 });
-const aiOptimizer = new AIPerformanceOptimizer(app, productionConfig);
 
-// Optimize database performance
-performanceOptimizer.optimizeDatabase(pool);
+// Simple caching for better performance
+const simpleCache = new Map();
+const cacheTimeout = 5 * 60 * 1000; // 5 minutes
 
-// Initialize quantum caching for ultra-fast response times
+// Basic caching middleware
 app.use('/api/', (req, res, next) => {
   if (req.method === 'GET') {
     const cacheKey = req.originalUrl;
-    const cached = quantumCache.quantumGet(cacheKey, { userAgent: req.get('user-agent') });
+    const cached = simpleCache.get(cacheKey);
 
-    if (cached) {
-      res.set('X-Quantum-Cache', 'HIT');
-      res.set('X-Cache-Coherence', cached.metadata.coherence);
-      return res.json(cached.value);
+    if (cached && (Date.now() - cached.timestamp) < cacheTimeout) {
+      res.set('X-Cache', 'HIT');
+      return res.json(cached.data);
     }
 
     const originalSend = res.json;
     res.json = function(data) {
       if (res.statusCode === 200) {
-        quantumCache.quantumSet(cacheKey, data, { userAgent: req.get('user-agent') });
-        res.set('X-Quantum-Cache', 'MISS');
+        simpleCache.set(cacheKey, { data, timestamp: Date.now() });
+        res.set('X-Cache', 'MISS');
       }
       originalSend.call(this, data);
     };
@@ -271,74 +260,54 @@ app.use('/api/', (req, res, next) => {
   next();
 });
 
-// Initialize production monitoring
-const ProductionMonitoringSystem = require('./deployment/production-monitoring');
-const productionMonitor = new ProductionMonitoringSystem(app, productionConfig);
-
-// Initialize unified API routes
-const unifiedAPI = new UnifiedAPIRouter(app, ragDB, featureManager, queryWithRetry);
-
-// Advanced monitoring endpoints
-app.get('/api/monitoring/health', (req, res) => {
-  const report = productionMonitor.getMonitoringReport();
-  res.json(report);
-});
-
-app.get('/api/monitoring/metrics', (req, res) => {
-  const metrics = {
-    quantum: quantumCache.getQuantumMetrics(),
-    ai: aiOptimizer.getAIOptimizationReport(),
-    performance: performanceOptimizer.getPerformanceMetrics(),
-    advanced: advancedOptimizer.getAdvancedMetrics()
-  };
-  res.json(metrics);
-});
-
-app.get('/api/monitoring/dashboard', (req, res) => {
-  res.json(productionMonitor.dashboardData);
-});
-
-// Performance optimization endpoint
-app.post('/api/optimize/trigger', (req, res) => {
-  const { type = 'auto' } = req.body;
-
-  switch (type) {
-    case 'quantum':
-      quantumCache.performDecoherence();
-      break;
-    case 'memory':
-      if (global.gc) global.gc();
-      break;
-    case 'cache':
-      quantumCache.quantumReset();
-      break;
-    default:
-      aiOptimizer.emit('manual_optimization', { timestamp: Date.now() });
-  }
-
-  res.json({ message: `${type} optimization triggered`, timestamp: Date.now() });
-});
-
-// Production validation and testing endpoints
-app.post('/api/production/validate', async (req, res) => {
+// Initialize API routes
+app.get('/api/rag/search', async (req, res) => {
   try {
-    const ProductionValidator = require('./deployment/production-validator');
-    const validator = new ProductionValidator(productionConfig);
-    const report = await validator.validateForProduction();
-    res.json(report);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+    const { query, platform, limit = 5 } = req.query;
+    
+    if (!query) {
+      return res.status(400).json({ error: 'Query parameter is required' });
+    }
 
-app.post('/api/production/stress-test', async (req, res) => {
-  try {
-    const ProductionStressTester = require('./deployment/stress-test');
-    const tester = new ProductionStressTester({
-      baseUrl: `http://localhost:${PORT || 5000}`
+    const results = await ragDB.searchDocuments(query, platform, parseInt(limit));
+    res.json({
+      query,
+      platform: platform || 'all',
+      results,
+      totalFound: results.length
     });
-    const results = await tester.runFullStressTest();
-    res.json(results);
+  } catch (error) {
+    console.error('RAG search error:', error);
+    res.status(500).json({ error: 'Search failed' });
+  }
+});
+
+// Simple health check
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    memory: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB',
+    ragDocuments: ragDB.documents ? Object.keys(ragDB.documents).length : 0
+  });
+});
+
+// Simple memory cleanup endpoint
+app.post('/api/cleanup', (req, res) => {
+  try {
+    // Clear cache
+    simpleCache.clear();
+    
+    // Run garbage collection if available
+    if (global.gc) {
+      global.gc();
+    }
+    
+    res.json({ 
+      message: 'Cleanup completed',
+      memoryUsage: process.memoryUsage(),
+      timestamp: Date.now()
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -447,7 +416,7 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-// Add WebSocket heartbeat to prevent memory leaks
+// Simple WebSocket heartbeat
 const heartbeat = setInterval(() => {
   wss.clients.forEach((ws) => {
     if (ws.isAlive === false) {
@@ -463,23 +432,16 @@ const heartbeat = setInterval(() => {
     }
   });
   
-  // Clean up stale connections more aggressively
-  if (activeConnections.size > 50) {
-    console.warn('[WEBSOCKET] Too many connections, cleaning up stale ones');
-    const connections = Array.from(activeConnections);
-    connections.slice(0, -25).forEach(ws => {
-      if (ws.readyState !== 1) {
-        activeConnections.delete(ws);
-        ws.terminate();
+  // Clean up cache periodically
+  if (simpleCache.size > 100) {
+    const now = Date.now();
+    for (const [key, value] of simpleCache.entries()) {
+      if (now - value.timestamp > cacheTimeout) {
+        simpleCache.delete(key);
       }
-    });
+    }
   }
-  
-  // Force garbage collection during cleanup
-  if (global.gc && activeConnections.size > 20) {
-    global.gc();
-  }
-}, 20000);
+}, 30000);
 
 // Root route serves the HTML page
 app.get('/', (req, res) => {
@@ -2775,31 +2737,20 @@ server.listen(PORT, () => {
   console.log(`🔑 API Key configured: ${!!process.env.DEEPSEEK_API_KEY ? 'Yes' : 'No'}`);
   console.log(`🌐 Access at: http://localhost:${PORT}`);
   console.log(`🔄 WebSocket server running at ws://localhost:${PORT}/ws`);
-  console.log(`📊 Real-time validation and monitoring: ACTIVE`);
+  console.log(`📊 RAG system initialized with ${Object.keys(ragDB.documents || {}).length} platforms`);
 
-  // Memory optimization and garbage collection
+  // Simple memory management
   if (global.gc) {
     setInterval(() => {
       const memUsage = process.memoryUsage();
       const heapUsedPercent = (memUsage.heapUsed / memUsage.heapTotal) * 100;
       
-      if (heapUsedPercent > 70) {
-        console.log(`[MEMORY] High usage detected: ${heapUsedPercent.toFixed(2)}% - Running GC`);
+      if (heapUsedPercent > 85) {
+        console.log(`[MEMORY] Running cleanup at ${heapUsedPercent.toFixed(1)}%`);
         global.gc();
       }
-    }, 15000);
+    }, 30000);
   }
-
-  // Force garbage collection on startup
-  if (global.gc) {
-    global.gc();
-  }
-
-  // Initialize real-time validation system
-  console.log('[REAL-TIME] Validation system initialized');
-  console.log('[RAG-SYSTEM] Database loaded with comprehensive platform documentation');
-  console.log('[A2A-PROTOCOL] Agent-to-Agent communication ready');
-  console.log('[MCP-INTEGRATION] Model Context Protocol handlers active');
 });
 
 server.on('error', (err) => {

@@ -103,8 +103,12 @@ class UnifiedRAGSystem {
 
   async initializeDatabase() {
     try {
+      // Test database connection first
+      await this.pool.queryAsync('SELECT 1');
       await this.syncDatabaseDocuments();
-      setInterval(() => this.smartSync(), this.syncInterval);
+      
+      // Less frequent syncing to reduce resource usage
+      setInterval(() => this.smartSync(), 600000); // 10 minutes
       console.log('[UNIFIED-RAG] Database integration initialized');
     } catch (error) {
       console.log('[UNIFIED-RAG] Database not available, using in-memory documents only');
@@ -116,15 +120,22 @@ class UnifiedRAGSystem {
     if (!this.pool) return;
 
     try {
-      const countResult = await this.pool.queryAsync('SELECT COUNT(*) as count FROM rag_documents WHERE is_active = true');
-      const currentCount = parseInt(countResult.rows[0].count);
+      // Skip if recently synced
+      const now = Date.now();
+      if (now - this.lastSyncTime < 300000) { // 5 minutes minimum
+        return;
+      }
+
+      const countResult = await this.pool.queryAsync('SELECT COUNT(*) as count FROM rag_documents WHERE is_active = 1');
+      const currentCount = parseInt(countResult.rows[0]?.count || 0);
 
       if (currentCount !== this.lastDocumentCount) {
         await this.syncDatabaseDocuments();
         this.lastDocumentCount = currentCount;
       }
     } catch (error) {
-      console.error('[UNIFIED-RAG] Smart sync error:', error);
+      // Silently handle database connection issues
+      console.log('[UNIFIED-RAG] Database temporarily unavailable for sync');
     }
   }
 
@@ -134,8 +145,8 @@ class UnifiedRAGSystem {
 
     try {
       const now = Date.now();
-      // Only sync if it's been more than 10 minutes since last sync
-      if (now - this.lastSyncTime < 10 * 60 * 1000) {
+      // Only sync if it's been more than 5 minutes since last sync
+      if (now - this.lastSyncTime < 5 * 60 * 1000) {
         return;
       }
 
@@ -144,8 +155,9 @@ class UnifiedRAGSystem {
       const result = await this.pool.queryAsync(`
         SELECT id, title, content, platform, document_type, keywords, created_at
         FROM rag_documents 
-        WHERE is_active = true
+        WHERE is_active = 1
         ORDER BY created_at DESC
+        LIMIT 100
       `);
 
       this.dbDocuments.clear();
@@ -156,13 +168,18 @@ class UnifiedRAGSystem {
           this.dbDocuments.set(platform, []);
         }
 
-        const keywords = Array.isArray(row.keywords) ? row.keywords : 
-                        (typeof row.keywords === 'string' ? JSON.parse(row.keywords) : []);
+        let keywords = [];
+        try {
+          keywords = Array.isArray(row.keywords) ? row.keywords : 
+                    (typeof row.keywords === 'string' && row.keywords ? JSON.parse(row.keywords) : []);
+        } catch (e) {
+          keywords = [];
+        }
 
         this.dbDocuments.get(platform).push({
           id: `db_${row.id}`,
-          title: row.title,
-          content: row.content,
+          title: row.title || 'Untitled',
+          content: row.content || '',
           type: row.document_type || 'document',
           keywords: keywords,
           lastUpdated: row.created_at,
@@ -173,7 +190,7 @@ class UnifiedRAGSystem {
       this.lastDbSync = Date.now();
       console.log(`[UNIFIED-RAG] Synchronized ${result.rows.length} documents from database`);
     } catch (error) {
-      console.error('[UNIFIED-RAG] Database sync error:', error);
+      console.log('[UNIFIED-RAG] Database sync failed, using in-memory documents');
     }
   }
 

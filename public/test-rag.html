@@ -1,0 +1,106 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Database Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8">RAG Database Test</h1>
+        
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Test RAG Search</h2>
+            <div class="flex gap-4 mb-4">
+                <input type="text" id="searchQuery" placeholder="Enter search query..." 
+                       class="flex-1 px-4 py-2 bg-gray-700 rounded border border-gray-600">
+                <select id="platformSelect" class="px-4 py-2 bg-gray-700 rounded border border-gray-600">
+                    <option value="">All Platforms</option>
+                    <option value="replit">Replit</option>
+                    <option value="cursor">Cursor</option>
+                    <option value="lovable">Lovable</option>
+                    <option value="bolt">Bolt</option>
+                    <option value="windsurf">Windsurf</option>
+                </select>
+                <button onclick="testSearch()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded">
+                    Search
+                </button>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Results</h2>
+            <div id="results" class="space-y-4">
+                <p class="text-gray-400">Enter a search query to test the RAG database</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function testSearch() {
+            const query = document.getElementById('searchQuery').value;
+            const platform = document.getElementById('platformSelect').value;
+            const resultsDiv = document.getElementById('results');
+            
+            if (!query.trim()) {
+                resultsDiv.innerHTML = '<p class="text-red-400">Please enter a search query</p>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = '<p class="text-blue-400">Searching...</p>';
+            
+            try {
+                const url = new URL('/api/rag/search', window.location.origin);
+                url.searchParams.append('query', query);
+                if (platform) url.searchParams.append('platform', platform);
+                url.searchParams.append('limit', '5');
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayResults(data);
+                } else {
+                    resultsDiv.innerHTML = `<p class="text-red-400">Error: ${data.error}</p>`;
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="text-red-400">Network error: ${error.message}</p>`;
+            }
+        }
+        
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            if (data.results.length === 0) {
+                resultsDiv.innerHTML = '<p class="text-yellow-400">No results found</p>';
+                return;
+            }
+            
+            const resultsHtml = data.results.map(result => `
+                <div class="bg-gray-700 rounded p-4">
+                    <h3 class="font-semibold text-lg mb-2">${result.title}</h3>
+                    <p class="text-gray-300 mb-2">${result.snippet || result.content.substring(0, 200)}...</p>
+                    <div class="flex justify-between text-sm text-gray-400">
+                        <span>Platform: ${result.platform}</span>
+                        <span>Score: ${result.relevanceScore}</span>
+                    </div>
+                </div>
+            `).join('');
+            
+            resultsDiv.innerHTML = `
+                <p class="text-green-400 mb-4">Found ${data.totalFound} results for "${data.query}"</p>
+                ${resultsHtml}
+            `;
+        }
+        
+        // Allow Enter key to trigger search
+        document.getElementById('searchQuery').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                testSearch();
+            }
+        });
+    </script>
+</body>
+</html>
