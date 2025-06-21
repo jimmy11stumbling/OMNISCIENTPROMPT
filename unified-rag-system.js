@@ -1,33 +1,43 @@
-// Unified RAG 2.0 System - Consolidating all RAG functionality into one comprehensive system
+// Unified RAG 2.0 System - Comprehensive platform documentation from attached assets
 const platformDocuments = {
   replit: [
     {
       id: 'repl_1',
-      title: 'Replit Agent AI Development',
-      content: 'Replit Agent is an AI system that builds full-stack applications from natural language prompts. It creates complete project structures, implements databases, handles authentication, and manages deployments. Agent can work with PostgreSQL, Redis, and various APIs while providing real-time collaboration features.',
+      title: 'Replit Agent AI Development System',
+      content: 'Replit Agent is an advanced AI system that builds complete full-stack applications from natural language prompts. It creates project structures, implements databases (PostgreSQL, SQLite), handles authentication (OAuth, JWT), manages deployments with autoscaling, and provides real-time collaboration. Agent integrates with 50+ frameworks including React, Next.js, Express, FastAPI, and supports multi-language development.',
       type: 'ai-agent',
-      keywords: ['agent', 'ai', 'fullstack', 'prompt', 'natural-language'],
-      lastUpdated: '2025-06-08',
+      keywords: ['agent', 'ai', 'fullstack', 'prompt', 'natural-language', 'deployment', 'autoscaling'],
+      lastUpdated: '2025-06-21',
       platform: 'replit',
       relevanceScore: 5
     },
     {
       id: 'repl_2',
-      title: 'Replit Database & Storage Systems',
-      content: 'Replit provides comprehensive database solutions including PostgreSQL with automated backups, ReplDB for key-value storage, and Object Storage for file management. Environment variables are auto-configured. Supports schema design, migrations, and real-time data sync.',
+      title: 'Replit Database & Object Storage Systems',
+      content: 'Replit provides comprehensive data solutions: PostgreSQL with automated backups and migrations, ReplDB for key-value storage, Object Storage for file management with GCS compatibility. Environment variables auto-configured, supports schema design, real-time data sync, and seamless integration between development and production environments.',
       type: 'database',
-      keywords: ['database', 'postgresql', 'repldb', 'storage', 'migrations'],
-      lastUpdated: '2025-06-08',
+      keywords: ['database', 'postgresql', 'repldb', 'object-storage', 'gcs', 'migrations', 'backup'],
+      lastUpdated: '2025-06-21',
       platform: 'replit',
       relevanceScore: 5
     },
     {
       id: 'repl_3',
-      title: 'Authentication & Security Systems',
-      content: 'Replit Auth provides OAuth integration with GitHub, Google, email, and custom providers. Includes session management, user profiles, role-based access control, and security scanning. Supports JWT tokens and encrypted password storage.',
+      title: 'Replit Authentication & Security',
+      content: 'Replit Auth provides OAuth integration with GitHub, Google, Discord, email providers. Features session management, user profiles, role-based access control, security scanning, JWT tokens, encrypted password storage, and seamless integration with Replit databases.',
       type: 'authentication',
-      keywords: ['auth', 'oauth', 'security', 'jwt', 'encryption'],
-      lastUpdated: '2025-06-08',
+      keywords: ['auth', 'oauth', 'security', 'jwt', 'encryption', 'github', 'google', 'discord'],
+      lastUpdated: '2025-06-21',
+      platform: 'replit',
+      relevanceScore: 5
+    },
+    {
+      id: 'repl_4',
+      title: 'Replit Deployment & Hosting',
+      content: 'Replit Deployments provide production-ready hosting with autoscaling, custom domains, SSL certificates, environment variables, and monitoring. Supports static sites, web services, background workers, and cron jobs with automatic CI/CD from your Repl.',
+      type: 'deployment',
+      keywords: ['deployment', 'hosting', 'autoscaling', 'ssl', 'domains', 'monitoring', 'cicd'],
+      lastUpdated: '2025-06-21',
       platform: 'replit',
       relevanceScore: 5
     }
@@ -35,11 +45,31 @@ const platformDocuments = {
   cursor: [
     {
       id: 'cursor_1',
-      title: 'Cursor AI Code Editor',
-      content: 'Cursor is an AI-first code editor built on VS Code. Features include AI autocomplete, code generation from natural language, real-time AI pair programming, and context-aware suggestions. Supports all major programming languages with advanced refactoring capabilities.',
+      title: 'Cursor AI-First Code Editor',
+      content: 'Cursor is an AI-first code editor built on VS Code with advanced AI capabilities. Features include GPT-4 powered autocomplete, natural language code generation, AI pair programming, context-aware suggestions, codebase understanding, and intelligent refactoring across all major programming languages.',
       type: 'editor',
-      keywords: ['cursor', 'ai-editor', 'vscode', 'autocomplete', 'pair-programming'],
-      lastUpdated: '2025-06-08',
+      keywords: ['cursor', 'ai-editor', 'vscode', 'gpt4', 'autocomplete', 'pair-programming', 'refactoring'],
+      lastUpdated: '2025-06-21',
+      platform: 'cursor',
+      relevanceScore: 5
+    },
+    {
+      id: 'cursor_2',
+      title: 'Cursor AI Chat & Code Generation',
+      content: 'Cursor Chat allows natural language interactions with your codebase. Generate functions, debug code, explain complex logic, and refactor existing code through conversational AI. Supports multi-file editing, project-wide understanding, and maintains coding best practices.',
+      type: 'ai-chat',
+      keywords: ['ai-chat', 'code-generation', 'debugging', 'refactoring', 'multi-file', 'best-practices'],
+      lastUpdated: '2025-06-21',
+      platform: 'cursor',
+      relevanceScore: 5
+    },
+    {
+      id: 'cursor_3',
+      title: 'Cursor Composer & Project Management',
+      content: 'Cursor Composer enables AI-assisted project creation and management. Build entire applications, generate project structures, handle dependencies, and maintain code quality through AI guidance. Integrates with Git, supports team collaboration, and provides intelligent project insights.',
+      type: 'project-management',
+      keywords: ['composer', 'project-creation', 'dependencies', 'git', 'collaboration', 'insights'],
+      lastUpdated: '2025-06-21',
       platform: 'cursor',
       relevanceScore: 5
     }
@@ -47,11 +77,31 @@ const platformDocuments = {
   lovable: [
     {
       id: 'lovable_1',
-      title: 'Lovable Full-Stack Development',
-      content: 'Lovable is an AI-powered platform for building full-stack web applications. Uses React, TypeScript, Node.js, and Supabase. Features include real-time collaboration, AI code generation, component libraries, and automated deployment.',
-      type: 'fullstack',
-      keywords: ['lovable', 'react', 'typescript', 'supabase', 'fullstack'],
-      lastUpdated: '2025-06-08',
+      title: 'Lovable 2.0 AI Fullstack Engineer',
+      content: 'Lovable 2.0 features an AI Fullstack Engineer that builds production-ready applications through conversational AI. Uses "vibe coding" philosophy with React, TailwindCSS, Vite frontend and Supabase backend. Supports real-time collaboration, AI code generation, component libraries, and automated deployment.',
+      type: 'ai-fullstack',
+      keywords: ['lovable', 'ai-engineer', 'react', 'tailwind', 'vite', 'supabase', 'vibe-coding'],
+      lastUpdated: '2025-06-21',
+      platform: 'lovable',
+      relevanceScore: 5
+    },
+    {
+      id: 'lovable_2',
+      title: 'Lovable Component System & Design',
+      content: 'Lovable provides an extensive component library with AI-generated UI components, responsive design patterns, and design system integration. Features include automatic responsiveness, accessibility compliance, and seamless design-to-code workflow.',
+      type: 'components',
+      keywords: ['components', 'ui-library', 'responsive', 'accessibility', 'design-system'],
+      lastUpdated: '2025-06-21',
+      platform: 'lovable',
+      relevanceScore: 5
+    },
+    {
+      id: 'lovable_3',
+      title: 'Lovable Supabase Integration',
+      content: 'Deep integration with Supabase for backend services including authentication, real-time databases, storage, and edge functions. Automatic schema generation, type-safe queries, and seamless data synchronization between frontend and backend.',
+      type: 'backend-integration',
+      keywords: ['supabase', 'authentication', 'realtime-db', 'storage', 'edge-functions', 'schema'],
+      lastUpdated: '2025-06-21',
       platform: 'lovable',
       relevanceScore: 5
     }
@@ -60,10 +110,30 @@ const platformDocuments = {
     {
       id: 'bolt_1',
       title: 'Bolt AI Development Platform',
-      content: 'Bolt provides instant full-stack application development with AI assistance. Features real-time preview, collaborative coding, and instant deployment capabilities.',
-      type: 'platform',
-      keywords: ['bolt', 'ai-development', 'instant-preview', 'collaboration'],
-      lastUpdated: '2025-06-08',
+      content: 'Bolt provides instant full-stack application development with AI assistance. Features include real-time preview, collaborative coding, instant deployment, and intelligent code generation. Supports multiple frameworks and provides seamless development experience.',
+      type: 'ai-platform',
+      keywords: ['bolt', 'ai-development', 'instant-preview', 'collaboration', 'deployment'],
+      lastUpdated: '2025-06-21',
+      platform: 'bolt',
+      relevanceScore: 5
+    },
+    {
+      id: 'bolt_2',
+      title: 'Bolt Real-time Collaboration',
+      content: 'Advanced real-time collaboration features with live code sharing, synchronized editing, and team development workflows. Supports concurrent editing, conflict resolution, and seamless team coordination.',
+      type: 'collaboration',
+      keywords: ['real-time', 'collaboration', 'live-sharing', 'concurrent-editing', 'team-workflow'],
+      lastUpdated: '2025-06-21',
+      platform: 'bolt',
+      relevanceScore: 5
+    },
+    {
+      id: 'bolt_3',
+      title: 'Bolt Instant Deployment & Preview',
+      content: 'Bolt offers instant deployment with live preview capabilities. Changes are reflected immediately, supporting rapid prototyping and iterative development. Includes staging environments and production deployment options.',
+      type: 'deployment',
+      keywords: ['instant-deployment', 'live-preview', 'prototyping', 'staging', 'production'],
+      lastUpdated: '2025-06-21',
       platform: 'bolt',
       relevanceScore: 5
     }
@@ -71,11 +141,31 @@ const platformDocuments = {
   windsurf: [
     {
       id: 'windsurf_1',
-      title: 'Windsurf Collaborative Development',
-      content: 'Windsurf offers team-based development environments with real-time collaboration, shared workspaces, and integrated project management tools.',
+      title: 'Windsurf Collaborative Development Environment',
+      content: 'Windsurf offers comprehensive team-based development with real-time collaboration, shared workspaces, integrated project management, and advanced debugging tools. Designed for distributed teams with seamless communication features.',
       type: 'collaboration',
-      keywords: ['windsurf', 'team-development', 'collaboration', 'workspaces'],
-      lastUpdated: '2025-06-08',
+      keywords: ['windsurf', 'team-development', 'collaboration', 'workspaces', 'project-management'],
+      lastUpdated: '2025-06-21',
+      platform: 'windsurf',
+      relevanceScore: 5
+    },
+    {
+      id: 'windsurf_2',
+      title: 'Windsurf AI-Powered Development',
+      content: 'AI-assisted coding with intelligent suggestions, automated testing, code review assistance, and smart refactoring. Integrates AI throughout the development lifecycle for enhanced productivity.',
+      type: 'ai-development',
+      keywords: ['ai-coding', 'intelligent-suggestions', 'automated-testing', 'code-review', 'refactoring'],
+      lastUpdated: '2025-06-21',
+      platform: 'windsurf',
+      relevanceScore: 5
+    },
+    {
+      id: 'windsurf_3',
+      title: 'Windsurf Team Management & Workflows',
+      content: 'Advanced team management with role-based permissions, workflow automation, sprint planning, and productivity analytics. Supports agile methodologies with integrated tools for project tracking.',
+      type: 'team-management',
+      keywords: ['team-management', 'permissions', 'workflow-automation', 'agile', 'analytics'],
+      lastUpdated: '2025-06-21',
       platform: 'windsurf',
       relevanceScore: 5
     }

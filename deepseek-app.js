@@ -334,7 +334,7 @@ app.post('/api/cleanup', (req, res) => {
   }
 });
 
-// Seed RAG database with initial documents
+// Seed RAG database with comprehensive platform data
 app.post('/api/rag/seed', async (req, res) => {
   try {
     // Check if database already has documents
@@ -348,39 +348,97 @@ app.post('/api/rag/seed', async (req, res) => {
       });
     }
 
-    // Seed with some initial documents
+    // Comprehensive seed documents based on attached assets
     const seedDocuments = [
+      // Replit comprehensive data
       {
-        title: 'Replit Authentication Guide',
-        content: 'Replit provides comprehensive authentication solutions including OAuth integration, session management, and user profiles. Use Replit Auth for secure user authentication with GitHub, Google, and email providers.',
+        title: 'Replit Agent AI System Complete Guide',
+        content: 'Replit Agent is an advanced AI system building complete full-stack applications from natural language. Features: project structure creation, database implementation (PostgreSQL, SQLite), authentication (OAuth, JWT), deployment with autoscaling, real-time collaboration, 50+ framework support including React, Next.js, Express, FastAPI, multi-language development.',
         platform: 'replit',
-        document_type: 'guide',
-        keywords: JSON.stringify(['auth', 'oauth', 'authentication', 'security', 'login'])
+        document_type: 'comprehensive-guide',
+        keywords: JSON.stringify(['agent', 'ai', 'fullstack', 'postgresql', 'oauth', 'autoscaling', 'react', 'nextjs'])
       },
       {
-        title: 'Replit Database Setup',
-        content: 'Set up PostgreSQL databases on Replit with automated backups, migrations, and real-time data sync. Environment variables are auto-configured for seamless database integration.',
+        title: 'Replit Database & Object Storage Integration',
+        content: 'Complete data solutions: PostgreSQL with automated backups/migrations, ReplDB key-value storage, Object Storage with GCS compatibility, environment auto-configuration, schema design, real-time sync, seamless dev-to-production integration.',
         platform: 'replit',
-        document_type: 'tutorial',
-        keywords: JSON.stringify(['database', 'postgresql', 'setup', 'migration', 'backup'])
+        document_type: 'database-guide',
+        keywords: JSON.stringify(['database', 'postgresql', 'repldb', 'object-storage', 'gcs', 'migrations', 'realtime'])
       },
       {
-        title: 'Cursor AI Development',
-        content: 'Cursor AI provides intelligent code completion, real-time pair programming, and context-aware suggestions. Built on VS Code with advanced AI capabilities for faster development.',
+        title: 'Replit Deployment & Production Hosting',
+        content: 'Production-ready hosting with autoscaling, custom domains, SSL certificates, environment variables, monitoring, static sites, web services, background workers, cron jobs, automatic CI/CD integration.',
+        platform: 'replit',
+        document_type: 'deployment-guide',
+        keywords: JSON.stringify(['deployment', 'hosting', 'autoscaling', 'ssl', 'domains', 'monitoring', 'cicd'])
+      },
+      
+      // Cursor comprehensive data
+      {
+        title: 'Cursor AI-First Development Environment',
+        content: 'AI-first code editor built on VS Code with GPT-4 powered autocomplete, natural language code generation, AI pair programming, context-aware suggestions, codebase understanding, intelligent refactoring across all programming languages.',
         platform: 'cursor',
-        document_type: 'overview',
-        keywords: JSON.stringify(['ai', 'cursor', 'development', 'vscode', 'autocomplete'])
+        document_type: 'editor-guide',
+        keywords: JSON.stringify(['cursor', 'ai-editor', 'gpt4', 'autocomplete', 'pair-programming', 'refactoring', 'vscode'])
       },
       {
-        title: 'Lovable Full-Stack Framework',
-        content: 'Lovable enables rapid full-stack development with React, TypeScript, and Supabase. Features include AI code generation, component libraries, and automated deployment.',
+        title: 'Cursor AI Chat & Code Generation System',
+        content: 'Natural language codebase interactions: generate functions, debug code, explain logic, refactor through conversation, multi-file editing, project-wide understanding, coding best practices maintenance.',
+        platform: 'cursor',
+        document_type: 'ai-features',
+        keywords: JSON.stringify(['ai-chat', 'code-generation', 'debugging', 'refactoring', 'multi-file', 'best-practices'])
+      },
+      
+      // Lovable comprehensive data
+      {
+        title: 'Lovable 2.0 AI Fullstack Engineer',
+        content: 'AI Fullstack Engineer building production-ready apps through conversation. "Vibe coding" philosophy with React, TailwindCSS, Vite frontend, Supabase backend, real-time collaboration, AI code generation, component libraries, automated deployment.',
         platform: 'lovable',
-        document_type: 'framework',
-        keywords: JSON.stringify(['fullstack', 'react', 'typescript', 'supabase', 'deployment'])
+        document_type: 'ai-platform',
+        keywords: JSON.stringify(['lovable', 'ai-engineer', 'react', 'tailwind', 'vite', 'supabase', 'vibe-coding'])
+      },
+      {
+        title: 'Lovable Supabase Deep Integration',
+        content: 'Deep Supabase integration: authentication, real-time databases, storage, edge functions, automatic schema generation, type-safe queries, seamless frontend-backend data synchronization.',
+        platform: 'lovable',
+        document_type: 'backend-integration',
+        keywords: JSON.stringify(['supabase', 'authentication', 'realtime-db', 'storage', 'edge-functions', 'schema'])
+      },
+      
+      // Bolt comprehensive data
+      {
+        title: 'Bolt AI Development & Collaboration Platform',
+        content: 'Instant full-stack development with AI assistance, real-time preview, collaborative coding, instant deployment, intelligent code generation, multiple framework support, seamless development experience.',
+        platform: 'bolt',
+        document_type: 'ai-platform',
+        keywords: JSON.stringify(['bolt', 'ai-development', 'instant-preview', 'collaboration', 'deployment'])
+      },
+      {
+        title: 'Bolt Real-time Collaboration Features',
+        content: 'Advanced real-time collaboration: live code sharing, synchronized editing, team workflows, concurrent editing, conflict resolution, seamless team coordination.',
+        platform: 'bolt',
+        document_type: 'collaboration',
+        keywords: JSON.stringify(['real-time', 'collaboration', 'live-sharing', 'concurrent-editing', 'team-workflow'])
+      },
+      
+      // Windsurf comprehensive data
+      {
+        title: 'Windsurf Team Development Environment',
+        content: 'Comprehensive team-based development: real-time collaboration, shared workspaces, integrated project management, advanced debugging, distributed team design, seamless communication features.',
+        platform: 'windsurf',
+        document_type: 'team-platform',
+        keywords: JSON.stringify(['windsurf', 'team-development', 'collaboration', 'workspaces', 'project-management'])
+      },
+      {
+        title: 'Windsurf AI-Powered Development & Team Management',
+        content: 'AI-assisted coding with intelligent suggestions, automated testing, code review assistance, smart refactoring, role-based permissions, workflow automation, sprint planning, productivity analytics, agile methodology support.',
+        platform: 'windsurf',
+        document_type: 'ai-team-management',
+        keywords: JSON.stringify(['ai-coding', 'automated-testing', 'team-management', 'agile', 'analytics'])
       }
     ];
 
-    // Insert seed documents
+    // Insert comprehensive seed documents
     const insertPromises = seedDocuments.map(doc => 
       queryWithRetry(`
         INSERT INTO rag_documents (title, content, platform, document_type, keywords, uploaded_by, is_active)
@@ -394,14 +452,63 @@ app.post('/api/rag/seed', async (req, res) => {
     await ragDB.syncDatabaseDocuments();
 
     res.json({
-      message: 'RAG database seeded successfully',
+      message: 'RAG database seeded with comprehensive platform data',
       documentsAdded: seedDocuments.length,
-      totalDocuments: ragDB.getTotalDocumentCount()
+      totalDocuments: ragDB.getTotalDocumentCount(),
+      platforms: ['replit', 'cursor', 'lovable', 'bolt', 'windsurf'],
+      dataSource: 'attached-assets-comprehensive'
     });
 
   } catch (error) {
     console.error('Seed database error:', error);
     res.status(500).json({ error: 'Failed to seed database' });
+  }
+});
+
+// Verify platform data coverage endpoint
+app.get('/api/rag/platform-coverage', async (req, res) => {
+  try {
+    const platforms = ['replit', 'cursor', 'lovable', 'bolt', 'windsurf'];
+    const coverage = {};
+    
+    // Check in-memory documents
+    for (const platform of platforms) {
+      const memoryDocs = ragDB.documents[platform] || [];
+      const dbQuery = await queryWithRetry(
+        'SELECT COUNT(*) as count FROM rag_documents WHERE platform = ? AND is_active = 1',
+        [platform]
+      );
+      const dbCount = parseInt(dbQuery.rows[0]?.count || 0);
+      
+      coverage[platform] = {
+        memoryDocuments: memoryDocs.length,
+        databaseDocuments: dbCount,
+        totalDocuments: memoryDocs.length + dbCount,
+        documentTypes: [...new Set(memoryDocs.map(doc => doc.type))],
+        lastUpdated: memoryDocs[0]?.lastUpdated || 'N/A'
+      };
+    }
+    
+    // Get recent database documents for verification
+    const recentDocs = await queryWithRetry(`
+      SELECT platform, document_type, title, created_at
+      FROM rag_documents 
+      WHERE is_active = 1 
+      ORDER BY created_at DESC 
+      LIMIT 20
+    `);
+    
+    res.json({
+      platformCoverage: coverage,
+      totalPlatforms: platforms.length,
+      recentDocuments: recentDocs.rows,
+      dataSourceStatus: 'comprehensive-attached-assets-integrated',
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Platform coverage check error:', error);
+    res.status(500).json({ error: 'Failed to check platform coverage' });
   }
 });
 
