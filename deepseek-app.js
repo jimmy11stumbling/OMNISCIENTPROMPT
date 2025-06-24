@@ -32,7 +32,81 @@ async function queryWithRetry(queryText, params = [], retries = 3) {
   }
 }
 
-// WebSocket server for real-time updates
+// Enhanced WebSocket server with connection management
+class WebSocketManager {
+  constructor() {
+    this.connections = new Set();
+    this.connectionLimit = 1000;
+    this.heartbeatInterval = 30000;
+    this.heartbeatTimer = null;
+  }
+
+  addConnection(ws, req) {
+    if (this.connections.size >= this.connectionLimit) {
+      ws.close(1008, 'Connection limit exceeded');
+      return false;
+    }
+
+    this.connections.add(ws);
+    
+    ws.on('close', () => {
+      this.connections.delete(ws);
+    });
+
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
+      this.connections.delete(ws);
+    });
+
+    // Ping-pong heartbeat
+    ws.isAlive = true;
+    ws.on('pong', () => {
+      ws.isAlive = true;
+    });
+
+    return true;
+  }
+
+  startHeartbeat() {
+    this.heartbeatTimer = setInterval(() => {
+      this.connections.forEach(ws => {
+        if (!ws.isAlive) {
+          ws.terminate();
+          this.connections.delete(ws);
+          return;
+        }
+        ws.isAlive = false;
+        ws.ping();
+      });
+    }, this.heartbeatInterval);
+  }
+
+  broadcast(data) {
+    const message = JSON.stringify(data);
+    this.connections.forEach(ws => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(message);
+      }
+    });
+  }
+
+  getStats() {
+    return {
+      activeConnections: this.connections.size,
+      connectionLimit: this.connectionLimit
+    };
+  }
+
+  shutdown() {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+    }
+    this.connections.forEach(ws => ws.close());
+    this.connections.clear();
+  }
+}
+
+const wsManager = new WebSocketManager();
 const wss = new WebSocketServer({ server, path: '/ws' });
 
 app.use(express.json({ limit: '10mb' }));
@@ -43,51 +117,82 @@ app.use((err, req, res, next) => {
   next();
 });
 
-// Rate limiting middleware with cleanup
-const rateLimitStore = new Map();
-
-// Cleanup old rate limit entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  const fiveMinutesAgo = now - 5 * 60 * 1000;
-
-  for (const [clientId, requests] of rateLimitStore.entries()) {
-    const validRequests = requests.filter(timestamp => timestamp > fiveMinutesAgo);
-    if (validRequests.length === 0) {
-      rateLimitStore.delete(clientId);
-    } else {
-      rateLimitStore.set(clientId, validRequests);
-    }
+// Enhanced rate limiting with sliding window
+class EnhancedRateLimiter {
+  constructor() {
+    this.store = new Map();
+    this.maxClients = 10000;
+    
+    // Cleanup every 2 minutes
+    setInterval(() => this.cleanup(), 2 * 60 * 1000);
   }
-}, 5 * 60 * 1000);
 
-const rateLimit = (windowMs = 60000, maxRequests = 100) => {
-  return (req, res, next) => {
-    const clientId = req.ip || req.connection.remoteAddress;
+  isAllowed(clientId, windowMs, maxRequests) {
     const now = Date.now();
     const windowStart = now - windowMs;
 
-    if (!rateLimitStore.has(clientId)) {
-      rateLimitStore.set(clientId, []);
+    if (!this.store.has(clientId)) {
+      this.store.set(clientId, []);
     }
 
-    const requests = rateLimitStore.get(clientId);
+    const requests = this.store.get(clientId);
     const validRequests = requests.filter(timestamp => timestamp > windowStart);
-
+    
     if (validRequests.length >= maxRequests) {
-      return res.status(429).json({
-        error: 'Rate limit exceeded',
-        retryAfter: Math.ceil((validRequests[0] + windowMs - now) / 1000)
-      });
+      return false;
     }
 
     validRequests.push(now);
-    rateLimitStore.set(clientId, validRequests);
+    this.store.set(clientId, validRequests);
+    
+    // Prevent memory bloat
+    if (this.store.size > this.maxClients) {
+      const oldestClient = this.store.keys().next().value;
+      this.store.delete(oldestClient);
+    }
+    
+    return true;
+  }
+
+  cleanup() {
+    const now = Date.now();
+    const tenMinutesAgo = now - 10 * 60 * 1000;
+
+    for (const [clientId, requests] of this.store.entries()) {
+      const validRequests = requests.filter(timestamp => timestamp > tenMinutesAgo);
+      if (validRequests.length === 0) {
+        this.store.delete(clientId);
+      } else {
+        this.store.set(clientId, validRequests);
+      }
+    }
+  }
+
+  getStats() {
+    return {
+      activeClients: this.store.size,
+      totalRequests: Array.from(this.store.values()).reduce((sum, reqs) => sum + reqs.length, 0)
+    };
+  }
+}
+
+const rateLimiter = new EnhancedRateLimiter();
+
+const rateLimit = (windowMs = 60000, maxRequests = 100) => {
+  return (req, res, next) => {
+    const clientId = req.ip || req.connection.remoteAddress || 'unknown';
+
+    if (!rateLimiter.isAllowed(clientId, windowMs, maxRequests)) {
+      return res.status(429).json({ 
+        error: 'Rate limit exceeded',
+        retryAfter: Math.ceil(windowMs / 1000),
+        limit: maxRequests,
+        window: windowMs
+      });
+    }
 
     res.setHeader('X-RateLimit-Limit', maxRequests);
-    res.setHeader('X-RateLimit-Remaining', maxRequests - validRequests.length);
-    res.setHeader('X-RateLimit-Reset', Math.ceil((now + windowMs) / 1000));
-
+    res.setHeader('X-RateLimit-Window', windowMs);
     next();
   };
 };
@@ -147,15 +252,86 @@ const storage = multer.diskStorage({
   }
 });
 
+// Enhanced file security scanner
+class FileSecurityScanner {
+  constructor() {
+    this.allowedMimeTypes = ['text/plain', 'application/pdf', 'text/markdown', 'application/json'];
+    this.allowedExtensions = ['.txt', '.pdf', '.md', '.json'];
+    this.maxFileSize = 10 * 1024 * 1024; // 10MB
+    this.suspiciousPatterns = [
+      /(<script[\s\S]*?>[\s\S]*?<\/script>)/gi,
+      /(javascript:)/gi,
+      /(on\w+\s*=)/gi,
+      /(\$\(|\$\.)/gi,
+      /(eval\s*\()/gi,
+      /(expression\s*\()/gi,
+      /(data:text\/html)/gi,
+      /(<iframe[\s\S]*?>)/gi,
+      /(vbscript:)/gi
+    ];
+  }
+
+  validateFile(file) {
+    const errors = [];
+    
+    if (!this.allowedMimeTypes.includes(file.mimetype)) {
+      errors.push(`Invalid MIME type: ${file.mimetype}`);
+    }
+    
+    const fileExt = path.extname(file.originalname).toLowerCase();
+    if (!this.allowedExtensions.includes(fileExt)) {
+      errors.push(`Invalid file extension: ${fileExt}`);
+    }
+    
+    if (file.size > this.maxFileSize) {
+      errors.push(`File too large: ${file.size} bytes`);
+    }
+    
+    if (this.suspiciousPatterns.some(pattern => pattern.test(file.originalname))) {
+      errors.push('Suspicious filename detected');
+    }
+    
+    return { isValid: errors.length === 0, errors };
+  }
+
+  async scanFileContent(filePath) {
+    try {
+      const fs = require('fs');
+      const content = fs.readFileSync(filePath, 'utf8');
+      const suspiciousContent = [];
+      
+      this.suspiciousPatterns.forEach((pattern, index) => {
+        if (pattern.test(content)) {
+          suspiciousContent.push(`Security pattern ${index + 1} detected`);
+        }
+      });
+      
+      return { 
+        isSafe: suspiciousContent.length === 0, 
+        issues: suspiciousContent,
+        scannedAt: new Date().toISOString()
+      };
+    } catch (error) {
+      return { isSafe: false, issues: ['File scan failed'], error: error.message };
+    }
+  }
+}
+
+const fileScanner = new FileSecurityScanner();
+
 const upload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+  limits: { 
+    fileSize: fileScanner.maxFileSize,
+    files: 5,
+    fields: 10
+  },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['text/plain', 'application/pdf', 'text/markdown', 'application/json'];
-    if (allowedTypes.includes(file.mimetype)) {
+    const validation = fileScanner.validateFile(file);
+    if (validation.isValid) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only .txt, .pdf, .md, .json allowed'));
+      cb(new Error(`File validation failed: ${validation.errors.join('; ')}`));
     }
   }
 });
@@ -229,6 +405,73 @@ const checkApiQuota = async (req, res, next) => {
 
 };
 
+// Enhanced security headers
+app.use((req, res, next) => {
+  // Basic security headers
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-DNS-Prefetch-Control', 'off');
+  res.setHeader('X-Download-Options', 'noopen');
+  res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+  
+  // Content Security Policy
+  res.setHeader('Content-Security-Policy', 
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' cdn.tailwindcss.com; " +
+    "style-src 'self' 'unsafe-inline' cdn.tailwindcss.com; " +
+    "img-src 'self' data: https:; " +
+    "connect-src 'self' wss:; " +
+    "font-src 'self' https:; " +
+    "frame-ancestors 'none';"
+  );
+  
+  // HSTS for production
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  }
+  
+  next();
+});
+
+// Input sanitization middleware
+app.use((req, res, next) => {
+  const sanitizeValue = (value) => {
+    if (typeof value === 'string') {
+      return value
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/javascript:/gi, '')
+        .replace(/on\w+\s*=/gi, '')
+        .trim();
+    }
+    return value;
+  };
+
+  const sanitizeObject = (obj) => {
+    if (typeof obj !== 'object' || obj === null) return obj;
+    
+    for (const key in obj) {
+      if (typeof obj[key] === 'string') {
+        obj[key] = sanitizeValue(obj[key]);
+      } else if (typeof obj[key] === 'object') {
+        sanitizeObject(obj[key]);
+      }
+    }
+    return obj;
+  };
+
+  if (req.body) {
+    req.body = sanitizeObject(req.body);
+  }
+  
+  if (req.query) {
+    req.query = sanitizeObject(req.query);
+  }
+
+  next();
+});
+
 app.use(express.static('public'));
 
 // Initialize unified systems with memory optimization
@@ -238,25 +481,90 @@ const UnifiedAPIRouter = require('./routes/unified-api');
 const featureManager = new FeatureManager();
 const ragDB = new UnifiedRAGSystem(pool);
 
-// Simple caching for better performance
-const simpleCache = new Map();
-const cacheTimeout = 5 * 60 * 1000; // 5 minutes
+// Enhanced caching system with TTL cleanup
+class EnhancedCache {
+  constructor(maxSize = 1000, defaultTTL = 5 * 60 * 1000) {
+    this.cache = new Map();
+    this.maxSize = maxSize;
+    this.defaultTTL = defaultTTL;
+    this.hitCount = 0;
+    this.missCount = 0;
+    
+    // Cleanup expired entries every 2 minutes
+    setInterval(() => this.cleanup(), 2 * 60 * 1000);
+  }
 
-// Basic caching middleware
+  set(key, value, ttl = this.defaultTTL) {
+    if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+    }
+    
+    this.cache.set(key, {
+      value,
+      expires: Date.now() + ttl
+    });
+  }
+
+  get(key) {
+    const item = this.cache.get(key);
+    if (!item) {
+      this.missCount++;
+      return null;
+    }
+    
+    if (Date.now() > item.expires) {
+      this.cache.delete(key);
+      this.missCount++;
+      return null;
+    }
+    
+    this.hitCount++;
+    return item.value;
+  }
+
+  cleanup() {
+    const now = Date.now();
+    for (const [key, item] of this.cache.entries()) {
+      if (now > item.expires) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
+  getStats() {
+    return {
+      size: this.cache.size,
+      hits: this.hitCount,
+      misses: this.missCount,
+      hitRate: this.hitCount / (this.hitCount + this.missCount) || 0
+    };
+  }
+
+  clear() {
+    this.cache.clear();
+    this.hitCount = 0;
+    this.missCount = 0;
+  }
+}
+
+const enhancedCache = new EnhancedCache();
+
+// Enhanced caching middleware
 app.use('/api/', (req, res, next) => {
-  if (req.method === 'GET') {
+  if (req.method === 'GET' && !req.headers.authorization) {
     const cacheKey = req.originalUrl;
-    const cached = simpleCache.get(cacheKey);
+    const cached = enhancedCache.get(cacheKey);
 
-    if (cached && (Date.now() - cached.timestamp) < cacheTimeout) {
+    if (cached) {
       res.set('X-Cache', 'HIT');
-      return res.json(cached.data);
+      return res.json(cached);
     }
 
     const originalSend = res.json;
     res.json = function(data) {
       if (res.statusCode === 200) {
-        simpleCache.set(cacheKey, { data, timestamp: Date.now() });
+        enhancedCache.set(cacheKey, data);
         res.set('X-Cache', 'MISS');
       }
       originalSend.call(this, data);

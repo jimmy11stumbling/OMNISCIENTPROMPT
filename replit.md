@@ -125,8 +125,21 @@ This is a comprehensive AI-powered prompt generation platform built specifically
 - Database connection management
 - API key configuration
 
+## Recent Changes
+
+### June 24, 2025 - Security and Performance Improvements
+- Enhanced rate limiting with sliding window algorithm and memory management
+- Implemented comprehensive caching system with TTL cleanup
+- Added file upload security scanning with pattern detection
+- Enhanced WebSocket connection management with heartbeat monitoring
+- Added comprehensive security headers and input sanitization
+- Implemented system monitoring endpoints for production readiness
+- Added graceful shutdown handling for all services
+- Fixed port binding issues and error handling
+
 ## Changelog
 - June 24, 2025. Initial setup
+- June 24, 2025. Security and performance enhancements completed
 
 ## User Preferences
 
