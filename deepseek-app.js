@@ -630,7 +630,7 @@ app.get('/api/rag/status', async (req, res) => {
 app.post('/api/cleanup', (req, res) => {
   try {
     // Clear cache
-    simpleCache.clear();
+    enhancedCache.clear();
     
     // Run garbage collection if available
     if (global.gc) {
@@ -945,14 +945,7 @@ const heartbeat = setInterval(() => {
   });
   
   // Clean up cache periodically
-  if (simpleCache.size > 100) {
-    const now = Date.now();
-    for (const [key, value] of simpleCache.entries()) {
-      if (now - value.timestamp > cacheTimeout) {
-        simpleCache.delete(key);
-      }
-    }
-  }
+  enhancedCache.cleanup();
 }, 30000);
 
 // Root route serves the HTML page
