@@ -25,6 +25,17 @@ const BCRYPT_ROUNDS = 12;
 // Database connection using SQLite
 const pool = database;
 
+// Global error handling for unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Promise Rejection:', reason);
+  // Don't exit the process, just log the error
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  // Don't exit the process, just log the error
+});
+
 // Wrapper function to maintain compatibility
 async function queryWithRetry(queryText, params = [], retries = 3) {
   for (let i = 0; i < retries; i++) {
@@ -2102,7 +2113,6 @@ app.post('/api/generate-prompt', async (req, res) => {
     });
   }
 
-  // Immediate response system - no timeouts needed
   console.log(`[PROMPT-GEN] Processing: "${query}" for ${platform}`);
 
   try {
@@ -2349,29 +2359,24 @@ Response:
     console.log(`[PROMPT-GEN] Calling DeepSeek API for: "${query}" on ${platform}`);
     console.log(`[DEEPSEEK-API] API Key configured: ${!!process.env.DEEPSEEK_API_KEY}`);
     
-    // Force API call attempt
-    console.log('[DEEPSEEK-API] Starting API call...');
-    try {
-      const fetch = (await import('node-fetch')).default;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        console.log('[DEEPSEEK-API] Request timeout after 20s');
-        controller.abort();
-      }, 20000);
+    if (process.env.DEEPSEEK_API_KEY) {
+      console.log('[DEEPSEEK-API] Starting API call...');
+      try {
+        const fetch = (await import('node-fetch')).default;
 
-      console.log('[DEEPSEEK-API] Making request to DeepSeek...');
-      const response = await fetch('https://api.deepseek.com/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
-          },
-          body: JSON.stringify({
-            model: 'deepseek-reasoner',
-            messages: [
-              {
-                role: 'user',
-                content: `CREATE COMPREHENSIVE MASTER BLUEPRINT FOR: "${query}"
+        console.log('[DEEPSEEK-API] Making request to DeepSeek...');
+        const response = await fetch('https://api.deepseek.com/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
+            },
+            body: JSON.stringify({
+              model: 'deepseek-reasoner',
+              messages: [
+                {
+                  role: 'user',
+                  content: `CREATE COMPREHENSIVE MASTER BLUEPRINT FOR: "${query}"
 
 Platform: ${platform}
 RAG Context: ${ragContext}
@@ -2430,53 +2435,52 @@ CREATE TABLE [specific_table] (
 [Specific implementation details]
 
 Provide ACTIONABLE, IMPLEMENTATION-READY specifications with exact code examples and configurations.`
-              }
-            ],
-            max_tokens: 8000,
-            temperature: 0.7,
-            stream: false
-          }),
-          signal: controller.signal
-        });
+                }
+              ],
+              max_tokens: 8000,
+              temperature: 0.7,
+              stream: false
+            })
+          });
 
-        clearTimeout(timeoutId);
-
-        console.log(`[DEEPSEEK-API] Response status: ${response.status}`);
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('[DEEPSEEK-API] Response received successfully');
+          console.log(`[DEEPSEEK-API] Response status: ${response.status}`);
           
-          if (data.choices && data.choices[0] && data.choices[0].message) {
-            optimizedPrompt = data.choices[0].message.content;
-            reasoning = data.choices[0].message.reasoning_content || 'Generated using DeepSeek AI reasoning';
-            tokensUsed = data.usage?.total_tokens || 0;
+          if (response.ok) {
+            const data = await response.json();
+            console.log('[DEEPSEEK-API] Response received successfully');
             
-            console.log(`[DEEPSEEK-API] Content extracted: ${optimizedPrompt?.length || 0} characters, ${tokensUsed} tokens`);
+            if (data.choices && data.choices[0] && data.choices[0].message) {
+              optimizedPrompt = data.choices[0].message.content;
+              reasoning = data.choices[0].message.reasoning_content || 'Generated using DeepSeek AI reasoning';
+              tokensUsed = data.usage?.total_tokens || 0;
+              
+              console.log(`[DEEPSEEK-API] Content extracted: ${optimizedPrompt?.length || 0} characters, ${tokensUsed} tokens`);
+            } else {
+              console.error('[DEEPSEEK-API] Invalid response structure');
+              throw new Error('Invalid API response structure');
+            }
           } else {
-            console.error('[DEEPSEEK-API] Invalid response structure');
-            throw new Error('Invalid API response structure');
+            const errorText = await response.text();
+            console.error(`[DEEPSEEK-API] Error ${response.status}:`, errorText);
+            throw new Error(`API Error: ${response.status} - ${errorText}`);
           }
-        } else {
-          const errorText = await response.text();
-          console.error(`[DEEPSEEK-API] Error ${response.status}:`, errorText);
-          throw new Error(`API Error: ${response.status} - ${errorText}`);
-        }
-    } catch (apiError) {
-      console.error('[DEEPSEEK-API] Failed:', apiError.message);
-      console.error('[DEEPSEEK-API] Error type:', apiError.name);
-      
-      // Use fallback if API call fails
-      console.log('[PROMPT-GEN] DeepSeek API call failed, using enhanced fallback');
+      } catch (apiError) {
+        console.error('[DEEPSEEK-API] Failed:', apiError.message);
+        console.error('[DEEPSEEK-API] Error type:', apiError.name);
+        
+        // Use fallback if API call fails
+        console.log('[PROMPT-GEN] DeepSeek API call failed, using enhanced fallback');
+        optimizedPrompt = generateFallbackPrompt(query, platform);
+        reasoning = `Enhanced template (DeepSeek API failed: ${apiError.message}) with ${platform}-specific optimizations`;
+        tokensUsed = 425;
+      }
+    } else {
+      console.log('[PROMPT-GEN] No API key configured, using fallback');
       optimizedPrompt = generateFallbackPrompt(query, platform);
-      reasoning = `Enhanced template (DeepSeek API failed: ${apiError.message}) with ${platform}-specific optimizations`;
+      reasoning = 'Enhanced template (no API key configured) with platform-specific optimizations';
       tokensUsed = 425;
     }
 
-    // Send immediate response
-    const responseTime = Date.now() - startTime;
-    console.log(`[PROMPT-GEN] Response ready in ${responseTime}ms`);
-    
     // Ensure we have a valid prompt before sending response
     if (!optimizedPrompt) {
       console.log('[PROMPT-GEN] No prompt generated, using fallback');
@@ -2484,6 +2488,9 @@ Provide ACTIONABLE, IMPLEMENTATION-READY specifications with exact code examples
       reasoning = `Enhanced template (API response empty) with ${platform}-specific optimizations`;
       tokensUsed = 425;
     }
+
+    const responseTime = Date.now() - startTime;
+    console.log(`[PROMPT-GEN] Response ready in ${responseTime}ms`);
 
     const finalResponse = {
       prompt: optimizedPrompt,
@@ -2495,24 +2502,22 @@ Provide ACTIONABLE, IMPLEMENTATION-READY specifications with exact code examples
       timestamp: new Date().toISOString()
     };
 
-    // Clear timeout and send response
-    clearTimeout(responseTimeout);
-    
-    if (!res.headersSent) {
-      console.log(`[PROMPT-GEN] Sending response with ${optimizedPrompt.length} characters`);
-      res.json(finalResponse);
-    }
+    console.log(`[PROMPT-GEN] Sending response with ${optimizedPrompt.length} characters`);
+    return res.json(finalResponse);
 
   } catch (error) {
     console.error('Error generating prompt:', error);
     
-    res.json({
+    const fallbackResponse = {
       prompt: generateFallbackPrompt(query, platform),
       platform,
       reasoning: 'Enhanced demo template with error recovery',
       tokensUsed: 350,
-      responseTime: Date.now() - startTime
-    });
+      responseTime: Date.now() - startTime,
+      timestamp: new Date().toISOString()
+    };
+    
+    return res.json(fallbackResponse);
   }
 });
 
