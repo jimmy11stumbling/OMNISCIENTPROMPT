@@ -2355,9 +2355,9 @@ Response:
       const fetch = (await import('node-fetch')).default;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
-        console.log('[DEEPSEEK-API] Request timeout after 30s');
+        console.log('[DEEPSEEK-API] Request timeout after 20s');
         controller.abort();
-      }, 30000);
+      }, 20000);
 
       console.log('[DEEPSEEK-API] Making request to DeepSeek...');
       const response = await fetch('https://api.deepseek.com/chat/completions', {
@@ -2445,13 +2445,18 @@ Provide ACTIONABLE, IMPLEMENTATION-READY specifications with exact code examples
         
         if (response.ok) {
           const data = await response.json();
-          console.log('[DEEPSEEK-API] Parsing response data...');
+          console.log('[DEEPSEEK-API] Response received successfully');
           
-          optimizedPrompt = data.choices[0]?.message?.content;
-          reasoning = data.choices[0]?.message?.reasoning_content || 'Generated using DeepSeek AI reasoning with comprehensive analysis';
-          tokensUsed = data.usage?.total_tokens || 0;
-
-          console.log(`[DEEPSEEK-API] Success: ${tokensUsed} tokens used, content length: ${optimizedPrompt?.length || 0}`);
+          if (data.choices && data.choices[0] && data.choices[0].message) {
+            optimizedPrompt = data.choices[0].message.content;
+            reasoning = data.choices[0].message.reasoning_content || 'Generated using DeepSeek AI reasoning';
+            tokensUsed = data.usage?.total_tokens || 0;
+            
+            console.log(`[DEEPSEEK-API] Content extracted: ${optimizedPrompt?.length || 0} characters, ${tokensUsed} tokens`);
+          } else {
+            console.error('[DEEPSEEK-API] Invalid response structure');
+            throw new Error('Invalid API response structure');
+          }
         } else {
           const errorText = await response.text();
           console.error(`[DEEPSEEK-API] Error ${response.status}:`, errorText);
@@ -2459,9 +2464,9 @@ Provide ACTIONABLE, IMPLEMENTATION-READY specifications with exact code examples
         }
     } catch (apiError) {
       console.error('[DEEPSEEK-API] Failed:', apiError.message);
-      console.error('[DEEPSEEK-API] Stack:', apiError.stack);
+      console.error('[DEEPSEEK-API] Error type:', apiError.name);
       
-      // Use fallback only if API call fails
+      // Use fallback if API call fails
       console.log('[PROMPT-GEN] DeepSeek API call failed, using enhanced fallback');
       optimizedPrompt = generateFallbackPrompt(query, platform);
       reasoning = `Enhanced template (DeepSeek API failed: ${apiError.message}) with ${platform}-specific optimizations`;
@@ -2472,14 +2477,31 @@ Provide ACTIONABLE, IMPLEMENTATION-READY specifications with exact code examples
     const responseTime = Date.now() - startTime;
     console.log(`[PROMPT-GEN] Response ready in ${responseTime}ms`);
     
-    res.json({
+    // Ensure we have a valid prompt before sending response
+    if (!optimizedPrompt) {
+      console.log('[PROMPT-GEN] No prompt generated, using fallback');
+      optimizedPrompt = generateFallbackPrompt(query, platform);
+      reasoning = `Enhanced template (API response empty) with ${platform}-specific optimizations`;
+      tokensUsed = 425;
+    }
+
+    const finalResponse = {
       prompt: optimizedPrompt,
       platform,
       reasoning,
       tokensUsed,
       responseTime,
-      ragContext: ragResults.length > 0 ? `Found ${ragResults.length} relevant documents` : 'Using platform knowledge base'
-    });
+      ragContext: ragResults.length > 0 ? `Found ${ragResults.length} relevant documents` : 'Using platform knowledge base',
+      timestamp: new Date().toISOString()
+    };
+
+    // Clear timeout and send response
+    clearTimeout(responseTimeout);
+    
+    if (!res.headersSent) {
+      console.log(`[PROMPT-GEN] Sending response with ${optimizedPrompt.length} characters`);
+      res.json(finalResponse);
+    }
 
   } catch (error) {
     console.error('Error generating prompt:', error);
