@@ -218,10 +218,15 @@ const checkApiQuota = async (req, res, next) => {
   }
 
   if (req.user.api_quota_used_today >= req.user.api_quota_daily) {
-    return res.status(429).json({ error: 'Daily API quota exceeded' });
+    return res.status(429).json({ 
+      error: 'Daily API quota exceeded',
+      quota: req.user.api_quota_daily,
+      used: req.user.api_quota_used_today,
+      resetDate: today
+    });
   }
 
-  next();
+
 };
 
 app.use(express.static('public'));
@@ -2969,7 +2974,7 @@ export function ${entity}Form({ onSubmit, initialData }: ${entity}FormProps) {
 \`\`\``;
 }
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ DeepSeek AI Prompt Generator running on port ${PORT}`);
   console.log(`🔑 API Key configured: ${!!process.env.DEEPSEEK_API_KEY ? 'Yes' : 'No'}`);
   console.log(`🌐 Access at: http://localhost:${PORT}`);
@@ -2992,6 +2997,17 @@ server.listen(PORT, () => {
 
 server.on('error', (err) => {
   console.error('Server error:', err);
+});
+
+// Add proper error handling
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
 });
 
 process.on('SIGTERM', () => {
