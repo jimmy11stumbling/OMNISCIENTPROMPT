@@ -10,6 +10,12 @@ const nodemailer = require('nodemailer');
 const UnifiedRAGSystem = require('./unified-rag-system');
 const database = require('./database');
 
+// Advanced protocol implementations based on attached assets
+const { A2AProtocol } = require('./services/a2aProtocol');
+const { MCPProtocol } = require('./services/mcpProtocol');
+const { AGUIProtocol } = require('./services/agUiProtocol');
+const { createProtocolRoutes } = require('./routes/protocolRoutes');
+
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
@@ -2339,13 +2345,128 @@ Response:
 
 **TRANSFORM "${query}" into this COMPREHENSIVE MASTER BLUEPRINT that serves as the DEFINITIVE GUIDE for building, deploying, and maintaining this application. Every section must be SPECIFIC, ACTIONABLE, and PRODUCTION-READY.**`;
 
-    // Generate immediate response using enhanced template
-    console.log(`[PROMPT-GEN] Generating comprehensive spec for: "${query}" on ${platform}`);
+    // DeepSeek API integration for authentic AI-powered master blueprints
+    console.log(`[PROMPT-GEN] Calling DeepSeek API for: "${query}" on ${platform}`);
+    console.log(`[DEEPSEEK-API] API Key configured: ${!!process.env.DEEPSEEK_API_KEY}`);
     
-    // Direct prompt generation without external API calls
-    optimizedPrompt = generateFallbackPrompt(query, platform);
-    reasoning = `Enhanced template with ${platform}-specific optimizations and RAG context`;
-    tokensUsed = 425;
+    // Force API call attempt
+    console.log('[DEEPSEEK-API] Starting API call...');
+    try {
+      const fetch = (await import('node-fetch')).default;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        console.log('[DEEPSEEK-API] Request timeout after 30s');
+        controller.abort();
+      }, 30000);
+
+      console.log('[DEEPSEEK-API] Making request to DeepSeek...');
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'deepseek-reasoner',
+            messages: [
+              {
+                role: 'user',
+                content: `CREATE COMPREHENSIVE MASTER BLUEPRINT FOR: "${query}"
+
+Platform: ${platform}
+RAG Context: ${ragContext}
+
+Generate a COMPLETE, PRODUCTION-READY master blueprint with DeepSeek reasoning. Include:
+
+# 📋 MASTER APPLICATION BLUEPRINT
+## ${query.toUpperCase()} - Complete Development Specification
+
+### 🎯 EXECUTIVE SUMMARY
+- **Application Purpose:** [Specific description and primary function]
+- **Target Audience:** [Detailed user personas]
+- **Business Model:** [Revenue streams and monetization]
+- **Success Metrics:** [KPIs and performance indicators]
+
+### 🏗️ TECHNICAL ARCHITECTURE
+- **System Design:** [High-level architecture]
+- **Technology Stack:** [Complete stack with versions]
+- **Database Design:** [Specific schemas and relationships]
+- **API Specification:** [Exact endpoints and formats]
+
+### 📁 EXACT FILE STRUCTURE
+\`\`\`
+project/
+├── frontend/
+│   ├── components/
+│   │   ├── [SpecificComponent].tsx
+│   │   └── [AnotherComponent].tsx
+│   ├── pages/
+│   └── utils/
+├── backend/
+│   ├── controllers/
+│   ├── models/
+│   └── routes/
+└── database/
+    └── migrations/
+\`\`\`
+
+### 🗄️ DATABASE SCHEMAS
+\`\`\`sql
+CREATE TABLE [specific_table] (
+  id SERIAL PRIMARY KEY,
+  [specific_columns] VARCHAR(255),
+  created_at TIMESTAMP DEFAULT NOW()
+);
+\`\`\`
+
+### 🔌 API ENDPOINTS
+- POST /api/[specific-resource] - [Exact functionality]
+- GET /api/[specific-resource]/:id - [Exact functionality]
+
+### 🚀 ${platform.toUpperCase()} DEPLOYMENT
+[Platform-specific deployment configuration]
+
+### 🔒 SECURITY & PERFORMANCE
+[Specific implementation details]
+
+Provide ACTIONABLE, IMPLEMENTATION-READY specifications with exact code examples and configurations.`
+              }
+            ],
+            max_tokens: 8000,
+            temperature: 0.7,
+            stream: false
+          }),
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        console.log(`[DEEPSEEK-API] Response status: ${response.status}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('[DEEPSEEK-API] Parsing response data...');
+          
+          optimizedPrompt = data.choices[0]?.message?.content;
+          reasoning = data.choices[0]?.message?.reasoning_content || 'Generated using DeepSeek AI reasoning with comprehensive analysis';
+          tokensUsed = data.usage?.total_tokens || 0;
+
+          console.log(`[DEEPSEEK-API] Success: ${tokensUsed} tokens used, content length: ${optimizedPrompt?.length || 0}`);
+        } else {
+          const errorText = await response.text();
+          console.error(`[DEEPSEEK-API] Error ${response.status}:`, errorText);
+          throw new Error(`API Error: ${response.status} - ${errorText}`);
+        }
+    } catch (apiError) {
+      console.error('[DEEPSEEK-API] Failed:', apiError.message);
+      console.error('[DEEPSEEK-API] Stack:', apiError.stack);
+      
+      // Use fallback only if API call fails
+      console.log('[PROMPT-GEN] DeepSeek API call failed, using enhanced fallback');
+      optimizedPrompt = generateFallbackPrompt(query, platform);
+      reasoning = `Enhanced template (DeepSeek API failed: ${apiError.message}) with ${platform}-specific optimizations`;
+      tokensUsed = 425;
+    }
 
     // Send immediate response
     const responseTime = Date.now() - startTime;
