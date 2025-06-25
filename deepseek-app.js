@@ -120,6 +120,121 @@ app.get('/api/status', (req, res) => {
   });
 });
 
+// Documentation seeding endpoint
+app.post('/api/seed-documentation', async (req, res) => {
+  try {
+    const { seedDocumentationDatabase } = require('./seed-documentation');
+    const result = await seedDocumentationDatabase();
+    
+    if (result.success) {
+      // Refresh RAG system after seeding
+      await ragDB.smartSync();
+      
+      res.json({
+        success: true,
+        message: 'Documentation database seeded successfully',
+        totalDocuments: result.totalDocuments,
+        platformCounts: result.platformCounts
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Documentation seeding error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Platform documentation stats endpoint
+app.get('/api/rag/platform/:platform', async (req, res) => {
+  try {
+    const { platform } = req.params;
+    
+    const result = await database.queryAsync(`
+      SELECT COUNT(*) as count, document_type, MAX(created_at) as last_updated
+      FROM rag_documents 
+      WHERE platform = ?
+      GROUP BY document_type
+    `, [platform]);
+    
+    const totalResult = await database.queryAsync(`
+      SELECT COUNT(*) as total FROM rag_documents WHERE platform = ?
+    `, [platform]);
+    
+    res.json({
+      platform,
+      count: totalResult.rows[0]?.total || 0,
+      documentTypes: result.rows,
+      lastUpdated: result.rows[0]?.last_updated || null
+    });
+  } catch (error) {
+    console.error(`Error getting ${req.params.platform} docs:`, error);
+    res.status(500).json({ error: 'Failed to get platform documentation' });
+  }
+});
+
+// All platforms overview endpoint
+app.get('/api/rag/overview', async (req, res) => {
+  try {
+    const result = await database.queryAsync(`
+      SELECT 
+        platform,
+        COUNT(*) as count,
+        MAX(created_at) as last_updated,
+        GROUP_CONCAT(DISTINCT document_type) as types
+      FROM rag_documents 
+      GROUP BY platform
+    `);
+    
+    const totalResult = await database.queryAsync(`
+      SELECT COUNT(*) as total FROM rag_documents
+    `);
+    
+    res.json({
+      total: totalResult.rows[0]?.total || 0,
+      platforms: result.rows.map(row => ({
+        platform: row.platform,
+        count: row.count,
+        lastUpdated: row.last_updated,
+        documentTypes: row.types ? row.types.split(',') : []
+      }))
+    });
+  } catch (error) {
+    console.error('Error getting RAG overview:', error);
+    res.status(500).json({ error: 'Failed to get documentation overview' });
+  }
+});
+
+// RAG search endpoint
+app.post('/api/rag/search', async (req, res) => {
+  try {
+    const { query, platform, limit = 10 } = req.body;
+    
+    if (!query || query.trim().length < 2) {
+      return res.status(400).json({ error: 'Query must be at least 2 characters' });
+    }
+
+    // Use the unified RAG system for search
+    const results = await ragDB.searchDocuments(query, platform, limit);
+    
+    res.json({
+      query,
+      platform: platform || 'all',
+      results: results || [],
+      totalFound: results ? results.length : 0
+    });
+  } catch (error) {
+    console.error('RAG search error:', error);
+    res.status(500).json({ error: 'Search failed' });
+  }
+});
+
 // Rate limiting middleware with cleanup
 const rateLimitStore = new Map();
 
