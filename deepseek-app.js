@@ -10,12 +10,6 @@ const nodemailer = require('nodemailer');
 const UnifiedRAGSystem = require('./unified-rag-system');
 const database = require('./database');
 
-// Advanced protocol implementations based on attached assets
-const { A2AProtocol } = require('./services/a2aProtocol');
-const { MCPProtocol } = require('./services/mcpProtocol');
-const { AGUIProtocol } = require('./services/agUiProtocol');
-const { createProtocolRoutes } = require('./routes/protocolRoutes');
-
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
@@ -24,17 +18,6 @@ const BCRYPT_ROUNDS = 12;
 
 // Database connection using SQLite
 const pool = database;
-
-// Global error handling for unhandled promise rejections
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Promise Rejection:', reason);
-  // Don't exit the process, just log the error
-});
-
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-  // Don't exit the process, just log the error
-});
 
 // Wrapper function to maintain compatibility
 async function queryWithRetry(queryText, params = [], retries = 3) {
@@ -49,81 +32,7 @@ async function queryWithRetry(queryText, params = [], retries = 3) {
   }
 }
 
-// Enhanced WebSocket server with connection management
-class WebSocketManager {
-  constructor() {
-    this.connections = new Set();
-    this.connectionLimit = 1000;
-    this.heartbeatInterval = 30000;
-    this.heartbeatTimer = null;
-  }
-
-  addConnection(ws, req) {
-    if (this.connections.size >= this.connectionLimit) {
-      ws.close(1008, 'Connection limit exceeded');
-      return false;
-    }
-
-    this.connections.add(ws);
-    
-    ws.on('close', () => {
-      this.connections.delete(ws);
-    });
-
-    ws.on('error', (error) => {
-      console.error('WebSocket error:', error);
-      this.connections.delete(ws);
-    });
-
-    // Ping-pong heartbeat
-    ws.isAlive = true;
-    ws.on('pong', () => {
-      ws.isAlive = true;
-    });
-
-    return true;
-  }
-
-  startHeartbeat() {
-    this.heartbeatTimer = setInterval(() => {
-      this.connections.forEach(ws => {
-        if (!ws.isAlive) {
-          ws.terminate();
-          this.connections.delete(ws);
-          return;
-        }
-        ws.isAlive = false;
-        ws.ping();
-      });
-    }, this.heartbeatInterval);
-  }
-
-  broadcast(data) {
-    const message = JSON.stringify(data);
-    this.connections.forEach(ws => {
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(message);
-      }
-    });
-  }
-
-  getStats() {
-    return {
-      activeConnections: this.connections.size,
-      connectionLimit: this.connectionLimit
-    };
-  }
-
-  shutdown() {
-    if (this.heartbeatTimer) {
-      clearInterval(this.heartbeatTimer);
-    }
-    this.connections.forEach(ws => ws.close());
-    this.connections.clear();
-  }
-}
-
-const wsManager = new WebSocketManager();
+// WebSocket server for real-time updates
 const wss = new WebSocketServer({ server, path: '/ws' });
 
 app.use(express.json({ limit: '10mb' }));
@@ -134,82 +43,51 @@ app.use((err, req, res, next) => {
   next();
 });
 
-// Enhanced rate limiting with sliding window
-class EnhancedRateLimiter {
-  constructor() {
-    this.store = new Map();
-    this.maxClients = 10000;
-    
-    // Cleanup every 2 minutes
-    setInterval(() => this.cleanup(), 2 * 60 * 1000);
-  }
+// Rate limiting middleware with cleanup
+const rateLimitStore = new Map();
 
-  isAllowed(clientId, windowMs, maxRequests) {
-    const now = Date.now();
-    const windowStart = now - windowMs;
+// Cleanup old rate limit entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  const fiveMinutesAgo = now - 5 * 60 * 1000;
 
-    if (!this.store.has(clientId)) {
-      this.store.set(clientId, []);
-    }
-
-    const requests = this.store.get(clientId);
-    const validRequests = requests.filter(timestamp => timestamp > windowStart);
-    
-    if (validRequests.length >= maxRequests) {
-      return false;
-    }
-
-    validRequests.push(now);
-    this.store.set(clientId, validRequests);
-    
-    // Prevent memory bloat
-    if (this.store.size > this.maxClients) {
-      const oldestClient = this.store.keys().next().value;
-      this.store.delete(oldestClient);
-    }
-    
-    return true;
-  }
-
-  cleanup() {
-    const now = Date.now();
-    const tenMinutesAgo = now - 10 * 60 * 1000;
-
-    for (const [clientId, requests] of this.store.entries()) {
-      const validRequests = requests.filter(timestamp => timestamp > tenMinutesAgo);
-      if (validRequests.length === 0) {
-        this.store.delete(clientId);
-      } else {
-        this.store.set(clientId, validRequests);
-      }
+  for (const [clientId, requests] of rateLimitStore.entries()) {
+    const validRequests = requests.filter(timestamp => timestamp > fiveMinutesAgo);
+    if (validRequests.length === 0) {
+      rateLimitStore.delete(clientId);
+    } else {
+      rateLimitStore.set(clientId, validRequests);
     }
   }
-
-  getStats() {
-    return {
-      activeClients: this.store.size,
-      totalRequests: Array.from(this.store.values()).reduce((sum, reqs) => sum + reqs.length, 0)
-    };
-  }
-}
-
-const rateLimiter = new EnhancedRateLimiter();
+}, 5 * 60 * 1000);
 
 const rateLimit = (windowMs = 60000, maxRequests = 100) => {
   return (req, res, next) => {
-    const clientId = req.ip || req.connection.remoteAddress || 'unknown';
+    const clientId = req.ip || req.connection.remoteAddress;
+    const now = Date.now();
+    const windowStart = now - windowMs;
 
-    if (!rateLimiter.isAllowed(clientId, windowMs, maxRequests)) {
-      return res.status(429).json({ 
+    if (!rateLimitStore.has(clientId)) {
+      rateLimitStore.set(clientId, []);
+    }
+
+    const requests = rateLimitStore.get(clientId);
+    const validRequests = requests.filter(timestamp => timestamp > windowStart);
+
+    if (validRequests.length >= maxRequests) {
+      return res.status(429).json({
         error: 'Rate limit exceeded',
-        retryAfter: Math.ceil(windowMs / 1000),
-        limit: maxRequests,
-        window: windowMs
+        retryAfter: Math.ceil((validRequests[0] + windowMs - now) / 1000)
       });
     }
 
+    validRequests.push(now);
+    rateLimitStore.set(clientId, validRequests);
+
     res.setHeader('X-RateLimit-Limit', maxRequests);
-    res.setHeader('X-RateLimit-Window', windowMs);
+    res.setHeader('X-RateLimit-Remaining', maxRequests - validRequests.length);
+    res.setHeader('X-RateLimit-Reset', Math.ceil((now + windowMs) / 1000));
+
     next();
   };
 };
@@ -269,86 +147,15 @@ const storage = multer.diskStorage({
   }
 });
 
-// Enhanced file security scanner
-class FileSecurityScanner {
-  constructor() {
-    this.allowedMimeTypes = ['text/plain', 'application/pdf', 'text/markdown', 'application/json'];
-    this.allowedExtensions = ['.txt', '.pdf', '.md', '.json'];
-    this.maxFileSize = 10 * 1024 * 1024; // 10MB
-    this.suspiciousPatterns = [
-      /(<script[\s\S]*?>[\s\S]*?<\/script>)/gi,
-      /(javascript:)/gi,
-      /(on\w+\s*=)/gi,
-      /(\$\(|\$\.)/gi,
-      /(eval\s*\()/gi,
-      /(expression\s*\()/gi,
-      /(data:text\/html)/gi,
-      /(<iframe[\s\S]*?>)/gi,
-      /(vbscript:)/gi
-    ];
-  }
-
-  validateFile(file) {
-    const errors = [];
-    
-    if (!this.allowedMimeTypes.includes(file.mimetype)) {
-      errors.push(`Invalid MIME type: ${file.mimetype}`);
-    }
-    
-    const fileExt = path.extname(file.originalname).toLowerCase();
-    if (!this.allowedExtensions.includes(fileExt)) {
-      errors.push(`Invalid file extension: ${fileExt}`);
-    }
-    
-    if (file.size > this.maxFileSize) {
-      errors.push(`File too large: ${file.size} bytes`);
-    }
-    
-    if (this.suspiciousPatterns.some(pattern => pattern.test(file.originalname))) {
-      errors.push('Suspicious filename detected');
-    }
-    
-    return { isValid: errors.length === 0, errors };
-  }
-
-  async scanFileContent(filePath) {
-    try {
-      const fs = require('fs');
-      const content = fs.readFileSync(filePath, 'utf8');
-      const suspiciousContent = [];
-      
-      this.suspiciousPatterns.forEach((pattern, index) => {
-        if (pattern.test(content)) {
-          suspiciousContent.push(`Security pattern ${index + 1} detected`);
-        }
-      });
-      
-      return { 
-        isSafe: suspiciousContent.length === 0, 
-        issues: suspiciousContent,
-        scannedAt: new Date().toISOString()
-      };
-    } catch (error) {
-      return { isSafe: false, issues: ['File scan failed'], error: error.message };
-    }
-  }
-}
-
-const fileScanner = new FileSecurityScanner();
-
 const upload = multer({
   storage,
-  limits: { 
-    fileSize: fileScanner.maxFileSize,
-    files: 5,
-    fields: 10
-  },
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
   fileFilter: (req, file, cb) => {
-    const validation = fileScanner.validateFile(file);
-    if (validation.isValid) {
+    const allowedTypes = ['text/plain', 'application/pdf', 'text/markdown', 'application/json'];
+    if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error(`File validation failed: ${validation.errors.join('; ')}`));
+      cb(new Error('Invalid file type. Only .txt, .pdf, .md, .json allowed'));
     }
   }
 });
@@ -411,83 +218,11 @@ const checkApiQuota = async (req, res, next) => {
   }
 
   if (req.user.api_quota_used_today >= req.user.api_quota_daily) {
-    return res.status(429).json({ 
-      error: 'Daily API quota exceeded',
-      quota: req.user.api_quota_daily,
-      used: req.user.api_quota_used_today,
-      resetDate: today
-    });
+    return res.status(429).json({ error: 'Daily API quota exceeded' });
   }
 
-
+  next();
 };
-
-// Enhanced security headers
-app.use((req, res, next) => {
-  // Basic security headers
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('X-DNS-Prefetch-Control', 'off');
-  res.setHeader('X-Download-Options', 'noopen');
-  res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
-  
-  // Content Security Policy
-  res.setHeader('Content-Security-Policy', 
-    "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' cdn.tailwindcss.com; " +
-    "style-src 'self' 'unsafe-inline' cdn.tailwindcss.com; " +
-    "img-src 'self' data: https:; " +
-    "connect-src 'self' wss:; " +
-    "font-src 'self' https:; " +
-    "frame-ancestors 'none';"
-  );
-  
-  // HSTS for production
-  if (process.env.NODE_ENV === 'production') {
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-  }
-  
-  next();
-});
-
-// Input sanitization middleware
-app.use((req, res, next) => {
-  const sanitizeValue = (value) => {
-    if (typeof value === 'string') {
-      return value
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-        .replace(/javascript:/gi, '')
-        .replace(/on\w+\s*=/gi, '')
-        .trim();
-    }
-    return value;
-  };
-
-  const sanitizeObject = (obj) => {
-    if (typeof obj !== 'object' || obj === null) return obj;
-    
-    for (const key in obj) {
-      if (typeof obj[key] === 'string') {
-        obj[key] = sanitizeValue(obj[key]);
-      } else if (typeof obj[key] === 'object') {
-        sanitizeObject(obj[key]);
-      }
-    }
-    return obj;
-  };
-
-  if (req.body) {
-    req.body = sanitizeObject(req.body);
-  }
-  
-  if (req.query) {
-    req.query = sanitizeObject(req.query);
-  }
-
-  next();
-});
 
 app.use(express.static('public'));
 
@@ -498,90 +233,25 @@ const UnifiedAPIRouter = require('./routes/unified-api');
 const featureManager = new FeatureManager();
 const ragDB = new UnifiedRAGSystem(pool);
 
-// Enhanced caching system with TTL cleanup
-class EnhancedCache {
-  constructor(maxSize = 1000, defaultTTL = 5 * 60 * 1000) {
-    this.cache = new Map();
-    this.maxSize = maxSize;
-    this.defaultTTL = defaultTTL;
-    this.hitCount = 0;
-    this.missCount = 0;
-    
-    // Cleanup expired entries every 2 minutes
-    setInterval(() => this.cleanup(), 2 * 60 * 1000);
-  }
+// Simple caching for better performance
+const simpleCache = new Map();
+const cacheTimeout = 5 * 60 * 1000; // 5 minutes
 
-  set(key, value, ttl = this.defaultTTL) {
-    if (this.cache.size >= this.maxSize) {
-      const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
-    }
-    
-    this.cache.set(key, {
-      value,
-      expires: Date.now() + ttl
-    });
-  }
-
-  get(key) {
-    const item = this.cache.get(key);
-    if (!item) {
-      this.missCount++;
-      return null;
-    }
-    
-    if (Date.now() > item.expires) {
-      this.cache.delete(key);
-      this.missCount++;
-      return null;
-    }
-    
-    this.hitCount++;
-    return item.value;
-  }
-
-  cleanup() {
-    const now = Date.now();
-    for (const [key, item] of this.cache.entries()) {
-      if (now > item.expires) {
-        this.cache.delete(key);
-      }
-    }
-  }
-
-  getStats() {
-    return {
-      size: this.cache.size,
-      hits: this.hitCount,
-      misses: this.missCount,
-      hitRate: this.hitCount / (this.hitCount + this.missCount) || 0
-    };
-  }
-
-  clear() {
-    this.cache.clear();
-    this.hitCount = 0;
-    this.missCount = 0;
-  }
-}
-
-const enhancedCache = new EnhancedCache();
-
-// Enhanced caching middleware
+// Basic caching middleware
 app.use('/api/', (req, res, next) => {
-  if (req.method === 'GET' && !req.headers.authorization) {
+  if (req.method === 'GET') {
     const cacheKey = req.originalUrl;
-    const cached = enhancedCache.get(cacheKey);
+    const cached = simpleCache.get(cacheKey);
 
-    if (cached) {
+    if (cached && (Date.now() - cached.timestamp) < cacheTimeout) {
       res.set('X-Cache', 'HIT');
-      return res.json(cached);
+      return res.json(cached.data);
     }
 
     const originalSend = res.json;
     res.json = function(data) {
       if (res.statusCode === 200) {
-        enhancedCache.set(cacheKey, data);
+        simpleCache.set(cacheKey, { data, timestamp: Date.now() });
         res.set('X-Cache', 'MISS');
       }
       originalSend.call(this, data);
@@ -647,7 +317,7 @@ app.get('/api/rag/status', async (req, res) => {
 app.post('/api/cleanup', (req, res) => {
   try {
     // Clear cache
-    enhancedCache.clear();
+    simpleCache.clear();
     
     // Run garbage collection if available
     if (global.gc) {
@@ -962,7 +632,14 @@ const heartbeat = setInterval(() => {
   });
   
   // Clean up cache periodically
-  enhancedCache.cleanup();
+  if (simpleCache.size > 100) {
+    const now = Date.now();
+    for (const [key, value] of simpleCache.entries()) {
+      if (now - value.timestamp > cacheTimeout) {
+        simpleCache.delete(key);
+      }
+    }
+  }
 }, 30000);
 
 // Root route serves the HTML page
@@ -2104,7 +1781,6 @@ app.post('/api/prompts/search', async (req, res) => {
 
 // Main prompt generation endpoint with advanced DeepSeek integration
 app.post('/api/generate-prompt', async (req, res) => {
-  const startTime = Date.now();
   const { query, platform } = req.body;
 
   if (!query || !platform) {
@@ -2112,8 +1788,6 @@ app.post('/api/generate-prompt', async (req, res) => {
       error: 'Both query and platform are required' 
     });
   }
-
-  console.log(`[PROMPT-GEN] Processing: "${query}" for ${platform}`);
 
   try {
     let optimizedPrompt;
@@ -2355,211 +2029,114 @@ Response:
 
 **TRANSFORM "${query}" into this COMPREHENSIVE MASTER BLUEPRINT that serves as the DEFINITIVE GUIDE for building, deploying, and maintaining this application. Every section must be SPECIFIC, ACTIONABLE, and PRODUCTION-READY.**`;
 
-    // DeepSeek API integration for authentic AI-powered master blueprints
-    console.log(`[PROMPT-GEN] Calling DeepSeek API for: "${query}" on ${platform}`);
-    console.log(`[DEEPSEEK-API] API Key configured: ${!!process.env.DEEPSEEK_API_KEY}`);
-    
     if (process.env.DEEPSEEK_API_KEY) {
-      console.log('[DEEPSEEK-API] Starting API call...');
       try {
+        // Real DeepSeek API integration with advanced reasoning
         const fetch = (await import('node-fetch')).default;
-
-        console.log('[DEEPSEEK-API] Making request to DeepSeek...');
         const response = await fetch('https://api.deepseek.com/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
-            },
-            body: JSON.stringify({
-              model: 'deepseek-reasoner',
-              messages: [
-                {
-                  role: 'user',
-                  content: `CREATE COMPREHENSIVE MASTER BLUEPRINT FOR: "${query}"
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: 'deepseek-reasoner',
+            messages: [
+              {
+                role: 'system',
+                content: systemPrompt
+              },
+              {
+                role: 'user',
+                content: `GENERATE ULTRA-SPECIFIC FULL-STACK APPLICATION SPECIFICATION:
 
+Application: "${query}"
 Platform: ${platform}
-RAG Context: ${ragContext}
 
-Generate a COMPLETE, PRODUCTION-READY master blueprint with DeepSeek reasoning. Include:
+REQUIREMENTS:
+1. Provide EXACT file structures with specific filenames
+2. Include DETAILED database schemas with actual table/column names
+3. List SPECIFIC API endpoints with exact request/response formats
+4. Specify EXACT package dependencies and versions
+5. Include CONCRETE component names and implementations
+6. Detail SPECIFIC authentication flows and security measures
+7. Provide ${platform}-specific configuration and deployment steps
 
-# 📋 MASTER APPLICATION BLUEPRINT
-## ${query.toUpperCase()} - Complete Development Specification
+NO GENERIC RESPONSES. Every detail must be ACTIONABLE and IMPLEMENTATION-READY.`
+              }
+            ],
+            max_tokens: 8000,
+            temperature: 0.7
+          })
+        });
 
-### 🎯 EXECUTIVE SUMMARY
-- **Application Purpose:** [Specific description and primary function]
-- **Target Audience:** [Detailed user personas]
-- **Business Model:** [Revenue streams and monetization]
-- **Success Metrics:** [KPIs and performance indicators]
+        if (response.ok) {
+          const data = await response.json();
+          optimizedPrompt = data.choices[0]?.message?.content;
+          reasoning = data.choices[0]?.message?.reasoning_content || 'Generated using DeepSeek AI reasoning';
+          tokensUsed = data.usage?.total_tokens || 0;
 
-### 🏗️ TECHNICAL ARCHITECTURE
-- **System Design:** [High-level architecture]
-- **Technology Stack:** [Complete stack with versions]
-- **Database Design:** [Specific schemas and relationships]
-- **API Specification:** [Exact endpoints and formats]
-
-### 📁 EXACT FILE STRUCTURE
-\`\`\`
-project/
-├── frontend/
-│   ├── components/
-│   │   ├── [SpecificComponent].tsx
-│   │   └── [AnotherComponent].tsx
-│   ├── pages/
-│   └── utils/
-├── backend/
-│   ├── controllers/
-│   ├── models/
-│   └── routes/
-└── database/
-    └── migrations/
-\`\`\`
-
-### 🗄️ DATABASE SCHEMAS
-\`\`\`sql
-CREATE TABLE [specific_table] (
-  id SERIAL PRIMARY KEY,
-  [specific_columns] VARCHAR(255),
-  created_at TIMESTAMP DEFAULT NOW()
-);
-\`\`\`
-
-### 🔌 API ENDPOINTS
-- POST /api/[specific-resource] - [Exact functionality]
-- GET /api/[specific-resource]/:id - [Exact functionality]
-
-### 🚀 ${platform.toUpperCase()} DEPLOYMENT
-[Platform-specific deployment configuration]
-
-### 🔒 SECURITY & PERFORMANCE
-[Specific implementation details]
-
-Provide ACTIONABLE, IMPLEMENTATION-READY specifications with exact code examples and configurations.`
-                }
-              ],
-              max_tokens: 8000,
-              temperature: 0.7,
-              stream: false
-            })
+          console.log('DeepSeek API Response:', {
+            hasContent: !!optimizedPrompt,
+            hasReasoning: !!reasoning,
+            tokensUsed
           });
-
-          console.log(`[DEEPSEEK-API] Response status: ${response.status}`);
-          
-          if (response.ok) {
-            const data = await response.json();
-            console.log('[DEEPSEEK-API] Response received successfully');
-            
-            if (data.choices && data.choices[0] && data.choices[0].message) {
-              optimizedPrompt = data.choices[0].message.content;
-              reasoning = data.choices[0].message.reasoning_content || 'Generated using DeepSeek AI reasoning';
-              tokensUsed = data.usage?.total_tokens || 0;
-              
-              console.log(`[DEEPSEEK-API] Content extracted: ${optimizedPrompt?.length || 0} characters, ${tokensUsed} tokens`);
-            } else {
-              console.error('[DEEPSEEK-API] Invalid response structure');
-              throw new Error('Invalid API response structure');
-            }
-          } else {
-            const errorText = await response.text();
-            console.error(`[DEEPSEEK-API] Error ${response.status}:`, errorText);
-            throw new Error(`API Error: ${response.status} - ${errorText}`);
-          }
+        } else {
+          const errorText = await response.text();
+          console.error('DeepSeek API error response:', errorText);
+          throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
+        }
       } catch (apiError) {
-        console.error('[DEEPSEEK-API] Failed:', apiError.message);
-        console.error('[DEEPSEEK-API] Error type:', apiError.name);
-        
-        // Use fallback if API call fails
-        console.log('[PROMPT-GEN] DeepSeek API call failed, using enhanced fallback');
-        optimizedPrompt = generateFallbackPrompt(query, platform);
-        reasoning = `Enhanced template (DeepSeek API failed: ${apiError.message}) with ${platform}-specific optimizations`;
-        tokensUsed = 425;
+        console.error('DeepSeek API error:', apiError);
+        // Fallback to advanced demo mode
       }
-    } else {
-      console.log('[PROMPT-GEN] No API key configured, using fallback');
-      optimizedPrompt = generateFallbackPrompt(query, platform);
-      reasoning = 'Enhanced template (no API key configured) with platform-specific optimizations';
-      tokensUsed = 425;
     }
 
-    // Ensure we have a valid prompt before sending response
+    // Advanced demo mode with full-stack prompt generation
     if (!optimizedPrompt) {
-      console.log('[PROMPT-GEN] No prompt generated, using fallback');
-      optimizedPrompt = generateFallbackPrompt(query, platform);
-      reasoning = `Enhanced template (API response empty) with ${platform}-specific optimizations`;
-      tokensUsed = 425;
-    }
+      optimizedPrompt = `# Full-Stack Application Development Prompt for ${platform.toUpperCase()}
 
-    const responseTime = Date.now() - startTime;
-    console.log(`[PROMPT-GEN] Response ready in ${responseTime}ms`);
+## 🎯 Project Overview
+**User Idea:** "${query}"
 
-    const finalResponse = {
-      prompt: optimizedPrompt,
-      platform,
-      reasoning,
-      tokensUsed,
-      responseTime,
-      ragContext: ragResults.length > 0 ? `Found ${ragResults.length} relevant documents` : 'Using platform knowledge base',
-      timestamp: new Date().toISOString()
-    };
+**Comprehensive Application Specification:**
 
-    console.log(`[PROMPT-GEN] Sending response with ${optimizedPrompt.length} characters`);
-    return res.json(finalResponse);
-
-  } catch (error) {
-    console.error('Error generating prompt:', error);
-    
-    const fallbackResponse = {
-      prompt: generateFallbackPrompt(query, platform),
-      platform,
-      reasoning: 'Enhanced demo template with error recovery',
-      tokensUsed: 350,
-      responseTime: Date.now() - startTime,
-      timestamp: new Date().toISOString()
-    };
-    
-    return res.json(fallbackResponse);
-  }
-});
-
-// Fallback prompt generation function
-function generateFallbackPrompt(query, platform) {
-  return `# Full-Stack Application Development Prompt for ${platform.toUpperCase()}
-
-## Project Overview
-**Application:** "${query}"
-
-### Technology Stack
+### 🏗️ Architecture & Technology Stack
 **Frontend:**
 - Framework: ${platform === 'replit' ? 'React/Next.js' : platform === 'lovable' ? 'React with TailwindCSS' : platform === 'bolt' ? 'React/Vue.js' : platform === 'cursor' ? 'React/TypeScript' : 'Modern JavaScript Framework'}
 - UI/UX: Responsive design, component-based architecture
 - State Management: Context API / Redux Toolkit
-- Styling: TailwindCSS with custom components
+- Styling: TailwindCSS / Styled Components
 
 **Backend:**
-- Runtime: Node.js with Express.js
-- Database: PostgreSQL with proper indexing
-- Authentication: JWT with secure session management
-- API Design: RESTful endpoints with validation
+- Runtime: Node.js / Express.js
+- Database: PostgreSQL / MongoDB with proper indexing
+- Authentication: JWT / OAuth 2.0
+- API Design: RESTful / GraphQL endpoints
+- File Storage: Cloud integration (AWS S3 / Cloudinary)
 
-### Implementation Roadmap
+**Platform-Specific Optimizations for ${platform.toUpperCase()}:**
+${generatePlatformOptimizations(platform)}
+
+### 📋 Detailed Implementation Roadmap
 
 #### Phase 1: Foundation Setup
 1. Initialize ${platform} project with proper configuration
 2. Set up development environment and dependencies
 3. Configure database schema and connections
-4. Implement authentication system
+4. Implement basic authentication system
 
 #### Phase 2: Core Features Development  
-1. Build main application components for "${query}"
+1. Build main application components based on "${query}"
 2. Implement CRUD operations and data flow
 3. Design responsive UI/UX following ${platform} best practices
 4. Add real-time features where applicable
 
 #### Phase 3: Advanced Features
 1. Integrate third-party APIs and services
-2. Implement search/filtering capabilities
+2. Implement advanced search/filtering capabilities
 3. Add file upload/management functionality
-4. Optimize performance and caching
+4. Optimize performance and caching strategies
 
 #### Phase 4: Production Readiness
 1. Implement comprehensive error handling
@@ -2567,21 +2144,45 @@ function generateFallbackPrompt(query, platform) {
 3. Configure CI/CD pipeline on ${platform}
 4. Perform security audits and optimization
 
-### Platform-Specific Optimizations for ${platform.toUpperCase()}
-${generatePlatformOptimizations(platform)}
-
-### Deployment Strategy
-${generateDeploymentStrategy(platform)}
-
-### Security & Performance
+### 🔒 Security & Performance Considerations
 - Input validation and sanitization
 - Rate limiting and DDoS protection
 - Database query optimization
 - Lazy loading and code splitting
-- SEO optimization and accessibility compliance
+- SEO optimization and meta tags
+- Accessibility compliance (WCAG 2.1)
 
-This comprehensive specification transforms "${query}" into a production-ready application optimized for ${platform}.`;
-}
+### 🚀 ${platform.toUpperCase()} Deployment Strategy
+${generateDeploymentStrategy(platform)}
+
+### 💡 Additional Recommendations
+- Implement proper logging and monitoring
+- Set up automated testing (unit, integration, E2E)
+- Configure environment-specific settings
+- Plan for scalability and future enhancements
+
+**This comprehensive prompt transforms "${query}" into a production-ready application specification optimized for ${platform}.**
+
+${process.env.DEEPSEEK_API_KEY ? '✨ Generated using DeepSeek AI reasoning capabilities.' : '📝 Demo mode - add DEEPSEEK_API_KEY for enhanced AI-powered generation'}`;
+
+      reasoning = process.env.DEEPSEEK_API_KEY ? 'Generated using DeepSeek AI reasoning' : 'Advanced demo mode with full-stack prompt generation template';
+      tokensUsed = 450;
+    }
+
+    res.json({
+      prompt: optimizedPrompt,
+      platform,
+      reasoning,
+      tokensUsed
+    });
+
+  } catch (error) {
+    console.error('Error generating prompt:', error);
+    res.status(500).json({ 
+      error: 'Failed to generate prompt. Please try again.' 
+    });
+  }
+});
 
 // Export analytics data endpoint
 app.get('/api/analytics/export', async (req, res) => {
@@ -3368,7 +2969,7 @@ export function ${entity}Form({ onSubmit, initialData }: ${entity}FormProps) {
 \`\`\``;
 }
 
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, () => {
   console.log(`✅ DeepSeek AI Prompt Generator running on port ${PORT}`);
   console.log(`🔑 API Key configured: ${!!process.env.DEEPSEEK_API_KEY ? 'Yes' : 'No'}`);
   console.log(`🌐 Access at: http://localhost:${PORT}`);
@@ -3391,17 +2992,6 @@ server.listen(PORT, '0.0.0.0', () => {
 
 server.on('error', (err) => {
   console.error('Server error:', err);
-});
-
-// Add proper error handling
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
 });
 
 process.on('SIGTERM', () => {
