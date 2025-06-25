@@ -10,6 +10,7 @@
     <script src="/js/realtime.js"></script>
     <script src="/js/documentation-loader.js"></script>
     <script src="/js/blueprint.js"></script>
+    <script src="/js/deepseek-integration.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
     <!-- Navigation -->
@@ -189,25 +190,20 @@
 
                     const data = await response.json();
 
-                    if (data.prompt) {
-                        promptResult.textContent = data.prompt;
+                    if (data.success && data.prompt) {
+                        // Display comprehensive results
+                        displayComprehensiveResults(data, query, platform);
+                        resultSection.classList.remove('hidden');
                         saveBtn.style.display = 'block';
 
                         // Store current prompt data for saving
                         currentReasoning = data.reasoning;
-                        currentRagContext = data.ragContext || [];
-                        currentTokensUsed = data.tokensUsed || 0;
-                        currentResponseTime = Date.now() - startTime;
-
-                        // Update statistics
-                        updateStats({
-                            tokensUsed: data.tokensUsed || 0,
-                            responseTime: currentResponseTime,
-                            hasReasoning: !!data.reasoning,
-                            ragResults: data.ragContext ? data.ragContext.length : 0
-                        });
+                        currentRagContext = data.ragContext || 0;
+                        currentTokensUsed = data.metadata?.usage?.total_tokens || 0;
+                        currentResponseTime = data.metadata?.responseTime || 0;
                     } else {
-                        promptResult.textContent = 'Error: No prompt generated';
+                        promptResult.textContent = data.error || 'Error: No prompt generated';
+                        resultSection.classList.remove('hidden');
                     }
 
                 } catch (error) {
@@ -287,6 +283,74 @@
                 alert('Error saving prompt');
             }
         });
+
+        // Function to display comprehensive results
+        function displayComprehensiveResults(data, query, platform) {
+            let resultsText = `# ${platform.toUpperCase()} Development Blueprint\n\n`;
+            resultsText += `**Query:** ${query}\n\n`;
+            
+            // Main prompt
+            resultsText += `## Generated Blueprint\n\n${data.prompt}\n\n`;
+            
+            // Reasoning (if available)
+            if (data.reasoning) {
+                resultsText += `## AI Reasoning Process\n\n`;
+                if (data.reasoning.chain_of_thought) {
+                    resultsText += `### Chain of Thought:\n`;
+                    data.reasoning.chain_of_thought.forEach((step, i) => {
+                        resultsText += `${i + 1}. ${step}\n`;
+                    });
+                    resultsText += `\n`;
+                }
+                if (data.reasoning.reasoning_summary) {
+                    resultsText += `### Summary:\n${data.reasoning.reasoning_summary}\n\n`;
+                }
+            }
+            
+            // Implementation steps
+            if (data.implementation && data.implementation.length > 0) {
+                resultsText += `## Implementation Steps\n\n`;
+                data.implementation.forEach((step, i) => {
+                    resultsText += `${i + 1}. ${step}\n`;
+                });
+                resultsText += `\n`;
+            }
+            
+            // Code examples
+            if (data.codeExamples && Object.keys(data.codeExamples).length > 0) {
+                resultsText += `## Code Examples\n\n`;
+                Object.entries(data.codeExamples).forEach(([key, code]) => {
+                    resultsText += `### ${key.toUpperCase()}\n\`\`\`\n${code}\n\`\`\`\n\n`;
+                });
+            }
+            
+            // Best practices
+            if (data.bestPractices && data.bestPractices.length > 0) {
+                resultsText += `## Best Practices\n\n`;
+                data.bestPractices.forEach(practice => {
+                    resultsText += `• ${practice}\n`;
+                });
+                resultsText += `\n`;
+            }
+            
+            // Documentation context
+            if (data.documentation && data.documentation.length > 0) {
+                resultsText += `## Referenced Documentation\n\n`;
+                data.documentation.forEach(doc => {
+                    resultsText += `### ${doc.title}\n**Type:** ${doc.type || 'general'}\n${doc.snippet || ''}\n\n`;
+                });
+            }
+            
+            // Metadata
+            resultsText += `## Generation Details\n`;
+            resultsText += `• Platform: ${platform}\n`;
+            resultsText += `• Response Time: ${data.metadata?.responseTime || 'N/A'}ms\n`;
+            resultsText += `• RAG Documents: ${data.ragContext || 0}\n`;
+            resultsText += `• Model: ${data.metadata?.model || 'DeepSeek'}\n`;
+            resultsText += `• Timestamp: ${new Date().toLocaleString()}\n`;
+            
+            promptResult.textContent = resultsText;
+        }
     </script>
 </body>
 </html>
