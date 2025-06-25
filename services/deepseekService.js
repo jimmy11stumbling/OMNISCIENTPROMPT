@@ -94,7 +94,7 @@ class DeepSeekService {
    * Call DeepSeek API with proper error handling
    */
   async callDeepSeekAPI(model, messages, useReasoning = false) {
-    const fetch = require('node-fetch');
+    const { default: fetch } = await import('node-fetch');
     
     const requestBody = {
       model,
