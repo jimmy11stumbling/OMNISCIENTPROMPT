@@ -203,10 +203,13 @@
                 for (const platform of platforms) {
                     try {
                         const response = await fetch(`/api/rag/platform/${platform}`);
-                        const data = await response.json();
-                        totalDocs += data.count || 0;
+                        if (response.ok) {
+                            const data = await response.json();
+                            totalDocs += data.count || 0;
+                        }
                     } catch (error) {
-                        console.error(`Error loading ${platform} docs:`, error);
+                        // Silently handle missing documentation endpoints
+                        console.log(`${platform} documentation not loaded`);
                     }
                 }
 

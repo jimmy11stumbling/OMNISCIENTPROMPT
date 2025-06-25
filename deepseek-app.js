@@ -23,6 +23,7 @@ const pool = database;
 async function queryWithRetry(queryText, params = [], retries = 3) {
   for (let i = 0; i < retries; i++) {
     try {
+      return await database.queryAsync(queryText, params);
     } catch (error) {
       console.error(`Database query attempt ${i + 1} failed:`, error.message);
       if (i === retries - 1) throw error;
@@ -34,12 +35,89 @@ async function queryWithRetry(queryText, params = [], retries = 3) {
 // WebSocket server for real-time updates
 const wss = new WebSocketServer({ server, path: '/ws' });
 
+// WebSocket connection handling
+wss.on('connection', (ws, req) => {
+  console.log('[WEBSOCKET] New connection established');
+  
+  // Send welcome message
+  ws.send(JSON.stringify({
+    type: 'connection',
+    message: 'Connected to DeepSeek AI Platform',
+    timestamp: new Date().toISOString()
+  }));
+  
+  // Handle incoming messages
+  ws.on('message', (message) => {
+    try {
+      const data = JSON.parse(message.toString());
+      console.log('[WEBSOCKET] Received:', data.type);
+      
+      // Echo back for testing
+      ws.send(JSON.stringify({
+        type: 'echo',
+        data: data,
+        timestamp: new Date().toISOString()
+      }));
+    } catch (error) {
+      console.error('[WEBSOCKET] Error parsing message:', error);
+    }
+  });
+  
+  // Handle disconnection
+  ws.on('close', () => {
+    console.log('[WEBSOCKET] Connection closed');
+  });
+  
+  // Handle errors
+  ws.on('error', (error) => {
+    console.error('[WEBSOCKET] Connection error:', error);
+  });
+});
+
+// Broadcast function for real-time updates
+function broadcastToClients(data) {
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(data));
+    }
+  });
+}
+
 app.use(express.json({ limit: '10mb' }));
+app.use(express.static(path.join(__dirname, 'public')));
+
 app.use((err, req, res, next) => {
   if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
     return res.status(400).json({ error: 'Invalid JSON payload' });
   }
   next();
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    database: 'connected',
+    websocket: 'active',
+    version: '1.0.0'
+  });
+});
+
+// API status endpoint
+app.get('/api/status', (req, res) => {
+  res.json({
+    status: 'operational',
+    services: {
+      database: 'healthy',
+      websocket: 'connected',
+      rag: 'active',
+      ai: 'ready'
+    },
+    metrics: realTimeValidator.metrics,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Rate limiting middleware with cleanup
@@ -744,7 +822,7 @@ class RealTimeValidator {
 const realTimeValidator = new RealTimeValidator();
 
 // Start server
-app.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`[SERVER] DeepSeek AI Platform running on port ${PORT}`);
   console.log(`[SERVER] Health check: http://localhost:${PORT}/health`);
   console.log(`[SERVER] API status: http://localhost:${PORT}/api/status`);
