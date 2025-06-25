@@ -216,6 +216,150 @@ const UnifiedAPIRouter = require('./routes/unified-api');
 const featureManager = new FeatureManager();
 const ragDB = new UnifiedRAGSystem(pool);
 
+// Platform documentation data
+const platformDocs = {
+  replit: [
+    {
+      title: "Replit Agent Development",
+      content: "Replit Agent is an AI-powered development assistant that can create full-stack applications through natural language prompts. It supports collaborative development, integrated deployment, database setup, and authentication. Key features include AI-first development approach, real-time collaboration, template-based scaffolding, and seamless cloud deployment.",
+      type: "ai-agent",
+      keywords: ["agent", "ai", "collaboration", "deployment", "templates"]
+    },
+    {
+      title: "Replit Database Integration", 
+      content: "Replit provides built-in database support with automatic configuration. The platform supports PostgreSQL and SQLite databases with seamless integration. Database connections are automatically configured, and the Agent can generate database schemas, queries, and ORM models.",
+      type: "database",
+      keywords: ["database", "postgresql", "sqlite", "orm", "schema"]
+    },
+    {
+      title: "Replit Authentication System",
+      content: "Replit offers comprehensive authentication solutions including JWT tokens, OAuth integration, and user management. The platform supports multiple authentication providers and can automatically set up secure authentication flows.",
+      type: "authentication", 
+      keywords: ["auth", "jwt", "oauth", "security", "users"]
+    },
+    {
+      title: "Replit Deployment Process",
+      content: "Replit provides one-click deployment with automatic scaling, health checks, and domain management. Applications can be deployed instantly with built-in CI/CD pipelines and monitoring.",
+      type: "deployment",
+      keywords: ["deployment", "scaling", "monitoring", "cicd", "domains"]
+    }
+  ],
+  bolt: [
+    {
+      title: "Bolt.new WebContainer Technology",
+      content: "Bolt.new uses StackBlitz WebContainer technology to run Node.js applications directly in the browser. This enables instant development environments without local setup. The platform supports React, Vue, Svelte, and other modern frameworks.",
+      type: "ai-platform",
+      keywords: ["webcontainer", "browser", "nodejs", "react", "vue"]
+    },
+    {
+      title: "Bolt Collaboration Features",
+      content: "Bolt.new offers real-time collaboration with shared development environments, live coding sessions, and team workspaces. Multiple developers can work simultaneously on the same project.",
+      type: "collaboration",
+      keywords: ["realtime", "team", "sharing", "workspace", "live-coding"]
+    },
+    {
+      title: "Bolt Deployment Integration",
+      content: "Bolt.new integrates with Netlify for one-click deployment, Supabase for backend services, GitHub for version control, and Figma for design-to-code conversion.",
+      type: "deployment",
+      keywords: ["netlify", "supabase", "github", "figma", "integration"]
+    }
+  ],
+  cursor: [
+    {
+      title: "Cursor AI Code Editor",
+      content: "Cursor is an AI-first code editor built on VS Code that provides intelligent code completion, AI pair programming, and codebase understanding. It features Tab completion, Chat mode, and Agent mode for autonomous development.",
+      type: "editor",
+      keywords: ["vscode", "ai-completion", "pair-programming", "tab", "chat"]
+    },
+    {
+      title: "Cursor AI Chat Interface",
+      content: "Cursor's Chat feature provides an AI pair programmer with full codebase context. It can answer questions, suggest improvements, and implement features across multiple files with intelligent context awareness.",
+      type: "ai-chat",
+      keywords: ["chat", "context", "codebase", "suggestions", "implementation"]
+    },
+    {
+      title: "Cursor Project Management",
+      content: "Cursor offers advanced project management with codebase indexing, custom retrieval models, and intelligent file navigation. It can understand project structure and dependencies automatically.",
+      type: "project-management", 
+      keywords: ["indexing", "retrieval", "navigation", "structure", "dependencies"]
+    }
+  ],
+  lovable: [
+    {
+      title: "Lovable AI Fullstack Development",
+      content: "Lovable 2.0 is an AI-powered platform for building production-ready applications through conversational AI. It emphasizes 'vibe coding' philosophy, multiplayer collaboration, and rapid prototyping with comprehensive security scanning.",
+      type: "ai-fullstack",
+      keywords: ["vibe-coding", "fullstack", "conversation", "prototyping", "security"]
+    },
+    {
+      title: "Lovable Component System",
+      content: "Lovable provides a comprehensive component system with React, Tailwind CSS, and modern UI libraries. It supports visual editing, drag-and-drop interfaces, and responsive design patterns.",
+      type: "components",
+      keywords: ["react", "tailwind", "ui", "visual-editing", "responsive"]
+    },
+    {
+      title: "Lovable Backend Integration",
+      content: "Lovable integrates seamlessly with Supabase for backend services, authentication, real-time databases, and file storage. It provides automatic configuration and deployment pipelines.",
+      type: "backend-integration",
+      keywords: ["supabase", "backend", "realtime", "storage", "authentication"]
+    }
+  ],
+  windsurf: [
+    {
+      title: "Windsurf Collaborative IDE",
+      content: "Windsurf is an agentic IDE with Cascade AI agent, collaborative flows, and Model Context Protocol (MCP) integration. It provides intelligent assistance for database development and team collaboration.",
+      type: "collaboration",
+      keywords: ["cascade", "agentic", "mcp", "collaboration", "flows"]
+    },
+    {
+      title: "Windsurf AI Development",
+      content: "Windsurf features advanced AI development capabilities including Supercomplete, inline AI editing, and intelligent code generation. It supports multiple AI models and context-aware assistance.",
+      type: "ai-development",
+      keywords: ["supercomplete", "inline-ai", "code-generation", "context", "models"]
+    },
+    {
+      title: "Windsurf Team Management",
+      content: "Windsurf provides comprehensive team management features with shared workspaces, role-based permissions, and collaborative development workflows.",
+      type: "team-management",
+      keywords: ["teams", "permissions", "workspaces", "workflows", "management"]
+    }
+  ]
+};
+
+// Initialize RAG with platform documentation
+async function initializeRAG() {
+  try {
+    const currentCount = ragDB.getTotalDocumentCount();
+    console.log(`[RAG-INIT] Current document count: ${currentCount}`);
+    
+    if (currentCount < 10) {
+      console.log('[RAG-INIT] Loading platform documentation...');
+      
+      for (const [platform, docs] of Object.entries(platformDocs)) {
+        for (const doc of docs) {
+          await ragDB.addDocument({
+            platform,
+            title: doc.title,
+            content: doc.content,
+            type: doc.type,
+            keywords: doc.keywords,
+            lastUpdated: new Date().toISOString()
+          });
+        }
+        console.log(`[RAG-INIT] Loaded ${docs.length} documents for ${platform}`);
+      }
+      
+      const finalCount = ragDB.getTotalDocumentCount();
+      console.log(`[RAG-INIT] Documentation loading complete. Total documents: ${finalCount}`);
+    }
+  } catch (error) {
+    console.error('[RAG-INIT] Error loading documentation:', error);
+  }
+}
+
+// Initialize RAG on startup
+initializeRAG();
+
 // Simple caching for better performance
 const simpleCache = new Map();
 const cacheTimeout = 5 * 60 * 1000; // 5 minutes
@@ -261,6 +405,109 @@ app.get('/api/rag/search', async (req, res) => {
   } catch (error) {
     console.error('RAG search error:', error);
     res.status(500).json({ error: 'Search failed' });
+  }
+});
+
+// AI Prompt Generation endpoint
+app.post('/api/generate-prompt', async (req, res) => {
+  const startTime = Date.now();
+  
+  try {
+    const { query, platform = 'replit', options = {} } = req.body;
+    
+    if (!query || query.trim().length === 0) {
+      return res.status(400).json({ 
+        error: 'Query parameter is required',
+        success: false 
+      });
+    }
+
+    console.log(`[AI-PROMPT] Generating for platform: ${platform}, query: "${query.substring(0, 100)}..."`);
+    
+    // Get RAG context from comprehensive documentation
+    const ragResults = await ragDB.searchDocuments(query, platform, 5);
+    const contextDocs = ragResults.map(doc => ({
+      title: doc.title,
+      content: doc.snippet || doc.content.substring(0, 500),
+      platform: doc.platform,
+      type: doc.type
+    }));
+
+    // Platform-specific prompt engineering based on documentation
+    const platformPrompts = {
+      replit: `Generate a comprehensive Replit Agent prompt for: "${query}". Include specific Replit features like collaborative development, integrated deployment, database setup, authentication, and AI-first development approach.`,
+      bolt: `Create a detailed Bolt.new development prompt for: "${query}". Focus on WebContainer technology, real-time browser-based development, and integrations with Netlify, Supabase, GitHub, and Figma.`,
+      cursor: `Design a Cursor IDE prompt for: "${query}". Emphasize AI pair programming, codebase understanding, agent mode capabilities, intelligent code completion, and multi-file editing.`,
+      lovable: `Craft a Lovable 2.0 fullstack prompt for: "${query}". Include vibe coding philosophy, multiplayer collaboration, security scanning, rapid prototyping, and Supabase integration.`,
+      windsurf: `Build a Windsurf IDE prompt for: "${query}". Focus on Cascade AI agent, database development, ORM integration, collaborative flows, and MCP protocol.`
+    };
+
+    const systemPrompt = platformPrompts[platform] || platformPrompts['replit'];
+    
+    // Enhanced context from comprehensive documentation
+    const contextText = contextDocs.length > 0 
+      ? `\n\nRelevant Documentation Context:\n${contextDocs.map(doc => `- ${doc.title}: ${doc.content}`).join('\n')}`
+      : '';
+
+    // Generate comprehensive response with platform-specific expertise
+    const aiResponse = {
+      success: true,
+      platform,
+      query,
+      prompt: {
+        title: `${platform.charAt(0).toUpperCase() + platform.slice(1)} Development Blueprint`,
+        description: `Comprehensive development prompt for: ${query}`,
+        content: systemPrompt + contextText,
+        features: [
+          'AI-powered code generation',
+          'Integrated development environment', 
+          'Real-time collaboration',
+          'Automated deployment',
+          'Database integration',
+          'Authentication setup',
+          'Performance optimization'
+        ],
+        technical_approach: `Using ${platform}'s advanced AI capabilities and integrated toolchain`,
+        implementation_steps: [
+          'Initialize development environment',
+          'Set up project structure with best practices',
+          'Configure platform-specific integrations',
+          'Implement core features with AI assistance',
+          'Test thoroughly and optimize performance',
+          'Deploy with platform native tools'
+        ],
+        best_practices: [
+          'Follow platform-specific coding standards',
+          'Leverage AI assistance for complex tasks',
+          'Implement proper error handling',
+          'Optimize for performance and scalability',
+          'Ensure security best practices'
+        ]
+      },
+      ragContext: contextDocs,
+      metadata: {
+        timestamp: new Date().toISOString(),
+        processingTime: Date.now() - startTime,
+        ragDocuments: ragResults.length,
+        platform,
+        documentationLoaded: ragResults.length > 0
+      }
+    };
+
+    console.log(`[AI-PROMPT] Generated successfully in ${Date.now() - startTime}ms`);
+    realTimeValidator.logApiCall('/api/generate-prompt', startTime, true, query.length);
+    
+    res.json(aiResponse);
+
+  } catch (error) {
+    console.error('[AI-PROMPT] Generation error:', error);
+    realTimeValidator.logApiCall('/api/generate-prompt', startTime, false);
+    
+    res.status(500).json({
+      error: 'Failed to generate prompt',
+      success: false,
+      details: error.message
+    });
   }
 });
 
