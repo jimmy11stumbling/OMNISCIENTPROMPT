@@ -247,7 +247,6 @@ class UnifiedRAGSystem {
         FROM rag_documents 
         WHERE is_active = 1
         ORDER BY created_at DESC
-        LIMIT 100
       `);
 
       this.dbDocuments.clear();
@@ -304,22 +303,26 @@ class UnifiedRAGSystem {
 
   performSemanticSearch(query, platform = null, limit = 10) {
     try {
-      // Combine in-memory and database documents
+      // Prioritize database documents over hardcoded ones
       let allDocuments = [];
       
-      // Add in-memory documents
+      // First, add database documents (priority)
       if (platform) {
-        allDocuments = [...(this.documents[platform] || [])];
-        // Add database documents for the platform
         if (this.dbDocuments.has(platform)) {
-          allDocuments = [...allDocuments, ...this.dbDocuments.get(platform)];
+          allDocuments = [...this.dbDocuments.get(platform)];
+        }
+        // Only add hardcoded documents if no database documents found
+        if (allDocuments.length === 0) {
+          allDocuments = [...(this.documents[platform] || [])];
         }
       } else {
-        // All platforms
-        allDocuments = Object.values(this.documents).flat();
-        // Add all database documents
+        // All platforms - prioritize database documents
         for (const docs of this.dbDocuments.values()) {
           allDocuments = [...allDocuments, ...docs];
+        }
+        // Only add hardcoded documents if no database documents found
+        if (allDocuments.length === 0) {
+          allDocuments = Object.values(this.documents).flat();
         }
       }
 
@@ -335,7 +338,7 @@ class UnifiedRAGSystem {
       });
 
       const results = scoredDocuments
-        .filter(doc => doc.relevanceScore > 0.1)
+        .filter(doc => doc.relevanceScore > 0)
         .sort((a, b) => b.relevanceScore - a.relevanceScore)
         .slice(0, limit)
         .map(doc => ({
@@ -358,20 +361,23 @@ class UnifiedRAGSystem {
   // Calculate relevance score with enhanced scoring
   calculateRelevanceScore(doc, searchTerms, originalQuery = '') {
     let score = 0;
-    const content = (doc.title + ' ' + doc.content + ' ' + (doc.keywords || []).join(' ')).toLowerCase();
+    const title = (doc.title || '').toLowerCase();
+    const content = (doc.content || '').toLowerCase();
+    const keywords = Array.isArray(doc.keywords) ? doc.keywords.join(' ').toLowerCase() : '';
+    const fullText = title + ' ' + content + ' ' + keywords;
 
     // Exact phrase matching (highest weight)
-    if (content.includes(originalQuery.toLowerCase())) {
-      score += 50;
+    if (fullText.includes(originalQuery.toLowerCase())) {
+      score += 100;
     }
 
     // Title matching (high weight)
-    const titleMatches = searchTerms.filter(term => doc.title.toLowerCase().includes(term)).length;
-    score += titleMatches * 15;
+    const titleMatches = searchTerms.filter(term => title.includes(term)).length;
+    score += titleMatches * 30;
 
-    // Content matching (medium weight)
-    const contentMatches = searchTerms.filter(term => doc.content.toLowerCase().includes(term)).length;
-    score += contentMatches * 10;
+    // Content matching (medium weight)  
+    const contentMatches = searchTerms.filter(term => content.includes(term)).length;
+    score += contentMatches * 20;
 
     // Keyword matching (medium weight)
     if (doc.keywords) {
