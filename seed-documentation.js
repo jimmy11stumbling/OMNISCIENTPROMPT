@@ -9,7 +9,11 @@ async function seedDocumentationDatabase() {
   try {
     const attachedAssetsDir = path.join(__dirname, 'attached_assets');
     
-    // Platform file mappings
+    // Get all text files from attached_assets
+    const allFiles = fs.readdirSync(attachedAssetsDir).filter(file => file.endsWith('.txt'));
+    console.log(`[SEED] Found ${allFiles.length} text files to process`);
+
+    // Platform file mappings (specific platform docs)
     const platformFiles = {
       replit: ['Replitdata_1749377356094.txt', 'replit research updated_1749377356094.txt'],
       lovable: ['lovable2.0 data_1749377356093.txt'],
@@ -17,6 +21,11 @@ async function seedDocumentationDatabase() {
       cursor: ['Cursordata_1749377356093.txt'],
       windsurf: ['windsurfdata_1749377356094.txt']
     };
+
+    // Protocol and system files (assign to 'system' platform)
+    const systemFiles = allFiles.filter(file => 
+      !Object.values(platformFiles).flat().includes(file)
+    );
 
     // Clear existing RAG documents
     await database.queryAsync('DELETE FROM rag_documents');
@@ -55,6 +64,44 @@ async function seedDocumentationDatabase() {
         } else {
           console.warn(`[SEED] File not found: ${filename}`);
         }
+      }
+    }
+
+    // Process system/protocol files
+    console.log(`[SEED] Processing ${systemFiles.length} system/protocol documents...`);
+    for (const filename of systemFiles) {
+      const filePath = path.join(attachedAssetsDir, filename);
+      
+      if (fs.existsSync(filePath)) {
+        const content = fs.readFileSync(filePath, 'utf8');
+        
+        // Determine platform based on filename content
+        let platform = 'system';
+        if (filename.toLowerCase().includes('rag')) platform = 'rag';
+        if (filename.toLowerCase().includes('mcp')) platform = 'mcp';
+        if (filename.toLowerCase().includes('a2a')) platform = 'a2a';
+        if (filename.toLowerCase().includes('deepseek')) platform = 'deepseek';
+        
+        // Split content into manageable chunks
+        const chunks = splitIntoChunks(content, platform);
+        
+        for (const chunk of chunks) {
+          await database.queryAsync(`
+            INSERT INTO rag_documents (
+              platform, title, content, document_type, keywords
+            ) VALUES (?, ?, ?, ?, ?)
+          `, [
+            platform,
+            chunk.title,
+            chunk.content,
+            chunk.type,
+            JSON.stringify(chunk.keywords)
+          ]);
+          
+          totalDocuments++;
+        }
+        
+        console.log(`[SEED] Processed ${filename} -> ${platform}`);
       }
     }
 
