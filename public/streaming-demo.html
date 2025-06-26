@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepSeek AI - Real-Time Streaming Chat Demo</title>
+    <link href="/css/tailwind.css" rel="stylesheet">
+    <script src="/js/streaming-chat.js"></script>
+    <style>
+        .typing-indicator {
+            animation: pulse 1.5s infinite;
+        }
+        .message {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-xl font-bold">DeepSeek AI Platform</h1>
+                <div class="flex space-x-6">
+                    <a href="/" class="text-gray-300 hover:text-white">Generator</a>
+                    <a href="/dashboard.html" class="text-gray-300 hover:text-white">Dashboard</a>
+                    <a href="/chat.html" class="text-gray-300 hover:text-white">Chat</a>
+                    <a href="/streaming-demo.html" class="text-blue-400 font-medium">Streaming Demo</a>
+                    <a href="/docs.html" class="text-gray-300 hover:text-white">Docs</a>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div id="connectionStatus" class="flex items-center space-x-2">
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span class="text-sm">Connected</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-4 gradient-bg bg-clip-text text-transparent">
+                Real-Time DeepSeek AI Streaming
+            </h1>
+            <p class="text-gray-400 text-lg mb-6">
+                Experience token-by-token streaming responses with comprehensive platform documentation
+            </p>
+            <div class="flex justify-center space-x-4 text-sm">
+                <span class="bg-blue-900 px-3 py-1 rounded-full">Token Streaming</span>
+                <span class="bg-green-900 px-3 py-1 rounded-full">RAG Integration</span>
+                <span class="bg-purple-900 px-3 py-1 rounded-full">Real-Time Updates</span>
+            </div>
+        </div>
+
+        <!-- Demo Features -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h3 class="text-lg font-semibold mb-3">Streaming Technology</h3>
+                <ul class="text-gray-400 space-y-2 text-sm">
+                    <li>• Server-Sent Events (SSE)</li>
+                    <li>• Token-by-token delivery</li>
+                    <li>• Real-time error handling</li>
+                    <li>• Cancellation support</li>
+                </ul>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h3 class="text-lg font-semibold mb-3">AI Capabilities</h3>
+                <ul class="text-gray-400 space-y-2 text-sm">
+                    <li>• DeepSeek reasoning model</li>
+                    <li>• Platform documentation RAG</li>
+                    <li>• Multi-turn conversations</li>
+                    <li>• Context-aware responses</li>
+                </ul>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h3 class="text-lg font-semibold mb-3">Implementation</h3>
+                <ul class="text-gray-400 space-y-2 text-sm">
+                    <li>• Frontend streaming handler</li>
+                    <li>• Backend SSE endpoint</li>
+                    <li>• Error recovery</li>
+                    <li>• Performance optimized</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Chat Interface -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold">Real-Time Chat Interface</h2>
+                <div class="flex space-x-2">
+                    <button id="clearChatBtn" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded text-sm">
+                        Clear Chat
+                    </button>
+                    <button id="testStreamBtn" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded text-sm">
+                        Test Stream
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Streaming Chat Container -->
+            <div id="streamingChatContainer"></div>
+        </div>
+
+        <!-- Example Prompts -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h3 class="text-lg font-semibold mb-4">Try These Example Prompts</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button class="example-prompt bg-gray-700 hover:bg-gray-600 p-4 rounded-lg text-left transition-colors">
+                    <h4 class="font-medium mb-2">Web App Development</h4>
+                    <p class="text-gray-400 text-sm">Create a real-time chat application with user authentication and message persistence</p>
+                </button>
+                <button class="example-prompt bg-gray-700 hover:bg-gray-600 p-4 rounded-lg text-left transition-colors">
+                    <h4 class="font-medium mb-2">API Integration</h4>
+                    <p class="text-gray-400 text-sm">How do I integrate external APIs with proper error handling and rate limiting?</p>
+                </button>
+                <button class="example-prompt bg-gray-700 hover:bg-gray-600 p-4 rounded-lg text-left transition-colors">
+                    <h4 class="font-medium mb-2">Database Design</h4>
+                    <p class="text-gray-400 text-sm">Design a scalable database schema for a social media platform</p>
+                </button>
+                <button class="example-prompt bg-gray-700 hover:bg-gray-600 p-4 rounded-lg text-left transition-colors">
+                    <h4 class="font-medium mb-2">Performance Optimization</h4>
+                    <p class="text-gray-400 text-sm">What are the best practices for optimizing web application performance?</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- Technical Implementation -->
+        <div class="bg-gray-800 rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-4">Implementation Details</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                    <h4 class="font-medium mb-3">Frontend Streaming</h4>
+                    <div class="bg-gray-900 rounded p-3 text-sm text-gray-300">
+                        <pre><code>// Real-time token streaming
+await streamHandler.streamChatResponse(
+  messages,
+  (token) => updateUI(token),
+  (content) => complete(content),
+  (error) => handleError(error)
+);</code></pre>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-medium mb-3">Backend SSE Endpoint</h4>
+                    <div class="bg-gray-900 rounded p-3 text-sm text-gray-300">
+                        <pre><code>// Server-Sent Events streaming
+res.writeHead(200, {
+  'Content-Type': 'text/plain',
+  'Cache-Control': 'no-cache'
+});
+res.write(`data: ${JSON.stringify({ token })}\n\n`);</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize streaming chat when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize the streaming chat
+            window.streamingChat = new DeepSeekStreamingChat('streamingChatContainer');
+            
+            // Setup example prompt buttons
+            const examplePrompts = document.querySelectorAll('.example-prompt');
+            examplePrompts.forEach(button => {
+                button.addEventListener('click', () => {
+                    const promptText = button.querySelector('p').textContent;
+                    const chatInput = document.querySelector('#chatInput');
+                    if (chatInput) {
+                        chatInput.value = promptText;
+                        chatInput.focus();
+                    }
+                });
+            });
+            
+            // Clear chat button
+            document.getElementById('clearChatBtn').addEventListener('click', () => {
+                if (window.streamingChat) {
+                    window.streamingChat.clearChat();
+                }
+            });
+            
+            // Test stream button
+            document.getElementById('testStreamBtn').addEventListener('click', async () => {
+                if (window.streamingChat) {
+                    const chatInput = document.querySelector('#chatInput');
+                    if (chatInput) {
+                        chatInput.value = "Test the streaming functionality with a comprehensive response about building modern web applications.";
+                        setTimeout(() => {
+                            window.streamingChat.sendMessage();
+                        }, 100);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

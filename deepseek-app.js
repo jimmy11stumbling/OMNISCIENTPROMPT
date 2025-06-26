@@ -8,6 +8,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
 const UnifiedRAGSystem = require('./unified-rag-system');
+const DeepSeekService = require('./services/deepseekService');
 const database = require('./database');
 
 const app = express();
@@ -18,6 +19,10 @@ const BCRYPT_ROUNDS = 12;
 
 // Database connection using SQLite
 const pool = database;
+
+// Initialize services
+global.deepSeekService = new DeepSeekService();
+console.log('[DEEPSEEK] Service initialized');
 
 // Wrapper function to maintain compatibility
 async function queryWithRetry(queryText, params = [], retries = 3) {
@@ -413,6 +418,56 @@ app.post('/api/chat/continue', async (req, res) => {
       error: 'Failed to continue conversation',
       details: error.message 
     });
+  }
+});
+
+// DeepSeek streaming chat endpoint
+app.post('/api/chat/stream', async (req, res) => {
+  try {
+    const { messages } = req.body;
+    
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: 'Messages array is required' });
+    }
+
+    // Set up Server-Sent Events
+    res.writeHead(200, {
+      'Content-Type': 'text/plain',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Cache-Control'
+    });
+
+    if (!global.deepSeekService) {
+      res.write('data: {"error": "DeepSeek service not available"}\n\n');
+      res.end();
+      return;
+    }
+
+    // Stream response
+    await global.deepSeekService.streamChatResponse(
+      messages,
+      (token) => {
+        // Send each token as it arrives
+        res.write(`data: ${JSON.stringify({ token })}\n\n`);
+      },
+      (fullContent) => {
+        // Send completion signal
+        res.write(`data: ${JSON.stringify({ complete: true, content: fullContent })}\n\n`);
+        res.end();
+      },
+      (error) => {
+        // Send error
+        res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+        res.end();
+      }
+    );
+
+  } catch (error) {
+    console.error('[CHAT-STREAM] Error:', error);
+    res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+    res.end();
   }
 });
 

@@ -17,12 +17,16 @@ class DeepSeekService {
       totalTokens: 0,
       successRate: 0
     };
+    this.apiAvailable = false; // Start with fallback mode until API proves working
+    this.lastApiCheck = 0;
   }
 
   /**
    * Generate optimized prompt with reasoning
    */
   async generatePrompt(query, platform, ragContext = [], useReasoning = true) {
+    const startTime = Date.now();
+    
     try {
       const model = useReasoning ? this.models.reasoner : this.models.chat;
       const sessionId = this.generateSessionId();
@@ -36,27 +40,40 @@ class DeepSeekService {
       // Get or create conversation history
       const messages = this.getConversationMessages(sessionId, systemMessage, userMessage);
       
-      const startTime = Date.now();
-      
-      if (this.apiKey) {
-        // Real DeepSeek API call
-        const response = await this.callDeepSeekAPI(model, messages, useReasoning);
-        
-        // Update conversation history
-        this.updateConversationHistory(sessionId, messages, response);
-        
-        // Track usage
-        this.trackUsage(true, Date.now() - startTime, response.usage?.total_tokens || 0);
-        
-        return this.formatResponse(response, ragContext, useReasoning);
-      } else {
-        // Fallback with sophisticated reasoning simulation
-        const response = await this.generateFallbackResponse(query, platform, ragContext, useReasoning);
-        
-        this.trackUsage(true, Date.now() - startTime, 0);
-        
-        return response;
+      if (this.apiKey && this.shouldTryApi()) {
+        // Try real DeepSeek API call with quick timeout
+        try {
+          const response = await Promise.race([
+            this.callDeepSeekAPI(model, messages, useReasoning),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('API timeout')), 3000)
+            )
+          ]);
+          
+          // Mark API as available on success
+          this.apiAvailable = true;
+          this.lastApiCheck = Date.now();
+          
+          // Update conversation history
+          this.updateConversationHistory(sessionId, messages, response);
+          
+          // Track usage
+          this.trackUsage(true, Date.now() - startTime, response.usage?.total_tokens || 0);
+          
+          return this.formatResponse(response, ragContext, useReasoning);
+        } catch (apiError) {
+          console.log('[DEEPSEEK] API unavailable, using fallback:', apiError.message);
+          this.apiAvailable = false;
+          this.lastApiCheck = Date.now();
+          // Fall through to fallback
+        }
       }
+      
+      // Fallback with sophisticated reasoning simulation
+      const response = await this.generateFallbackResponse(query, platform, ragContext, useReasoning);
+      this.trackUsage(true, Date.now() - startTime, 0);
+      return response;
+      
     } catch (error) {
       console.error('[DEEPSEEK] Error generating prompt:', error);
       this.trackUsage(false, 0, 0);
@@ -93,15 +110,19 @@ class DeepSeekService {
   /**
    * Call DeepSeek API with proper error handling
    */
-  async callDeepSeekAPI(model, messages, useReasoning = false) {
+  async callDeepSeekAPI(model, messages, useReasoning = false, stream = false) {
     const { default: fetch } = await import('node-fetch');
     
     const requestBody = {
       model,
       messages: this.cleanMessages(messages),
       max_tokens: useReasoning ? 8000 : 4000,
-      stream: false
+      stream: stream,
+      temperature: 0.7
     };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
@@ -110,11 +131,17 @@ class DeepSeekService {
         'Authorization': `Bearer ${this.apiKey}`
       },
       body: JSON.stringify(requestBody),
-      timeout: 30000
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       throw new Error(`DeepSeek API error: ${response.status} ${response.statusText}`);
+    }
+
+    if (stream) {
+      return response; // Return the response for streaming
     }
 
     return await response.json();
@@ -492,6 +519,68 @@ export default function HomePage() {
   }
 
   /**
+   * Stream chat response with real-time updates (Node.js compatible)
+   */
+  async streamChatResponse(messages, onToken, onComplete, onError) {
+    try {
+      const model = this.models.chat;
+      const response = await this.callDeepSeekAPI(model, messages, false, true);
+      
+      if (!response.body) {
+        throw new Error('No response stream available');
+      }
+
+      let buffer = '';
+      let fullContent = '';
+
+      // Handle Node.js readable stream
+      response.body.on('data', (chunk) => {
+        try {
+          buffer += chunk.toString();
+          const parts = buffer.split('\n\n');
+          
+          for (let i = 0; i < parts.length - 1; i++) {
+            const part = parts[i].trim();
+            if (part.startsWith('data:')) {
+              const jsonStr = part.slice(5).trim();
+              if (jsonStr === '[DONE]') {
+                onComplete(fullContent);
+                return;
+              }
+              
+              try {
+                const parsed = JSON.parse(jsonStr);
+                const token = parsed.choices?.[0]?.delta?.content;
+                if (token) {
+                  fullContent += token;
+                  onToken(token);
+                }
+              } catch (e) {
+                console.warn('JSON parse error:', e);
+              }
+            }
+          }
+          buffer = parts[parts.length - 1];
+        } catch (err) {
+          onError(err);
+        }
+      });
+
+      response.body.on('end', () => {
+        onComplete(fullContent);
+      });
+
+      response.body.on('error', (error) => {
+        onError(error);
+      });
+      
+    } catch (error) {
+      console.error('[DEEPSEEK] Streaming error:', error);
+      onError(error);
+    }
+  }
+
+  /**
    * Usage tracking
    */
   trackUsage(success, responseTime, tokens) {
@@ -500,6 +589,14 @@ export default function HomePage() {
     this.usage.successRate = success ? 
       (this.usage.successRate * (this.usage.totalRequests - 1) + 1) / this.usage.totalRequests :
       (this.usage.successRate * (this.usage.totalRequests - 1)) / this.usage.totalRequests;
+  }
+
+  /**
+   * Check if API should be tried (avoid repeated failures)
+   */
+  shouldTryApi() {
+    // Only try API once every 5 minutes to avoid repeated timeouts
+    return (Date.now() - this.lastApiCheck) > 300000;
   }
 
   /**
