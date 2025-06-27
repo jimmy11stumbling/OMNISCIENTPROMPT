@@ -914,6 +914,9 @@ app.get('/api/rag/search', async (req, res) => {
       return res.status(400).json({ error: 'Query parameter is required' });
     }
 
+    // Use the RAG system to search documents
+    const results = await ragSystem.searchDocuments(query, platform, parseInt(limit));
+
     res.json({
       query,
       platform: platform || 'all',
