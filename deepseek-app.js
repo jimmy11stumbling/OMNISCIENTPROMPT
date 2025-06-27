@@ -1258,6 +1258,139 @@ class RealTimeValidator {
   }
 }
 
+// Authentication middleware definitions
+const optionalAuth = (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+      req.user = null;
+      return next();
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    // For now, set a basic user object to prevent errors
+    req.user = { id: decoded.userId };
+    next();
+  } catch (error) {
+    req.user = null;
+    next();
+  }
+};
+
+// Missing API Routes - Fix for bug resolution
+app.get('/api/prompts', optionalAuth, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.json([]); // Return empty array for unauthenticated users
+    }
+
+    const { page = 1, limit = 20, platform, search } = req.query;
+    const offset = (page - 1) * limit;
+
+    let sql = `
+      SELECT id, title, original_query, platform, generated_prompt, 
+             reasoning, tokens_used, response_time, created_at
+      FROM saved_prompts 
+      WHERE user_id = ?
+    `;
+    const params = [req.user.id];
+
+    if (platform) {
+      sql += ' AND platform = ?';
+      params.push(platform);
+    }
+
+    if (search) {
+      sql += ' AND (title LIKE ? OR original_query LIKE ?)';
+      const searchTerm = `%${search}%`;
+      params.push(searchTerm, searchTerm);
+    }
+
+    sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+    params.push(parseInt(limit), offset);
+
+    const result = await queryWithRetry(sql, params);
+    res.json(result.rows || []);
+  } catch (error) {
+    console.error('Get saved prompts error:', error);
+    res.status(500).json({ 
+      error: 'Failed to get saved prompts',
+      code: 'GET_PROMPTS_ERROR'
+    });
+  }
+});
+
+app.get('/api/prompts/:id', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!req.user) {
+      return res.status(404).json({ 
+        error: 'Prompt not found',
+        code: 'PROMPT_NOT_FOUND'
+      });
+    }
+
+    const result = await queryWithRetry(
+      'SELECT * FROM saved_prompts WHERE id = ? AND user_id = ?',
+      [id, req.user.id]
+    );
+
+    if (!result.rows || result.rows.length === 0) {
+      return res.status(404).json({ 
+        error: 'Prompt not found',
+        code: 'PROMPT_NOT_FOUND'
+      });
+    }
+
+    const prompt = result.rows[0];
+    res.json({
+      ...prompt,
+      rag_context: prompt.rag_context ? JSON.parse(prompt.rag_context) : []
+    });
+  } catch (error) {
+    console.error('Get saved prompt error:', error);
+    res.status(500).json({ 
+      error: 'Failed to get saved prompt',
+      code: 'GET_PROMPT_ERROR'
+    });
+  }
+});
+
+app.get('/api/templates', async (req, res) => {
+  try {
+    const { platform } = req.query;
+    const templates = {
+      replit: [
+        {
+          id: 'repl_web_app',
+          title: 'Full-Stack Web Application',
+          description: 'Generate a complete web application with frontend and backend',
+          template: 'Create a {technology} web application that {functionality}. Include {features} and ensure {requirements}.'
+        }
+      ],
+      lovable: [
+        {
+          id: 'lov_component',
+          title: 'React Component',
+          description: 'Create a reusable React component with Tailwind styling',
+          template: 'Create a {componentType} React component that {functionality}. Style with Tailwind CSS and include {props}.'
+        }
+      ]
+    };
+
+    res.json({ templates: platform ? (templates[platform] || []) : templates });
+  } catch (error) {
+    console.error('Get templates error:', error);
+    res.status(500).json({ 
+      error: 'Failed to get templates',
+      code: 'TEMPLATES_ERROR'
+    });
+  }
+});
+
 // Initialize RAG system and validator
 const ragSystem = new UnifiedRAGSystem(pool);
 const realTimeValidator = new RealTimeValidator();

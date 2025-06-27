@@ -575,4 +575,4 @@ class WebSocketService {
 // Create singleton instance
 const webSocketService = new WebSocketService();
 
-module.exports = WebSocketService;
+module.exports = { webSocketService, WebSocketService };

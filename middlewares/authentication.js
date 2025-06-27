@@ -346,9 +346,9 @@ const authManager = new AuthenticationManager();
 
 module.exports = {
   authManager,
-  verifyToken: authManager.verifyToken(),
-  optionalAuth: authManager.optionalAuth(),
-  requireAdmin: authManager.requireAdmin(),
+  verifyToken: authManager.verifyToken.bind(authManager),
+  optionalAuth: authManager.optionalAuth.bind(authManager),
+  requireAdmin: authManager.requireAdmin.bind(authManager),
   requireRole: (role) => authManager.requireRole(role),
   requireAnyRole: (roles) => authManager.requireAnyRole(roles),
   requireOwnership: (param) => authManager.requireOwnership(param),

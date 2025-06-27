@@ -183,10 +183,7 @@ class PromptController {
   async getSavedPrompts(req, res) {
     try {
       if (!req.user) {
-        return res.status(401).json({ 
-          error: 'Authentication required',
-          code: 'AUTH_REQUIRED'
-        });
+        return res.json([]); // Return empty array for unauthenticated users
       }
 
       const { page = 1, limit = 20, platform, search } = req.query;
@@ -264,9 +261,9 @@ class PromptController {
       const { id } = req.params;
       
       if (!req.user) {
-        return res.status(401).json({ 
-          error: 'Authentication required',
-          code: 'AUTH_REQUIRED'
+        return res.status(404).json({ 
+          error: 'Prompt not found',
+          code: 'PROMPT_NOT_FOUND'
         });
       }
 
@@ -491,9 +488,10 @@ class PromptController {
   async getPromptStats(req, res) {
     try {
       if (!req.user) {
-        return res.status(401).json({ 
-          error: 'Authentication required',
-          code: 'AUTH_REQUIRED'
+        return res.json({
+          summary: { total_prompts: 0, total_tokens: 0, avg_response_time: 0 },
+          byPlatform: [],
+          timeRange: req.query.timeRange || '30d'
         });
       }
 

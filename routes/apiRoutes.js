@@ -60,27 +60,27 @@ router.get('/health', async (req, res) => {
 // Authentication routes
 router.post('/auth/register', authLimiter, authController.register);
 router.post('/auth/login', authLimiter, authController.login);
-router.post('/auth/logout', verifyToken, authController.logout);
+router.post('/auth/logout', verifyToken(), authController.logout);
 router.post('/auth/refresh', authController.refreshToken);
 router.get('/auth/verify', authController.verifyEmail);
 router.post('/auth/resend-verification', authLimiter, authController.resendVerification);
 router.post('/auth/forgot-password', authLimiter, authController.requestPasswordReset);
 router.post('/auth/reset-password', authLimiter, authController.resetPassword);
-router.get('/auth/profile', verifyToken, authController.getProfile);
-router.put('/auth/profile', verifyToken, authController.updateProfile);
+router.get('/auth/profile', verifyToken(), authController.getProfile);
+router.put('/auth/profile', verifyToken(), authController.updateProfile);
 
 // Prompt generation routes
-router.post('/generate-prompt', promptLimiter, optionalAuth, promptController.generatePrompt);
-router.post('/optimize-prompt', promptLimiter, optionalAuth, promptController.optimizePrompt);
-router.post('/generate-batch', promptLimiter, verifyToken, promptController.generateBatch);
+router.post('/generate-prompt', promptLimiter, optionalAuth(), promptController.generatePrompt);
+router.post('/optimize-prompt', promptLimiter, optionalAuth(), promptController.optimizePrompt);
+router.post('/generate-batch', promptLimiter, verifyToken(), promptController.generateBatch);
 router.get('/templates', promptController.getTemplates);
 
 // Saved prompts routes
-router.get('/prompts', verifyToken, promptController.getSavedPrompts);
-router.get('/prompts/:id', verifyToken, promptController.getSavedPrompt);
-router.put('/prompts/:id', verifyToken, promptController.updateSavedPrompt);
-router.delete('/prompts/:id', verifyToken, promptController.deleteSavedPrompt);
-router.get('/prompts/stats', verifyToken, promptController.getPromptStats);
+router.get('/prompts', optionalAuth(), promptController.getSavedPrompts);
+router.get('/prompts/:id', optionalAuth(), promptController.getSavedPrompt);
+router.put('/prompts/:id', verifyToken(), promptController.updateSavedPrompt);
+router.delete('/prompts/:id', verifyToken(), promptController.deleteSavedPrompt);
+router.get('/prompts/stats', optionalAuth(), promptController.getPromptStats);
 
 // RAG and search routes
 router.post('/search', async (req, res) => {
@@ -126,7 +126,7 @@ router.get('/search/stats', async (req, res) => {
 });
 
 // Document management routes
-router.post('/documents', verifyToken, async (req, res) => {
+router.post('/documents', verifyToken(), async (req, res) => {
   try {
     const { title, content, platform, documentType, keywords } = req.body;
     
@@ -240,7 +240,7 @@ router.post('/chat', chatLimiter, verifyToken, async (req, res) => {
 });
 
 // Notifications routes
-router.get('/notifications', verifyToken, async (req, res) => {
+router.get('/notifications', verifyToken(), async (req, res) => {
   try {
     const { limit = 20, unreadOnly = false } = req.query;
     
@@ -270,7 +270,7 @@ router.get('/notifications', verifyToken, async (req, res) => {
   }
 });
 
-router.put('/notifications/:id/read', verifyToken, async (req, res) => {
+router.put('/notifications/:id/read', verifyToken(), async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -289,7 +289,7 @@ router.put('/notifications/:id/read', verifyToken, async (req, res) => {
   }
 });
 
-router.put('/notifications/read-all', verifyToken, async (req, res) => {
+router.put('/notifications/read-all', verifyToken(), async (req, res) => {
   try {
     await database.queryAsync(
       'UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0',
@@ -307,7 +307,7 @@ router.put('/notifications/read-all', verifyToken, async (req, res) => {
 });
 
 // Analytics routes
-router.get('/analytics', verifyToken, requireAdmin, async (req, res) => {
+router.get('/analytics', verifyToken(), requireAdmin(), async (req, res) => {
   try {
     const { timeRange = '24h' } = req.query;
     const analytics = await logManager.getAnalytics(timeRange);
@@ -323,7 +323,7 @@ router.get('/analytics', verifyToken, requireAdmin, async (req, res) => {
 });
 
 // System status routes
-router.get('/system/status', verifyToken, requireAdmin, async (req, res) => {
+router.get('/system/status', verifyToken(), requireAdmin(), async (req, res) => {
   try {
     const [wsMetrics, ragStats] = await Promise.all([
       Promise.resolve(webSocketService.getMetrics()),
@@ -349,7 +349,7 @@ router.get('/system/status', verifyToken, requireAdmin, async (req, res) => {
 });
 
 // User management routes (admin only)
-router.get('/admin/users', verifyToken, requireAdmin, async (req, res) => {
+router.get('/admin/users', verifyToken(), requireAdmin(), async (req, res) => {
   try {
     const { page = 1, limit = 50, search } = req.query;
     const offset = (page - 1) * limit;
@@ -395,7 +395,7 @@ router.get('/admin/users', verifyToken, requireAdmin, async (req, res) => {
 });
 
 // File upload route
-router.post('/upload', verifyToken, async (req, res) => {
+router.post('/upload', verifyToken(), async (req, res) => {
   try {
     // This would be handled by multer middleware in the main app
     res.json({ message: 'File upload endpoint ready' });
