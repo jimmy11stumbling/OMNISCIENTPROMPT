@@ -57,6 +57,7 @@ class MasterPromptGenerator {
 
         this.isGenerating = true;
         this.abortController = new AbortController();
+        this.streamStartTime = Date.now();
         this.updateUI('generating');
         this.clearResults();
 
@@ -73,6 +74,88 @@ class MasterPromptGenerator {
     }
 
     async streamPromptGeneration(requestData) {
+        // First try streaming endpoint for real-time token delivery
+        try {
+            await this.streamRealTimeResponse(requestData);
+        } catch (streamError) {
+            console.warn('Streaming failed, falling back to regular generation:', streamError);
+            // Fallback to regular generation
+            await this.regularPromptGeneration(requestData);
+        }
+    }
+
+    async streamRealTimeResponse(requestData) {
+        const messages = [
+            { role: 'user', content: `Generate a master blueprint for: ${requestData.query}. Platform: ${requestData.platform}` }
+        ];
+
+        const response = await fetch('/api/chat/stream', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                messages: messages,
+                model: 'deepseek-chat',
+                temperature: 0.7,
+                stream: true
+            }),
+            signal: this.abortController.signal
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        if (!response.body) {
+            throw new Error('No response stream available');
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let buffer = '';
+        let fullContent = '';
+
+        // Show result section and clear content
+        this.showResultSection();
+        const promptResult = document.getElementById('promptResult');
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const parts = buffer.split('\n\n');
+
+            for (let i = 0; i < parts.length - 1; i++) {
+                const part = parts[i].trim();
+                if (part.startsWith('data:')) {
+                    const jsonStr = part.slice(5).trim();
+                    if (jsonStr === '[DONE]') {
+                        this.completeStreaming(fullContent);
+                        return;
+                    }
+                    
+                    try {
+                        const parsed = JSON.parse(jsonStr);
+                        const token = parsed.choices?.[0]?.delta?.content;
+                        if (token) {
+                            fullContent += token;
+                            this.onTokenReceived(token);
+                        }
+                    } catch (e) {
+                        console.warn('JSON parse error:', e);
+                    }
+                }
+            }
+            buffer = parts[parts.length - 1];
+        }
+
+        // Complete streaming with accumulated content
+        this.completeStreaming(fullContent);
+    }
+
+    async regularPromptGeneration(requestData) {
         const response = await fetch('/api/generate-prompt', {
             method: 'POST',
             headers: {
@@ -94,6 +177,113 @@ class MasterPromptGenerator {
             this.showSuccess('Master blueprint generated successfully');
         } else {
             throw new Error(data.error || 'Generation failed');
+        }
+    }
+
+    showResultSection() {
+        const resultSection = document.getElementById('resultSection');
+        const promptResult = document.getElementById('promptResult');
+        const streamingStats = document.getElementById('streamingStats');
+        const streamingCursor = document.getElementById('streamingCursor');
+        
+        if (resultSection) {
+            resultSection.classList.remove('hidden');
+            resultSection.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        if (promptResult) {
+            promptResult.textContent = '';
+        }
+        
+        if (streamingStats) {
+            streamingStats.classList.remove('hidden');
+        }
+        
+        if (streamingCursor) {
+            streamingCursor.classList.remove('hidden');
+        }
+        
+        // Initialize streaming counters
+        this.tokenCounter = 0;
+        this.streamingInterval = setInterval(() => {
+            this.updateStreamingStats();
+        }, 100);
+    }
+
+    onTokenReceived(token) {
+        const promptResult = document.getElementById('promptResult');
+        const streamingCursor = document.getElementById('streamingCursor');
+        
+        if (promptResult) {
+            promptResult.textContent += token;
+            this.tokenCounter++;
+            
+            // Move cursor to end of content
+            if (streamingCursor) {
+                promptResult.appendChild(streamingCursor);
+            }
+            
+            // Auto-scroll to bottom to follow the streaming content
+            const container = promptResult.parentElement;
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
+            
+            // Also scroll the result section if needed
+            const resultSection = document.getElementById('resultSection');
+            if (resultSection) {
+                resultSection.scrollTop = resultSection.scrollHeight;
+            }
+        }
+    }
+
+    updateStreamingStats() {
+        const tokenCount = document.getElementById('tokenCount');
+        const streamTime = document.getElementById('streamTime');
+        
+        if (tokenCount) {
+            tokenCount.textContent = `Tokens: ${this.tokenCounter}`;
+        }
+        
+        if (streamTime && this.streamStartTime) {
+            const elapsed = Math.floor((Date.now() - this.streamStartTime) / 1000);
+            streamTime.textContent = `Time: ${elapsed}s`;
+        }
+    }
+
+    completeStreaming(fullContent) {
+        // Clean up streaming UI
+        this.cleanupStreamingUI();
+        
+        // Create response data for compatibility
+        this.currentPromptData = {
+            prompt: fullContent,
+            success: true,
+            metadata: {
+                usage: { total_tokens: this.tokenCounter || Math.floor(fullContent.length / 4) },
+                responseTime: Date.now() - this.streamStartTime
+            }
+        };
+        
+        this.displayMetadata(this.currentPromptData);
+        this.showSuccess('Master blueprint generated successfully');
+    }
+
+    cleanupStreamingUI() {
+        const streamingCursor = document.getElementById('streamingCursor');
+        const streamingStats = document.getElementById('streamingStats');
+        
+        if (streamingCursor) {
+            streamingCursor.classList.add('hidden');
+        }
+        
+        if (streamingStats) {
+            streamingStats.classList.add('hidden');
+        }
+        
+        if (this.streamingInterval) {
+            clearInterval(this.streamingInterval);
+            this.streamingInterval = null;
         }
     }
 
