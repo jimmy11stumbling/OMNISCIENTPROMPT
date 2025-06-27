@@ -62,15 +62,12 @@ class DeepSeekService {
           console.error('[DEEPSEEK] API call failed:', apiError.message);
           this.apiAvailable = false;
           this.lastApiCheck = Date.now();
-          // Fall through to sophisticated fallback
+          // Return the actual error instead of fallback for debugging
+          throw apiError;
         }
+      } else {
+        throw new Error('DeepSeek API key not configured');
       }
-      
-      // Fallback with sophisticated reasoning simulation
-      console.log('[DEEPSEEK] Using enhanced fallback response');
-      const response = await this.generateFallbackResponse(query, platform, ragContext, useReasoning);
-      this.trackUsage(true, Date.now() - startTime, 0);
-      return response;
       
     } catch (error) {
       console.error('[DEEPSEEK] Error generating prompt:', error);
@@ -122,12 +119,6 @@ class DeepSeekService {
     console.log(`[DEEPSEEK] Making API call to ${this.baseUrl}/chat/completions`);
     console.log(`[DEEPSEEK] Model: ${model}, Stream: ${stream}, Messages: ${messages.length}`);
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      console.log('[DEEPSEEK] Request timeout reached, aborting...');
-      controller.abort();
-    }, 15000); // Reduced to 15 seconds for faster response
-
     try {
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
@@ -135,11 +126,8 @@ class DeepSeekService {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${this.apiKey}`
         },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal
+        body: JSON.stringify(requestBody)
       });
-
-      clearTimeout(timeoutId);
       console.log(`[DEEPSEEK] API response status: ${response.status}`);
 
       if (!response.ok) {
@@ -152,21 +140,12 @@ class DeepSeekService {
         return response; // Return the response for streaming
       }
 
-      const result = await Promise.race([
-        response.json(),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Response parsing timeout')), 10000)
-        )
-      ]);
+      // Handle large response bodies properly
+      const result = await response.json();
       console.log(`[DEEPSEEK] API success: ${result.choices?.[0]?.message?.content?.length || 0} chars`);
       return result;
       
     } catch (error) {
-      clearTimeout(timeoutId);
-      if (error.name === 'AbortError') {
-        console.error('[DEEPSEEK] Request was aborted due to timeout');
-        throw new Error('API request timeout');
-      }
       console.error(`[DEEPSEEK] API call failed: ${error.message}`);
       throw error;
     }

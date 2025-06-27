@@ -21,7 +21,8 @@ const BCRYPT_ROUNDS = 12;
 const pool = database;
 
 // Initialize services
-global.deepSeekService = new DeepSeekService();
+const WorkingDeepSeekService = require('./services/workingDeepSeekService');
+global.deepSeekService = new WorkingDeepSeekService();
 console.log('[DEEPSEEK] Service initialized');
 
 // Wrapper function to maintain compatibility
@@ -355,13 +356,61 @@ app.post('/api/generate-prompt', async (req, res) => {
       global.deepSeekService = new DeepSeekService();
     }
     
-    // Generate comprehensive response with DeepSeek
-    const aiResponse = await global.deepSeekService.generatePrompt(
-      query, 
-      platform, 
-      ragResults, 
-      useReasoning
-    );
+    // Generate comprehensive response with DeepSeek using streaming collection
+    let aiResponse;
+    try {
+      // Use streaming collection approach for immediate response
+      let fullContent = '';
+      
+      await global.deepSeekService.streamChatResponse(
+        [
+          {
+            role: 'system',
+            content: `You are an expert AI assistant specializing in ${platform} development. Generate comprehensive, production-ready responses with detailed implementation guidance.`
+          },
+          {
+            role: 'user', 
+            content: `Platform: ${platform}\nRequest: ${query}\n\nPlease provide a detailed response with implementation steps, code examples, and best practices.`
+          }
+        ],
+        // onToken - collect all tokens
+        (token) => {
+          fullContent += token;
+        },
+        // onComplete - format the response
+        (content) => {
+          console.log(`[AI-PROMPT] Streaming complete: ${content.length} chars`);
+        },
+        // onError
+        (error) => {
+          console.error('[AI-PROMPT] Streaming error:', error);
+        }
+      );
+
+      // Format the streaming response into expected structure
+      aiResponse = {
+        success: true,
+        prompt: fullContent,
+        reasoning: null,
+        implementation: global.deepSeekService.extractImplementationSteps ? global.deepSeekService.extractImplementationSteps(fullContent) : [],
+        codeExamples: global.deepSeekService.extractCodeExamples ? global.deepSeekService.extractCodeExamples(fullContent) : {},
+        bestPractices: global.deepSeekService.extractBestPractices ? global.deepSeekService.extractBestPractices(fullContent) : [],
+        documentation: ragResults.slice(0, 3).map(doc => ({
+          title: doc.title,
+          snippet: doc.snippet || doc.content?.substring(0, 200) + '...'
+        })),
+        metadata: {
+          model: 'deepseek-chat',
+          timestamp: new Date().toISOString(),
+          responseTime: Date.now() - startTime
+        }
+      };
+      
+    } catch (error) {
+      console.error('[AI-PROMPT] DeepSeek error, using fallback:', error.message);
+      // Use fallback only when API actually fails
+      aiResponse = await global.deepSeekService.generateFallbackResponse(query, platform, ragResults, useReasoning);
+    }
     
     const responseTime = Date.now() - startTime;
     console.log(`[AI-PROMPT] Generated successfully in ${responseTime}ms`);
