@@ -17,7 +17,7 @@ class DeepSeekService {
       totalTokens: 0,
       successRate: 0
     };
-    this.apiAvailable = false; // Start with fallback mode until API proves working
+    this.apiAvailable = true; // Start optimistic, allow API attempts
     this.lastApiCheck = 0;
   }
 
@@ -46,7 +46,7 @@ class DeepSeekService {
           const response = await Promise.race([
             this.callDeepSeekAPI(model, messages, useReasoning),
             new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('API timeout')), 3000)
+              setTimeout(() => reject(new Error('API timeout')), 25000)
             )
           ]);
           
@@ -122,7 +122,7 @@ class DeepSeekService {
     };
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // Increased to 30 seconds
 
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
@@ -595,8 +595,8 @@ export default function HomePage() {
    * Check if API should be tried (avoid repeated failures)
    */
   shouldTryApi() {
-    // Only try API once every 5 minutes to avoid repeated timeouts
-    return (Date.now() - this.lastApiCheck) > 300000;
+    // Allow API calls more frequently - only block if recently failed
+    return (Date.now() - this.lastApiCheck) > 60000; // 1 minute instead of 5
   }
 
   /**

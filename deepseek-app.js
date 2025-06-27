@@ -549,6 +549,29 @@ app.get('/api/deepseek/stats', (req, res) => {
   }
 });
 
+// Saved prompts endpoint (fixing frontend error)
+app.get('/api/saved-prompts', async (req, res) => {
+  try {
+    const prompts = await queryWithRetry(`
+      SELECT id, title, query, platform, prompt, created_at 
+      FROM saved_prompts 
+      ORDER BY created_at DESC 
+      LIMIT 50
+    `);
+    
+    res.json({
+      success: true,
+      prompts: prompts || []
+    });
+  } catch (error) {
+    console.error('[SAVED-PROMPTS] Error:', error);
+    res.json({
+      success: true,
+      prompts: []
+    });
+  }
+});
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -594,12 +617,15 @@ const authenticateToken = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+    
+    // Look up user in database
+    const userResult = await queryWithRetry('SELECT * FROM users WHERE id = ?', [decoded.userId]);
 
-    if (userResult.rows.length === 0) {
+    if (userResult.length === 0) {
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
 
-    req.user = userResult.rows[0];
+    req.user = userResult[0];
     next();
   } catch (error) {
     return res.status(403).json({ error: 'Invalid token' });
