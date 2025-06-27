@@ -436,14 +436,16 @@ app.post('/api/chat/stream', async (req, res) => {
     const { message, messages, stream = true } = req.body;
     
     // Handle both single message and messages array formats
-    let userMessage;
+    let chatMessages;
     if (message) {
-      userMessage = message;
-    } else if (messages && Array.isArray(messages) && messages.length > 0) {
-      userMessage = messages[messages.length - 1].content || messages[messages.length - 1];
+      chatMessages = [{ role: 'user', content: message }];
+    } else if (messages && Array.isArray(messages)) {
+      chatMessages = messages;
     } else {
       return res.status(400).json({ error: 'Message or messages array is required' });
     }
+
+    console.log('[STREAMING] Starting real-time streaming response...');
 
     // Set up Server-Sent Events for streaming
     res.writeHead(200, {
@@ -454,28 +456,45 @@ app.post('/api/chat/stream', async (req, res) => {
       'Access-Control-Allow-Headers': 'Cache-Control, Content-Type'
     });
 
-    // Generate streaming response using RAG context
-    const mockResponse = await generateMockStreamingResponse(userMessage);
-    
-    // Stream each token with realistic timing
-    for (let i = 0; i < mockResponse.length; i++) {
-      const token = mockResponse[i];
-      
-      res.write(`data: ${JSON.stringify({
-        choices: [{
-          delta: {
-            content: token
-          }
-        }]
-      })}\n\n`);
-      
-      // Add realistic delay between tokens
-      await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 100));
+    // Initialize DeepSeek service if not already done
+    if (!global.deepSeekService) {
+      const DeepSeekService = require('./services/deepseekService');
+      global.deepSeekService = new DeepSeekService();
     }
 
-    // Send completion signal
-    res.write('data: [DONE]\n\n');
-    res.end();
+    // Use real DeepSeek API streaming
+    try {
+      await global.deepSeekService.streamChatResponse(
+        chatMessages,
+        // onToken callback
+        (token) => {
+          res.write(`data: ${JSON.stringify({
+            choices: [{
+              delta: {
+                content: token
+              }
+            }]
+          })}\n\n`);
+        },
+        // onComplete callback
+        (fullContent) => {
+          console.log(`[STREAMING] Complete response: ${fullContent.length} characters`);
+          res.write('data: [DONE]\n\n');
+          res.end();
+        },
+        // onError callback
+        (error) => {
+          console.error('[STREAMING] Error:', error);
+          res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+          res.end();
+        }
+      );
+    } catch (error) {
+      console.error('[STREAMING] DeepSeek streaming failed:', error);
+      // Fallback to error response
+      res.write(`data: ${JSON.stringify({ error: 'Streaming failed: ' + error.message })}\n\n`);
+      res.end();
+    }
 
   } catch (error) {
     console.error('[CHAT-STREAM] Error:', error);

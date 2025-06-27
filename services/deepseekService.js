@@ -40,15 +40,11 @@ class DeepSeekService {
       // Get or create conversation history
       const messages = this.getConversationMessages(sessionId, systemMessage, userMessage);
       
-      if (this.apiKey && this.shouldTryApi()) {
-        // Try real DeepSeek API call with quick timeout
+      if (this.apiKey) {
+        // Try real DeepSeek API call first
         try {
-          const response = await Promise.race([
-            this.callDeepSeekAPI(model, messages, useReasoning),
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('API timeout')), 25000)
-            )
-          ]);
+          console.log('[DEEPSEEK] Attempting real API call...');
+          const response = await this.callDeepSeekAPI(model, messages, useReasoning);
           
           // Mark API as available on success
           this.apiAvailable = true;
@@ -60,16 +56,18 @@ class DeepSeekService {
           // Track usage
           this.trackUsage(true, Date.now() - startTime, response.usage?.total_tokens || 0);
           
+          console.log('[DEEPSEEK] Real API call successful');
           return this.formatResponse(response, ragContext, useReasoning);
         } catch (apiError) {
-          console.log('[DEEPSEEK] API unavailable, using fallback:', apiError.message);
+          console.error('[DEEPSEEK] API call failed:', apiError.message);
           this.apiAvailable = false;
           this.lastApiCheck = Date.now();
-          // Fall through to fallback
+          // Fall through to sophisticated fallback
         }
       }
       
       // Fallback with sophisticated reasoning simulation
+      console.log('[DEEPSEEK] Using enhanced fallback response');
       const response = await this.generateFallbackResponse(query, platform, ragContext, useReasoning);
       this.trackUsage(true, Date.now() - startTime, 0);
       return response;
@@ -121,30 +119,57 @@ class DeepSeekService {
       temperature: 0.7
     };
 
+    console.log(`[DEEPSEEK] Making API call to ${this.baseUrl}/chat/completions`);
+    console.log(`[DEEPSEEK] Model: ${model}, Stream: ${stream}, Messages: ${messages.length}`);
+
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // Increased to 30 seconds
+    const timeoutId = setTimeout(() => {
+      console.log('[DEEPSEEK] Request timeout reached, aborting...');
+      controller.abort();
+    }, 15000); // Reduced to 15 seconds for faster response
 
-    const response = await fetch(`${this.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`
-      },
-      body: JSON.stringify(requestBody),
-      signal: controller.signal
-    });
+    try {
+      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.apiKey}`
+        },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
+      });
 
-    clearTimeout(timeoutId);
+      clearTimeout(timeoutId);
+      console.log(`[DEEPSEEK] API response status: ${response.status}`);
 
-    if (!response.ok) {
-      throw new Error(`DeepSeek API error: ${response.status} ${response.statusText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[DEEPSEEK] API error response: ${errorText}`);
+        throw new Error(`DeepSeek API error: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      if (stream) {
+        return response; // Return the response for streaming
+      }
+
+      const result = await Promise.race([
+        response.json(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Response parsing timeout')), 10000)
+        )
+      ]);
+      console.log(`[DEEPSEEK] API success: ${result.choices?.[0]?.message?.content?.length || 0} chars`);
+      return result;
+      
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        console.error('[DEEPSEEK] Request was aborted due to timeout');
+        throw new Error('API request timeout');
+      }
+      console.error(`[DEEPSEEK] API call failed: ${error.message}`);
+      throw error;
     }
-
-    if (stream) {
-      return response; // Return the response for streaming
-    }
-
-    return await response.json();
   }
 
   /**
@@ -524,6 +549,9 @@ export default function HomePage() {
   async streamChatResponse(messages, onToken, onComplete, onError) {
     try {
       const model = this.models.chat;
+      console.log('[DEEPSEEK] Starting streaming response...');
+      
+      // Make the streaming API call
       const response = await this.callDeepSeekAPI(model, messages, false, true);
       
       if (!response.body) {
@@ -532,6 +560,49 @@ export default function HomePage() {
 
       let buffer = '';
       let fullContent = '';
+      
+      // Use async iterator for proper Node.js streaming
+      try {
+        for await (const chunk of response.body) {
+          buffer += chunk.toString();
+          
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line in buffer
+          
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('data:')) {
+              const jsonStr = trimmed.slice(5).trim();
+              if (jsonStr === '[DONE]') {
+                console.log('[DEEPSEEK] Streaming completed');
+                if (onComplete) onComplete(fullContent);
+                return fullContent;
+              }
+              if (jsonStr) {
+                try {
+                  const parsed = JSON.parse(jsonStr);
+                  const token = parsed.choices?.[0]?.delta?.content;
+                  if (token) {
+                    fullContent += token;
+                    if (onToken) onToken(token);
+                  }
+                } catch (e) {
+                  console.warn('[DEEPSEEK] JSON parse error:', e.message);
+                }
+              }
+            }
+          }
+        }
+        
+        console.log('[DEEPSEEK] Stream ended normally');
+        if (onComplete) onComplete(fullContent);
+        return fullContent;
+        
+      } catch (streamError) {
+        console.error('[DEEPSEEK] Streaming error:', streamError.message);
+        if (onError) onError(streamError);
+        throw streamError;
+      }
 
       // Handle Node.js readable stream
       response.body.on('data', (chunk) => {
