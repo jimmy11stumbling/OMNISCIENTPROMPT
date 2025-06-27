@@ -524,106 +524,59 @@ export default function HomePage() {
 
   /**
    * Stream chat response with real-time updates (Node.js compatible)
+   * Matches DeepSeek API streaming format with proper token delivery
    */
   async streamChatResponse(messages, onToken, onComplete, onError) {
     try {
       const model = this.models.chat;
       console.log('[DEEPSEEK] Starting streaming response...');
       
-      // Make the streaming API call
+      // Make the streaming API call with proper streaming format
       const response = await this.callDeepSeekAPI(model, messages, false, true);
       
       if (!response.body) {
         throw new Error('No response stream available');
       }
 
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
       let buffer = '';
       let fullContent = '';
-      
-      // Use async iterator for proper Node.js streaming
-      try {
-        for await (const chunk of response.body) {
-          buffer += chunk.toString();
-          
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || ''; // Keep incomplete line in buffer
-          
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (trimmed.startsWith('data:')) {
-              const jsonStr = trimmed.slice(5).trim();
-              if (jsonStr === '[DONE]') {
-                console.log('[DEEPSEEK] Streaming completed');
-                if (onComplete) onComplete(fullContent);
-                return fullContent;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n\n');
+
+        for (let i = 0; i < parts.length - 1; i++) {
+          const part = parts[i].trim();
+          if (part.startsWith('data:')) {
+            const jsonStr = part.slice(5).trim();
+            if (jsonStr === '[DONE]') {
+              onComplete(fullContent);
+              return;
+            }
+            
+            try {
+              const parsed = JSON.parse(jsonStr);
+              const token = parsed.choices?.[0]?.delta?.content;
+              if (token) {
+                fullContent += token;
+                onToken(token);
               }
-              if (jsonStr) {
-                try {
-                  const parsed = JSON.parse(jsonStr);
-                  const token = parsed.choices?.[0]?.delta?.content;
-                  if (token) {
-                    fullContent += token;
-                    if (onToken) onToken(token);
-                  }
-                } catch (e) {
-                  console.warn('[DEEPSEEK] JSON parse error:', e.message);
-                }
-              }
+            } catch (e) {
+              console.warn('[DEEPSEEK] JSON parse error:', e);
             }
           }
         }
-        
-        console.log('[DEEPSEEK] Stream ended normally');
-        if (onComplete) onComplete(fullContent);
-        return fullContent;
-        
-      } catch (streamError) {
-        console.error('[DEEPSEEK] Streaming error:', streamError.message);
-        if (onError) onError(streamError);
-        throw streamError;
+        buffer = parts[parts.length - 1];
       }
 
-      // Handle Node.js readable stream
-      response.body.on('data', (chunk) => {
-        try {
-          buffer += chunk.toString();
-          const parts = buffer.split('\n\n');
-          
-          for (let i = 0; i < parts.length - 1; i++) {
-            const part = parts[i].trim();
-            if (part.startsWith('data:')) {
-              const jsonStr = part.slice(5).trim();
-              if (jsonStr === '[DONE]') {
-                onComplete(fullContent);
-                return;
-              }
-              
-              try {
-                const parsed = JSON.parse(jsonStr);
-                const token = parsed.choices?.[0]?.delta?.content;
-                if (token) {
-                  fullContent += token;
-                  onToken(token);
-                }
-              } catch (e) {
-                console.warn('JSON parse error:', e);
-              }
-            }
-          }
-          buffer = parts[parts.length - 1];
-        } catch (err) {
-          onError(err);
-        }
-      });
+      // Complete with accumulated content if no [DONE] signal
+      onComplete(fullContent);
 
-      response.body.on('end', () => {
-        onComplete(fullContent);
-      });
-
-      response.body.on('error', (error) => {
-        onError(error);
-      });
-      
     } catch (error) {
       console.error('[DEEPSEEK] Streaming error:', error);
       onError(error);

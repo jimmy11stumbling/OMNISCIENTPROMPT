@@ -505,10 +505,10 @@ app.post('/api/chat/stream', async (req, res) => {
       'Access-Control-Allow-Headers': 'Cache-Control, Content-Type'
     });
 
-    // Initialize DeepSeek service if not already done
+    // Initialize working DeepSeek service if not already done
     if (!global.deepSeekService) {
-      const DeepSeekService = require('./services/deepseekService');
-      global.deepSeekService = new DeepSeekService();
+      const WorkingDeepSeekService = require('./services/workingDeepSeekService');
+      global.deepSeekService = new WorkingDeepSeekService();
     }
 
     // Use real DeepSeek API streaming
