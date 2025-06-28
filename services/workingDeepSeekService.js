@@ -49,7 +49,7 @@ class WorkingDeepSeekService {
           messages: messages,
           stream: true,
           temperature: 0.9,
-          max_tokens: 16000
+          max_tokens: 8192
         }),
         signal: controller.signal
       });
