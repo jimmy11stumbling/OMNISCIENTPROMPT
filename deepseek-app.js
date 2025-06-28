@@ -599,12 +599,12 @@ Use the following platform-specific documentation context to create an authentic
 ${ragContext}
 
 Requirements:
-- Generate exactly 20,000+ characters minimum (STRICTLY ENFORCED)
+- Generate exactly 15,000+ characters minimum (STRICTLY ENFORCED)
 - Include all 8 comprehensive sections with extensive detail
 - Use only authentic platform-specific features from the documentation above
 - Provide complete code examples and production-ready implementation
 - Focus on the detected platform: ${primaryPlatform}
-- Continue writing until blueprint exceeds 20,000 characters minimum
+- Continue writing until blueprint exceeds 15,000 characters minimum
 
 Begin generating the complete master blueprint now:`;
           

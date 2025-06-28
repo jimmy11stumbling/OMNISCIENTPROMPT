@@ -24,15 +24,15 @@ AUTHENTICATED DOCUMENTATION CONTEXT:
 ${documentationContext}
 
 CRITICAL MASTER BLUEPRINT REQUIREMENTS:
-- Generate EXACTLY 20,000+ characters minimum (STRICTLY ENFORCED)
+- Generate EXACTLY 15,000+ characters minimum (STRICTLY ENFORCED)
 - Use ONLY authentic documentation from the provided context above
 - Create comprehensive production-ready application blueprints
 - Include ALL 8 required sections with extensive detail
 - Provide complete code examples, database schemas, deployment configs
 - Focus on platform-specific implementations using provided documentation
-- NEVER generate short responses - only comprehensive 20,000+ character blueprints
-- Model configured with max_tokens: 16384 to support full blueprint generation
-- Continue writing until complete blueprint exceeds 20,000 characters minimum
+- NEVER generate short responses - only comprehensive 15,000+ character blueprints
+- Model configured with max_tokens: 8192 to support full blueprint generation
+- Continue writing until complete blueprint exceeds 15,000 characters minimum
 - Write detailed explanations for each code section and implementation step
 - Include multiple implementation examples and configuration options
 - Provide comprehensive troubleshooting and optimization guidance`;
