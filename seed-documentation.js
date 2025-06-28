@@ -13,13 +13,31 @@ async function seedDocumentationDatabase() {
     const allFiles = fs.readdirSync(attachedAssetsDir).filter(file => file.endsWith('.txt'));
     console.log(`[SEED] Found ${allFiles.length} text files to process`);
 
-    // Platform file mappings (specific platform docs)
+    // Platform file mappings (updated with latest comprehensive docs)
     const platformFiles = {
-      replit: ['Replitdata_1749377356094.txt', 'replit research updated_1749377356094.txt'],
-      lovable: ['lovable2.0 data_1749377356093.txt'],
-      bolt: ['boltdata_1749377356093.txt'],
-      cursor: ['Cursordata_1749377356093.txt'],
-      windsurf: ['windsurfdata_1749377356094.txt']
+      replit: [
+        'Replitdata_1749377356094.txt', 
+        'replit research updated_1749377356094.txt',
+        'Replitdata_1751086250571.txt',
+        'replit research updated_1751086250571.txt'
+      ],
+      lovable: [
+        'lovable2.0 data_1749377356093.txt',
+        'lovable2.0 data_1751086242600.txt',
+        'lovable2.0 data_1751086250571.txt'
+      ],
+      bolt: [
+        'boltdata_1749377356093.txt',
+        'boltdata_1751086250570.txt'
+      ],
+      cursor: [
+        'Cursordata_1749377356093.txt',
+        'Cursordata_1751086250570.txt'
+      ],
+      windsurf: [
+        'windsurfdata_1749377356094.txt',
+        'windsurfdata_1751086250572.txt'
+      ]
     };
 
     // Protocol and system files (assign to 'system' platform)

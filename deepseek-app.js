@@ -8,6 +8,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const nodemailer = require('nodemailer');
 const UnifiedRAGSystem = require('./unified-rag-system');
+const SeamlessRAGIntegration = require('./seamless-rag-integration');
 const DeepSeekService = require('./services/deepseekService');
 const database = require('./database');
 
@@ -503,64 +504,62 @@ app.post('/api/chat/stream', async (req, res) => {
     let ragContext = '';
     let platformDocs = [];
     try {
-      // Comprehensive search strategy to access ALL 557 documents without exceptions
+      // Initialize comprehensive knowledge retrieval system
       let searchResults = [];
-      console.log(`[RAG-COMPREHENSIVE] Starting full knowledge base search for: "${userQuery}"`);
+      console.log(`[COMPREHENSIVE-RAG] Starting multi-platform knowledge retrieval for: "${userQuery}"`);
       
-      // Strategy 1: Search ALL platforms simultaneously
-      const allPlatforms = ['lovable', 'bolt', 'cursor', 'windsurf', 'replit'];
-      for (const plt of allPlatforms) {
-        const platformResults = await ragDB.searchDocuments(userQuery, plt, 5);
-        searchResults = [...searchResults, ...platformResults];
-        console.log(`[RAG-COMPREHENSIVE] Platform ${plt}: ${platformResults.length} documents`);
+      // Initialize unified RAG system
+      const ragSystem = new UnifiedRAGSystem();
+      await ragSystem.initializeDatabase();
+      
+      const queryLower = userQuery.toLowerCase();
+      const mentionedPlatforms = ['lovable', 'bolt', 'cursor', 'windsurf', 'replit'].filter(p => 
+        queryLower.includes(p)
+      );
+      
+      // Strategy 1: Platform-specific comprehensive search
+      if (mentionedPlatforms.length > 0) {
+        for (const platform of mentionedPlatforms) {
+          const platformResults = await ragSystem.searchDocuments(userQuery, platform, 20);
+          searchResults = [...searchResults, ...platformResults];
+          console.log(`[COMPREHENSIVE-RAG] ${platform}: ${platformResults.length} documents`);
+          
+          // Also search by platform name for additional coverage
+          const nameResults = await ragSystem.searchDocuments(platform, platform, 10);
+          searchResults = [...searchResults, ...nameResults];
+        }
+      } else {
+        // Strategy 2: Cross-platform comprehensive search
+        for (const platform of ['lovable', 'bolt', 'cursor', 'windsurf', 'replit']) {
+          const platformResults = await ragSystem.searchDocuments(userQuery, platform, 8);
+          searchResults = [...searchResults, ...platformResults];
+          console.log(`[COMPREHENSIVE-RAG] Cross-platform ${platform}: ${platformResults.length} documents`);
+        }
       }
       
-      // Strategy 2: General cross-platform search to catch any missed documents
-      const generalResults = await ragDB.searchDocuments(userQuery, null, 15);
+      // Strategy 3: General comprehensive search
+      const generalResults = await ragSystem.searchDocuments(userQuery, null, 15);
       searchResults = [...searchResults, ...generalResults];
-      console.log(`[RAG-COMPREHENSIVE] General search: ${generalResults.length} documents`);
+      console.log(`[COMPREHENSIVE-RAG] General search: ${generalResults.length} documents`);
       
-      // Strategy 3: Keyword-based search for comprehensive coverage
-      const keywords = userQuery.toLowerCase().split(' ').filter(word => word.length > 2);
-      for (const keyword of keywords.slice(0, 3)) {
-        const keywordResults = await ragDB.searchDocuments(keyword, null, 5);
-        searchResults = [...searchResults, ...keywordResults];
-        console.log(`[RAG-COMPREHENSIVE] Keyword "${keyword}": ${keywordResults.length} documents`);
-      }
-      
-      // Remove duplicates and prioritize diverse platform coverage
+      // Remove duplicates
       const uniqueResults = searchResults.filter((doc, index, self) => 
         index === self.findIndex(d => d.id === doc.id)
       );
       
-      // Ensure platform diversity in results
-      const platformCounts = {};
-      const diverseResults = [];
-      for (const doc of uniqueResults) {
-        const platform = doc.platform || 'general';
-        platformCounts[platform] = (platformCounts[platform] || 0) + 1;
-        if (platformCounts[platform] <= 6) { // Max 6 docs per platform for diversity
-          diverseResults.push(doc);
-        }
-      }
-      
-      searchResults = diverseResults.slice(0, 25); // Increased to 25 for comprehensive context
-      console.log(`[RAG-COMPREHENSIVE] Final comprehensive result: ${searchResults.length} documents from all platforms`);
+      searchResults = uniqueResults.slice(0, 30); // Comprehensive context
+      console.log(`[COMPREHENSIVE-RAG] Final result: ${searchResults.length} comprehensive documents`);
       
       if (searchResults && searchResults.length > 0) {
         console.log(`[RAG-CONTEXT] Final result: ${searchResults.length} relevant documents`);
         platformDocs = searchResults;
         
-        // Debug: Log the actual search results to understand the data structure
-        console.log(`[RAG-DEBUG] First result:`, JSON.stringify(searchResults[0], null, 2));
-        
-        // Create rich context with comprehensive documentation content
+        // Format comprehensive context for AI
         ragContext = searchResults.map(doc => {
           const title = doc.title || 'Untitled Document';
           const platform = doc.platform ? `[${doc.platform.toUpperCase()}]` : '[GENERAL]';
-          // Use full content for better context, not just snippets
-          const content = doc.content || doc.snippet || doc.description || 'No content available';
-          const docType = doc.type || doc.document_type || 'general';
+          const content = doc.content || doc.snippet || 'No content available';
+          const docType = doc.document_type || doc.type || 'general';
           const keywords = doc.keywords ? (Array.isArray(doc.keywords) ? doc.keywords.join(', ') : doc.keywords) : 'none';
           
           return `${platform} ${title}
@@ -617,7 +616,7 @@ INSTRUCTIONS: Provide a comprehensive, detailed answer using the documentation c
         console.log(`[RAG-CONTEXT] No relevant documents found for query: ${userQuery}`);
       }
     } catch (ragError) {
-      console.warn('[RAG-CONTEXT] RAG search failed:', ragError);
+      console.warn('[COMPREHENSIVE-RAG] Error in knowledge retrieval:', ragError.message);
     }
 
     // Set up Server-Sent Events for streaming

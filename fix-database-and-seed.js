@@ -13,11 +13,28 @@ async function fixDatabaseAndSeed() {
     // Platform file mappings based on actual files in attached_assets
     const attachedAssetsDir = path.join(__dirname, 'attached_assets');
     const platformFiles = {
-      replit: ['Replitdata_1749377356094.txt', 'replit research updated_1749377356094.txt'],
-      lovable: ['lovable2.0 data_1749377356093.txt'],
-      bolt: ['boltdata_1749377356093.txt'],
-      cursor: ['Cursordata_1749377356093.txt'],
-      windsurf: ['windsurfdata_1749377356094.txt']
+      replit: [
+        'Replitdata_1749377356094.txt', 
+        'replit research updated_1749377356094.txt',
+        'Replitdata_1751086250571.txt',
+        'replit research updated_1751086250571.txt'
+      ],
+      lovable: [
+        'lovable2.0 data_1749377356093.txt',
+        'lovable2.0 data_1751086250571.txt'
+      ],
+      bolt: [
+        'boltdata_1749377356093.txt',
+        'boltdata_1751086250570.txt'
+      ],
+      cursor: [
+        'Cursordata_1749377356093.txt',
+        'Cursordata_1751086250570.txt'
+      ],
+      windsurf: [
+        'windsurfdata_1749377356094.txt',
+        'windsurfdata_1751086250572.txt'
+      ]
     };
 
     let totalDocuments = 0;
