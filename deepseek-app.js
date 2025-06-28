@@ -32,6 +32,11 @@ const mcpServer = new MCPDocumentServer();
 global.mcpDocumentServer = mcpServer;
 console.log('[MCP-SERVER] Document server initialized');
 
+// Initialize MCP Chat Server for seamless document retrieval
+const MCPChatServer = require('./services/mcpChatServer');
+global.mcpChatServer = new MCPChatServer();
+console.log('[MCP-CHAT-SERVER] Chat document server initialized');
+
 // Wrapper function to maintain compatibility
 async function queryWithRetry(queryText, params = [], retries = 3) {
   for (let i = 0; i < retries; i++) {
@@ -480,6 +485,181 @@ app.post('/api/chat/stream', async (req, res) => {
     }
 
     console.log('[STREAMING] Starting real-time streaming response...');
+
+    // SMART INTENT DETECTION - Check conversation type
+    const detectIntentType = (query) => {
+      const lowercaseQuery = query.toLowerCase().trim();
+      
+      // Simple greetings - brief response
+      const greetings = ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening', 
+                        'how are you', 'whats up', 'sup', 'greetings', 'hola', 'bonjour', 'thanks', 'thank you'];
+      
+      if (greetings.some(greeting => lowercaseQuery === greeting || lowercaseQuery.includes(greeting))) {
+        return 'greeting';
+      }
+      
+      // Blueprint generation keywords
+      const blueprintKeywords = ['create', 'build', 'make', 'develop', 'generate', 'design', 'app', 'application', 
+                                'website', 'platform', 'system', 'project', 'todo', 'chat', 'ecommerce', 'blog'];
+      
+      if (blueprintKeywords.some(keyword => lowercaseQuery.includes(keyword)) && lowercaseQuery.length > 15) {
+        return 'blueprint';
+      }
+      
+      // General questions - use RAG for informed responses
+      const questionKeywords = ['what', 'how', 'why', 'which', 'when', 'where', 'compare', 'difference', 
+                               'better', 'best', 'features', 'pricing', 'cost', 'vs', 'versus'];
+      
+      if (questionKeywords.some(keyword => lowercaseQuery.includes(keyword)) || lowercaseQuery.includes('?')) {
+        return 'question';
+      }
+      
+      // Default to question for general chat
+      return lowercaseQuery.length < 10 ? 'greeting' : 'question';
+    };
+
+    const intentType = detectIntentType(userQuery);
+    console.log(`[INTENT-DETECTION] Detected intent: ${intentType}`);
+
+    // Handle simple greetings with brief responses
+    if (intentType === 'greeting') {
+      console.log('[INTENT-DETECTION] Simple greeting detected, providing brief response');
+      
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Cache-Control'
+      });
+
+      const simpleResponse = `Hello! I'm your DeepSeek AI assistant for creating comprehensive project blueprints. I can help you build applications on platforms like Replit, Lovable, Bolt, Cursor, and Windsurf.
+
+What would you like to create today? For example:
+- "Create a todo app on Replit"
+- "Build a chat application with real-time features"
+- "Design an e-commerce platform with authentication"
+
+Just describe your project idea and I'll generate a detailed blueprint for you!`;
+
+      // Stream the simple response
+      const words = simpleResponse.split(' ');
+      for (let i = 0; i < words.length; i++) {
+        const word = i === 0 ? words[i] : ' ' + words[i];
+        res.write(`data: ${JSON.stringify({
+          choices: [{
+            delta: {
+              content: word
+            }
+          }]
+        })}\n\n`);
+        await new Promise(resolve => setTimeout(resolve, 30));
+      }
+
+      res.write('data: [DONE]\n\n');
+      res.end();
+      return;
+    }
+
+    // Handle general questions with MCP Chat Server for seamless document retrieval
+    if (intentType === 'question') {
+      console.log('[INTENT-DETECTION] General question detected, using MCP Chat Server for document retrieval');
+      
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Cache-Control'
+      });
+
+      try {
+        // Use MCP Chat Server for optimized document retrieval
+        const chatSearchResult = await global.mcpChatServer.handleToolRequest({
+          name: 'chat_search_documents',
+          arguments: {
+            query: userQuery,
+            platform: platform,
+            intent: 'question',
+            limit: 8
+          }
+        });
+
+        console.log(`[MCP-CHAT-SERVER] Retrieved ${chatSearchResult.content?.length || 0} documents for general question`);
+
+        // Get platform-specific prompts service
+        const PlatformSpecificPrompts = require('./services/platformSpecificPrompts');
+        const platformPrompts = new PlatformSpecificPrompts();
+
+        // Get general chat system prompt with retrieved documents
+        const systemPrompt = platformPrompts.getSystemPrompt(platform, chatSearchResult.content || [], true);
+
+        const chatMessages = [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userQuery }
+        ];
+
+        console.log('[MCP-CHAT-SERVER] Starting AI response with seamless document context');
+
+        // Stream response using DeepSeek service
+        const streamTimeout = setTimeout(() => {
+          try {
+            res.write('data: [DONE]\n\n');
+            res.end();
+          } catch (e) {
+            // Connection already closed
+          }
+        }, 60000); // 60 second timeout for general questions
+
+        await global.deepSeekService.streamChatResponse(
+          chatMessages,
+          // onToken callback
+          (token) => {
+            try {
+              res.write(`data: ${JSON.stringify({
+                choices: [{
+                  delta: {
+                    content: token
+                  }
+                }]
+              })}\n\n`);
+            } catch (writeError) {
+              console.warn('[STREAMING] Write error:', writeError);
+            }
+          },
+          // onComplete callback
+          (fullContent) => {
+            clearTimeout(streamTimeout);
+            console.log(`[MCP-CHAT-SERVER] General question response completed: ${fullContent.length} characters`);
+            try {
+              res.write('data: [DONE]\n\n');
+              res.end();
+            } catch (endError) {
+              console.warn('[STREAMING] End error:', endError);
+            }
+          },
+          // onError callback
+          (error) => {
+            clearTimeout(streamTimeout);
+            console.error('[MCP-CHAT-SERVER] Streaming error:', error);
+            try {
+              res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+              res.end();
+            } catch (errorWriteError) {
+              console.warn('[STREAMING] Error write failed:', errorWriteError);
+            }
+          }
+        );
+
+        return;
+
+      } catch (error) {
+        console.error('[MCP-CHAT-SERVER] Question handling error:', error);
+        res.write(`data: ${JSON.stringify({ error: 'Failed to process question' })}\n\n`);
+        res.end();
+        return;
+      }
+    }
     
     // Get RAG context before streaming - enhanced for no-code platforms
     let ragContext = '';
@@ -1221,6 +1401,117 @@ app.get('/api/rag/status', async (req, res) => {
   } catch (error) {
     console.error('RAG status error:', error);
     res.status(500).json({ error: 'Failed to get RAG status' });
+  }
+});
+
+// MCP Chat Server API endpoints for seamless document retrieval
+app.post('/api/mcp/chat/search', async (req, res) => {
+  try {
+    const { query, platform, intent = 'question', limit = 8 } = req.body;
+    
+    if (!query) {
+      return res.status(400).json({ error: 'Query is required' });
+    }
+
+    const result = await global.mcpChatServer.handleToolRequest({
+      name: 'chat_search_documents',
+      arguments: { query, platform, intent, limit }
+    });
+
+    res.json({
+      success: true,
+      query: query,
+      intent: intent,
+      platform: platform,
+      documents: result.content || [],
+      totalResults: result.totalResults || 0
+    });
+  } catch (error) {
+    console.error('[MCP-CHAT-API] Search error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/mcp/chat/compare', async (req, res) => {
+  try {
+    const { platforms, aspect = 'general' } = req.body;
+    
+    if (!platforms || !Array.isArray(platforms)) {
+      return res.status(400).json({ error: 'Platforms array is required' });
+    }
+
+    const result = await global.mcpChatServer.handleToolRequest({
+      name: 'chat_compare_platforms',
+      arguments: { platforms, aspect }
+    });
+
+    res.json({
+      success: true,
+      platforms: platforms,
+      aspect: aspect,
+      comparison: result.comparison || {},
+      totalDocuments: result.totalDocuments || 0
+    });
+  } catch (error) {
+    console.error('[MCP-CHAT-API] Compare error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.get('/api/mcp/chat/overview/:platform', async (req, res) => {
+  try {
+    const { platform } = req.params;
+    
+    const supportedPlatforms = ['replit', 'lovable', 'bolt', 'cursor', 'windsurf'];
+    if (!supportedPlatforms.includes(platform)) {
+      return res.status(400).json({ error: 'Unsupported platform' });
+    }
+
+    const result = await global.mcpChatServer.handleToolRequest({
+      name: 'chat_get_platform_overview',
+      arguments: { platform }
+    });
+
+    res.json({
+      success: true,
+      platform: platform,
+      overview: result.overview || [],
+      categories: result.categories || {}
+    });
+  } catch (error) {
+    console.error('[MCP-CHAT-API] Overview error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.get('/api/mcp/chat/status', async (req, res) => {
+  try {
+    const capabilities = global.mcpChatServer.getCapabilities();
+    const documentStats = await global.mcpChatServer.ragSystem?.getDocumentStats() || { total: 0 };
+    
+    res.json({
+      success: true,
+      status: 'operational',
+      capabilities: capabilities,
+      documentStats: documentStats,
+      supportedPlatforms: ['replit', 'lovable', 'bolt', 'cursor', 'windsurf'],
+      supportedIntents: ['question', 'comparison', 'feature_inquiry', 'pricing', 'tutorial']
+    });
+  } catch (error) {
+    console.error('[MCP-CHAT-API] Status error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 });
 

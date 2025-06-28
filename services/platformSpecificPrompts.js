@@ -14,7 +14,11 @@ class PlatformSpecificPrompts {
     };
   }
 
-  getSystemPrompt(platform, ragDocuments = []) {
+  getSystemPrompt(platform, ragDocuments = [], isGeneralChat = false) {
+    if (isGeneralChat) {
+      return this.getGeneralChatSystemPrompt(ragDocuments);
+    }
+    
     const basePrompt = this.platforms[platform] || this.getGenericSystemPrompt();
     const documentationContext = this.buildDocumentationContext(ragDocuments, platform);
     
@@ -36,6 +40,32 @@ CRITICAL MASTER BLUEPRINT REQUIREMENTS:
 - Include multiple implementation examples, configuration options, and best practices
 - Provide comprehensive database integration patterns and deployment configurations
 - Ensure seamless integration between frontend, backend, and database layers`;
+  }
+
+  getGeneralChatSystemPrompt(ragDocuments = []) {
+    const documentationContext = this.buildGeneralChatContext(ragDocuments);
+    
+    return `You are a knowledgeable AI assistant specializing in no-code platforms and modern development. You have access to comprehensive documentation about Replit, Lovable, Bolt, Cursor, and Windsurf platforms.
+
+GENERAL CHAT CAPABILITIES:
+- Answer questions about platform features, pricing, and capabilities
+- Provide comparisons between different no-code platforms
+- Explain technical concepts and implementation approaches
+- Offer guidance on choosing the right platform for specific projects
+- Share best practices for development workflows
+
+AUTHENTICATED DOCUMENTATION CONTEXT:
+${documentationContext}
+
+RESPONSE GUIDELINES:
+- Provide accurate, helpful information based on the authentic documentation above
+- Keep responses conversational but informative
+- Use specific examples from the documentation when relevant
+- Suggest appropriate platforms based on user requirements
+- Offer practical implementation advice when discussing features
+- Reference specific documentation sections when providing detailed technical information
+
+Always use the provided documentation context to ensure accuracy and provide authentic platform information.`;
   }
 
   getReplitSystemPrompt() {
@@ -374,6 +404,45 @@ GENERATE COMPREHENSIVE FULL-STACK MASTER BLUEPRINTS:
         context += `   Content: ${doc.content.substring(0, 300)}...\n\n`;
       });
     }
+
+    return context;
+  }
+
+  buildGeneralChatContext(ragDocuments = []) {
+    if (!ragDocuments || ragDocuments.length === 0) {
+      return 'No specific documentation context available for this query.';
+    }
+
+    let context = 'RELEVANT PLATFORM DOCUMENTATION:\n\n';
+
+    // Group documents by platform for better organization
+    const documentsByPlatform = {};
+    ragDocuments.forEach(doc => {
+      const platform = doc.platform || 'general';
+      if (!documentsByPlatform[platform]) {
+        documentsByPlatform[platform] = [];
+      }
+      documentsByPlatform[platform].push(doc);
+    });
+
+    // Format documents by platform
+    Object.keys(documentsByPlatform).forEach(platform => {
+      const docs = documentsByPlatform[platform];
+      context += `${platform.toUpperCase()} PLATFORM:\n`;
+      
+      docs.slice(0, 5).forEach((doc, index) => {
+        context += `${index + 1}. ${doc.title || 'Untitled Document'}\n`;
+        context += `   Type: ${doc.document_type || doc.type || 'general'}\n`;
+        context += `   Content: ${(doc.content || doc.snippet || '').substring(0, 400)}...\n`;
+        if (doc.keywords) {
+          const keywords = typeof doc.keywords === 'string' ? 
+            JSON.parse(doc.keywords) : doc.keywords;
+          context += `   Keywords: ${Array.isArray(keywords) ? keywords.join(', ') : keywords}\n`;
+        }
+        context += '\n';
+      });
+      context += '---\n\n';
+    });
 
     return context;
   }
