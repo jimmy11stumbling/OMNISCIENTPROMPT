@@ -270,7 +270,7 @@ RULES:
             const promptResult = document.getElementById('promptResult');
 
             let lastActivity = Date.now();
-            const activityTimeout = 30000; // 30 second inactivity timeout
+            const activityTimeout = 120000; // 120 second timeout for comprehensive master blueprints
 
             while (true) {
                 try {
@@ -288,23 +288,32 @@ RULES:
                     for (let i = 0; i < parts.length - 1; i++) {
                         const part = parts[i].trim();
                         if (part.startsWith('data:')) {
-                            const jsonStr = part.slice(5).trim();
-                            if (jsonStr === '[DONE]') {
+                            const content = part.slice(5).trim();
+                            if (content === '[DONE]') {
                                 console.log('Received [DONE] signal');
                                 this.completeStreaming(fullContent);
                                 return;
                             }
                             
+                            // Handle both JSON and raw content for master blueprints
                             try {
-                                const parsed = JSON.parse(jsonStr);
+                                const parsed = JSON.parse(content);
                                 const token = parsed.choices?.[0]?.delta?.content;
                                 if (token) {
                                     fullContent += token;
                                     this.onTokenReceived(token);
                                 }
                             } catch (e) {
-                                // Skip malformed JSON without logging
+                                // For master blueprints, handle raw content directly
+                                if (content && content.length > 0) {
+                                    fullContent += content;
+                                    this.onTokenReceived(content);
+                                }
                             }
+                        } else if (part.length > 0) {
+                            // Handle direct content without 'data:' prefix
+                            fullContent += part;
+                            this.onTokenReceived(part);
                         }
                     }
                     buffer = parts[parts.length - 1];

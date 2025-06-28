@@ -520,7 +520,7 @@ app.post('/api/chat/stream', async (req, res) => {
       } catch (e) {
         // Connection already closed
       }
-    }, 60000); // 60 second timeout for master blueprints
+    }, 300000); // 300 second timeout for comprehensive master blueprints
 
     // Use real DeepSeek API streaming
     try {
