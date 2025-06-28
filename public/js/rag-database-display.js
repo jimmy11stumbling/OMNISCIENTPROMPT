@@ -254,6 +254,16 @@ class RAGDatabaseDisplay {
             });
         }
 
+        // Platform tab functionality
+        document.querySelectorAll('.platform-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const platform = e.target.dataset.platform;
+                if (platform && platform !== this.currentPlatform) {
+                    this.switchToPlatform(platform);
+                }
+            });
+        });
+
         // Refresh functionality
         const refreshButton = document.querySelector('.refresh-button');
         if (refreshButton) {

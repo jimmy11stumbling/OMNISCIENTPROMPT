@@ -202,7 +202,7 @@ app.get('/api/rag/platform/:platform', async (req, res) => {
     
     // Also get recent documents for the platform
     const documentsResult = await pool.query(`
-      SELECT title, document_type, created_at, 
+      SELECT id, title, document_type, created_at, 
              SUBSTRING(content, 1, 200) as preview
       FROM rag_documents 
       WHERE platform = $1
