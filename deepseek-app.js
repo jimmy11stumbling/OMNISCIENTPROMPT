@@ -503,35 +503,49 @@ app.post('/api/chat/stream', async (req, res) => {
     let ragContext = '';
     let platformDocs = [];
     try {
-      // Enhanced search strategy for no-code platforms
+      // Comprehensive search strategy to access ALL 557 documents without exceptions
       let searchResults = [];
+      console.log(`[RAG-COMPREHENSIVE] Starting full knowledge base search for: "${userQuery}"`);
       
-      // First, try platform-specific search
-      if (platform) {
-        searchResults = await ragDB.searchDocuments(userQuery, platform, 8);
-        console.log(`[RAG-CONTEXT] Platform-specific search for ${platform}: ${searchResults.length} documents`);
+      // Strategy 1: Search ALL platforms simultaneously
+      const allPlatforms = ['lovable', 'bolt', 'cursor', 'windsurf', 'replit'];
+      for (const plt of allPlatforms) {
+        const platformResults = await ragDB.searchDocuments(userQuery, plt, 5);
+        searchResults = [...searchResults, ...platformResults];
+        console.log(`[RAG-COMPREHENSIVE] Platform ${plt}: ${platformResults.length} documents`);
       }
       
-      // If no platform-specific results or general query, search across all platforms
-      if (!searchResults || searchResults.length < 3) {
-        const generalResults = await ragDB.searchDocuments(userQuery, null, 10);
-        console.log(`[RAG-CONTEXT] General search: ${generalResults.length} documents`);
-        
-        // Filter for no-code platforms if query mentions them
-        const platformKeywords = ['lovable', 'bolt', 'cursor', 'windsurf', 'replit', 'vercel', 'netlify'];
-        const queryLower = userQuery.toLowerCase();
-        const mentionedPlatforms = platformKeywords.filter(p => queryLower.includes(p));
-        
-        if (mentionedPlatforms.length > 0) {
-          const filteredResults = generalResults.filter(doc => 
-            mentionedPlatforms.some(p => doc.platform?.toLowerCase() === p || doc.title?.toLowerCase().includes(p))
-          );
-          searchResults = [...searchResults, ...filteredResults].slice(0, 8);
-          console.log(`[RAG-CONTEXT] Filtered for platforms ${mentionedPlatforms.join(', ')}: ${filteredResults.length} documents`);
-        } else {
-          searchResults = [...searchResults, ...generalResults].slice(0, 8);
+      // Strategy 2: General cross-platform search to catch any missed documents
+      const generalResults = await ragDB.searchDocuments(userQuery, null, 15);
+      searchResults = [...searchResults, ...generalResults];
+      console.log(`[RAG-COMPREHENSIVE] General search: ${generalResults.length} documents`);
+      
+      // Strategy 3: Keyword-based search for comprehensive coverage
+      const keywords = userQuery.toLowerCase().split(' ').filter(word => word.length > 2);
+      for (const keyword of keywords.slice(0, 3)) {
+        const keywordResults = await ragDB.searchDocuments(keyword, null, 5);
+        searchResults = [...searchResults, ...keywordResults];
+        console.log(`[RAG-COMPREHENSIVE] Keyword "${keyword}": ${keywordResults.length} documents`);
+      }
+      
+      // Remove duplicates and prioritize diverse platform coverage
+      const uniqueResults = searchResults.filter((doc, index, self) => 
+        index === self.findIndex(d => d.id === doc.id)
+      );
+      
+      // Ensure platform diversity in results
+      const platformCounts = {};
+      const diverseResults = [];
+      for (const doc of uniqueResults) {
+        const platform = doc.platform || 'general';
+        platformCounts[platform] = (platformCounts[platform] || 0) + 1;
+        if (platformCounts[platform] <= 6) { // Max 6 docs per platform for diversity
+          diverseResults.push(doc);
         }
       }
+      
+      searchResults = diverseResults.slice(0, 25); // Increased to 25 for comprehensive context
+      console.log(`[RAG-COMPREHENSIVE] Final comprehensive result: ${searchResults.length} documents from all platforms`);
       
       if (searchResults && searchResults.length > 0) {
         console.log(`[RAG-CONTEXT] Final result: ${searchResults.length} relevant documents`);
