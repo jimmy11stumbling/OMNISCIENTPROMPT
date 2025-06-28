@@ -6,7 +6,7 @@
 class WorkingDeepSeekService {
   constructor() {
     this.apiKey = process.env.DEEPSEEK_API_KEY || null;
-    this.baseUrl = 'https://api.deepseek.com/v1';
+    this.baseUrl = 'https://api.deepseek.com';
     this.models = {
       chat: 'deepseek-chat',
       reasoner: 'deepseek-reasoner'
@@ -49,7 +49,7 @@ class WorkingDeepSeekService {
           messages: messages,
           stream: true,
           temperature: 0.7,
-          max_tokens: 20000
+          max_tokens: 4000
         }),
         signal: controller.signal
       });
@@ -57,7 +57,14 @@ class WorkingDeepSeekService {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
+        const errorText = await response.text();
+        console.error('[WORKING-DEEPSEEK] API Error Details:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText,
+          headers: Object.fromEntries(response.headers.entries())
+        });
+        throw new Error(`API Error: ${response.status} - ${errorText}`);
       }
 
       const reader = response.body.getReader();
