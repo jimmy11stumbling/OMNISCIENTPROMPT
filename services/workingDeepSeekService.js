@@ -31,10 +31,13 @@ class WorkingDeepSeekService {
       console.log('[WORKING-DEEPSEEK] Starting streaming response...');
       
       if (!this.apiKey) {
-        console.log('[WORKING-DEEPSEEK] No API key, using demo mode');
-        return this.generateDemoStreamingResponse(messages, onToken, onComplete, onError);
+        console.log('[WORKING-DEEPSEEK] No API key configured');
+        throw new Error('DeepSeek API key not configured');
       }
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+      
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
@@ -46,9 +49,12 @@ class WorkingDeepSeekService {
           messages: messages,
           stream: true,
           temperature: 0.7,
-          max_tokens: 8000
-        })
+          max_tokens: 20000
+        }),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`API Error: ${response.status}`);
@@ -94,9 +100,8 @@ class WorkingDeepSeekService {
       onComplete(fullContent);
       
     } catch (error) {
-      console.error('[WORKING-DEEPSEEK] Streaming error:', error);
-      // Fallback to demo mode on error
-      this.generateDemoStreamingResponse(messages, onToken, onComplete, onError);
+      console.error('[WORKING-DEEPSEEK] API error:', error);
+      throw error; // Let the calling function handle the error properly
     }
   }
 
@@ -1179,6 +1184,1042 @@ This comprehensive application blueprint provides complete implementation detail
       activeConversations: this.conversationHistory.size,
       apiKeyConfigured: !!this.apiKey
     };
+  }
+
+  /**
+   * Enhanced generic app blueprint for comprehensive 15,000+ character output
+   */
+  generateGenericAppBlueprint(query) {
+    const appType = this.extractAppType(query);
+    const features = this.extractFeatures(query);
+    
+    return `# MASTER BLUEPRINT: ${appType} - Comprehensive Production Application
+*Complete implementation guide with 15,000+ character detailed specifications*
+
+## 1. PROJECT OVERVIEW & ARCHITECTURE
+
+**Application Purpose:** ${appType} designed for modern web standards with comprehensive functionality including user management, real-time features, advanced security, scalable architecture, and production-ready deployment strategies.
+
+**Core Technologies Stack:**
+- Frontend: React 18 with TypeScript, Next.js 14 for SSR/SSG, Tailwind CSS for styling
+- Backend: Node.js with Express.js, Fastify for high performance, Socket.io for real-time features
+- Database: PostgreSQL with Drizzle ORM, Redis for caching and sessions
+- Authentication: NextAuth.js with multiple providers, JWT tokens with refresh rotation
+- Real-time: WebSocket connections, Server-Sent Events for live updates
+- State Management: Zustand for global state, TanStack Query for server state
+- Testing: Jest, React Testing Library, Playwright for E2E
+- Deployment: Docker containers, Kubernetes orchestration, CI/CD with GitHub Actions
+- Monitoring: Sentry for error tracking, Analytics with privacy-first approach
+
+**Architecture Pattern:** Hexagonal architecture with clear separation between domain logic, infrastructure, and presentation layers. Microservices approach for scalability with API Gateway for routing, authentication service, notification service, file service, and core application service.
+
+**Key Features Implementation:**
+1. ${features[0] || 'Advanced User Management'} with comprehensive profiles and permissions
+2. ${features[1] || 'Real-time Collaboration'} with live updates and synchronization
+3. ${features[2] || 'File Management System'} with upload, processing, and storage
+4. ${features[3] || 'Analytics Dashboard'} with detailed insights and reporting
+5. ${features[4] || 'Notification System'} with email, push, and in-app notifications
+6. ${features[5] || 'Search Functionality'} with full-text search and filtering
+7. ${features[6] || 'API Integration'} with third-party services and webhooks
+8. ${features[7] || 'Mobile Responsiveness'} with PWA capabilities
+9. ${features[8] || 'Security Framework'} with comprehensive protection measures
+10. ${features[9] || 'Performance Optimization'} with caching and optimization strategies
+
+## 2. COMPLETE FILE STRUCTURE
+
+\`\`\`
+project-root/
+├── client/                     # Frontend application
+│   ├── src/
+│   │   ├── components/         # Reusable UI components
+│   │   │   ├── ui/            # Base UI components (Button, Input, Modal)
+│   │   │   ├── forms/         # Form components with validation
+│   │   │   ├── layout/        # Layout components (Header, Sidebar, Footer)
+│   │   │   └── features/      # Feature-specific components
+│   │   ├── pages/             # Page components and routing
+│   │   │   ├── auth/          # Authentication pages
+│   │   │   ├── dashboard/     # Dashboard and analytics
+│   │   │   ├── profile/       # User profile management
+│   │   │   └── admin/         # Administrative interfaces
+│   │   ├── hooks/             # Custom React hooks
+│   │   │   ├── useAuth.ts     # Authentication hook
+│   │   │   ├── useSocket.ts   # WebSocket hook
+│   │   │   └── useApi.ts      # API communication hook
+│   │   ├── services/          # API and external services
+│   │   │   ├── api.ts         # API client configuration
+│   │   │   ├── auth.ts        # Authentication service
+│   │   │   └── socket.ts      # WebSocket service
+│   │   ├── stores/            # State management
+│   │   │   ├── authStore.ts   # Authentication state
+│   │   │   ├── uiStore.ts     # UI state management
+│   │   │   └── appStore.ts    # Application-specific state
+│   │   ├── utils/             # Utility functions
+│   │   │   ├── validation.ts  # Form validation schemas
+│   │   │   ├── formatting.ts  # Data formatting utilities
+│   │   │   └── constants.ts   # Application constants
+│   │   └── types/             # TypeScript type definitions
+│   ├── public/                # Static assets
+│   ├── package.json           # Dependencies and scripts
+│   └── next.config.js         # Next.js configuration
+├── server/                     # Backend application
+│   ├── src/
+│   │   ├── controllers/       # Route handlers
+│   │   │   ├── authController.ts    # Authentication endpoints
+│   │   │   ├── userController.ts    # User management
+│   │   │   ├── fileController.ts    # File upload/download
+│   │   │   └── adminController.ts   # Administrative functions
+│   │   ├── middleware/        # Express middleware
+│   │   │   ├── auth.ts        # Authentication middleware
+│   │   │   ├── validation.ts  # Request validation
+│   │   │   ├── rateLimit.ts   # Rate limiting
+│   │   │   └── security.ts    # Security headers and CORS
+│   │   ├── models/            # Database models
+│   │   │   ├── User.ts        # User model with relations
+│   │   │   ├── Session.ts     # Session management
+│   │   │   └── File.ts        # File metadata model
+│   │   ├── services/          # Business logic
+│   │   │   ├── AuthService.ts # Authentication logic
+│   │   │   ├── UserService.ts # User operations
+│   │   │   ├── FileService.ts # File processing
+│   │   │   └── NotificationService.ts # Notification handling
+│   │   ├── routes/            # API routes
+│   │   │   ├── auth.ts        # Authentication routes
+│   │   │   ├── users.ts       # User management routes
+│   │   │   ├── files.ts       # File handling routes
+│   │   │   └── admin.ts       # Administrative routes
+│   │   ├── config/            # Configuration files
+│   │   │   ├── database.ts    # Database configuration
+│   │   │   ├── redis.ts       # Redis configuration
+│   │   │   └── environment.ts # Environment variables
+│   │   └── utils/             # Server utilities
+│   ├── package.json           # Server dependencies
+│   └── Dockerfile             # Container configuration
+├── shared/                     # Shared code between client/server
+│   ├── types/                 # Shared TypeScript types
+│   ├── validation/            # Shared validation schemas
+│   └── constants/             # Shared constants
+├── database/                   # Database related files
+│   ├── migrations/            # Database migrations
+│   ├── seeds/                 # Database seed data
+│   └── schema.sql             # Database schema
+├── docker-compose.yml          # Development environment
+├── kubernetes/                 # Kubernetes deployment files
+│   ├── deployment.yaml        # Application deployment
+│   ├── service.yaml          # Service configuration
+│   └── ingress.yaml          # Ingress configuration
+└── docs/                      # Documentation
+    ├── api.md                 # API documentation
+    ├── deployment.md          # Deployment guide
+    └── development.md         # Development setup
+\`\`\`
+
+## 3. DATABASE DESIGN & SCHEMA
+
+### Complete Database Schema with Drizzle ORM
+
+\`\`\`typescript
+// shared/schema.ts - Comprehensive database schema
+import { pgTable, serial, varchar, text, boolean, timestamp, integer, json } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
+
+export const users = pgTable('users', {
+  id: serial('id').primaryKey(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  passwordHash: varchar('password_hash', { length: 255 }).notNull(),
+  firstName: varchar('first_name', { length: 100 }).notNull(),
+  lastName: varchar('last_name', { length: 100 }).notNull(),
+  avatar: varchar('avatar', { length: 500 }),
+  role: varchar('role', { length: 50 }).default('user'),
+  isEmailVerified: boolean('is_email_verified').default(false),
+  twoFactorEnabled: boolean('two_factor_enabled').default(false),
+  twoFactorSecret: varchar('two_factor_secret', { length: 255 }),
+  lastActiveAt: timestamp('last_active_at').defaultNow(),
+  preferences: json('preferences'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow()
+});
+
+export const sessions = pgTable('sessions', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id),
+  token: varchar('token', { length: 255 }).notNull().unique(),
+  refreshToken: varchar('refresh_token', { length: 255 }).notNull().unique(),
+  expiresAt: timestamp('expires_at').notNull(),
+  ipAddress: varchar('ip_address', { length: 45 }),
+  userAgent: text('user_agent'),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow()
+});
+
+export const files = pgTable('files', {
+  id: serial('id').primaryKey(),
+  originalName: varchar('original_name', { length: 255 }).notNull(),
+  filename: varchar('filename', { length: 255 }).notNull(),
+  mimeType: varchar('mime_type', { length: 100 }).notNull(),
+  size: integer('size').notNull(),
+  path: varchar('path', { length: 500 }).notNull(),
+  uploadedBy: integer('uploaded_by').references(() => users.id),
+  isPublic: boolean('is_public').default(false),
+  metadata: json('metadata'),
+  createdAt: timestamp('created_at').defaultNow()
+});
+
+export const notifications = pgTable('notifications', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id),
+  title: varchar('title', { length: 255 }).notNull(),
+  message: text('message').notNull(),
+  type: varchar('type', { length: 50 }).notNull(),
+  isRead: boolean('is_read').default(false),
+  actionUrl: varchar('action_url', { length: 500 }),
+  metadata: json('metadata'),
+  createdAt: timestamp('created_at').defaultNow()
+});
+
+// Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  sessions: many(sessions),
+  files: many(files),
+  notifications: many(notifications)
+}));
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, { fields: [sessions.userId], references: [users.id] })
+}));
+\`\`\`
+
+### Database Configuration and Optimization
+
+\`\`\`typescript
+// server/config/database.ts
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import * as schema from '@shared/schema';
+
+const connectionString = process.env.DATABASE_URL!;
+
+// Connection pool configuration
+const client = postgres(connectionString, {
+  max: 20,
+  idle_timeout: 20,
+  connect_timeout: 10,
+  prepare: false
+});
+
+export const db = drizzle(client, { schema });
+
+// Performance optimization indexes
+const indexes = [
+  'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_email ON users(email)',
+  'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_sessions_token ON sessions(token)',
+  'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_sessions_user_id ON sessions(user_id)',
+  'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_files_uploaded_by ON files(uploaded_by)',
+  'CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_notifications_user_id_read ON notifications(user_id, is_read)'
+];
+\`\`\`
+
+## 4. FRONTEND IMPLEMENTATION
+
+### React Components Architecture
+
+\`\`\`typescript
+// client/src/components/forms/LoginForm.tsx
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+
+const loginSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  rememberMe: z.boolean().optional()
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
+
+export const LoginForm = () => {
+  const { login, isLoading } = useAuth();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors }
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema)
+  });
+
+  const onSubmit = async (data: LoginFormData) => {
+    try {
+      await login(data);
+    } catch (error) {
+      console.error('Login failed:', error);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div>
+        <Input
+          {...register('email')}
+          type="email"
+          placeholder="Email address"
+          error={errors.email?.message}
+        />
+      </div>
+      <div>
+        <Input
+          {...register('password')}
+          type="password"
+          placeholder="Password"
+          error={errors.password?.message}
+        />
+      </div>
+      <div className="flex items-center">
+        <input
+          {...register('rememberMe')}
+          type="checkbox"
+          className="mr-2"
+        />
+        <label>Remember me</label>
+      </div>
+      <Button
+        type="submit"
+        disabled={isLoading}
+        className="w-full"
+      >
+        {isLoading ? 'Signing in...' : 'Sign In'}
+      </Button>
+    </form>
+  );
+};
+\`\`\`
+
+### State Management with Zustand
+
+\`\`\`typescript
+// client/src/stores/authStore.ts
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { AuthService } from '@/services/auth';
+
+interface User {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  avatar?: string;
+}
+
+interface AuthStore {
+  user: User | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (credentials: LoginCredentials) => Promise<void>;
+  logout: () => void;
+  refreshToken: () => Promise<void>;
+  updateProfile: (data: Partial<User>) => Promise<void>;
+}
+
+export const useAuthStore = create<AuthStore>()(
+  persist(
+    (set, get) => ({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isLoading: false,
+
+      login: async (credentials) => {
+        set({ isLoading: true });
+        try {
+          const response = await AuthService.login(credentials);
+          set({
+            user: response.user,
+            token: response.token,
+            isAuthenticated: true,
+            isLoading: false
+          });
+        } catch (error) {
+          set({ isLoading: false });
+          throw error;
+        }
+      },
+
+      logout: () => {
+        AuthService.logout();
+        set({
+          user: null,
+          token: null,
+          isAuthenticated: false
+        });
+      },
+
+      refreshToken: async () => {
+        try {
+          const response = await AuthService.refreshToken();
+          set({ token: response.token });
+        } catch (error) {
+          get().logout();
+          throw error;
+        }
+      },
+
+      updateProfile: async (data) => {
+        const response = await AuthService.updateProfile(data);
+        set({ user: { ...get().user!, ...response } });
+      }
+    }),
+    {
+      name: 'auth-storage',
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+        isAuthenticated: state.isAuthenticated
+      })
+    }
+  )
+);
+\`\`\`
+
+## 5. BACKEND API DEVELOPMENT
+
+### Express.js Server Setup
+
+\`\`\`typescript
+// server/src/app.ts
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
+import { createServer } from 'http';
+import { Server as SocketIO } from 'socket.io';
+import { authMiddleware } from './middleware/auth';
+import { errorHandler } from './middleware/errorHandler';
+import { rateLimiter } from './middleware/rateLimit';
+import authRoutes from './routes/auth';
+import userRoutes from './routes/users';
+import fileRoutes from './routes/files';
+
+const app = express();
+const server = createServer(app);
+const io = new SocketIO(server, {
+  cors: {
+    origin: process.env.CLIENT_URL,
+    credentials: true
+  }
+});
+
+// Security middleware
+app.use(helmet());
+app.use(cors({
+  origin: process.env.CLIENT_URL,
+  credentials: true
+}));
+app.use(compression());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// Rate limiting
+app.use('/api', rateLimiter);
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
+// API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', authMiddleware, userRoutes);
+app.use('/api/files', authMiddleware, fileRoutes);
+
+// Error handling
+app.use(errorHandler);
+
+// Socket.io authentication
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth.token;
+    const user = await AuthService.verifyToken(token);
+    socket.userId = user.id;
+    next();
+  } catch (error) {
+    next(new Error('Authentication failed'));
+  }
+});
+
+// Real-time features
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.userId);
+  
+  socket.on('join-room', (roomId) => {
+    socket.join(roomId);
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.userId);
+  });
+});
+
+export { app, server, io };
+\`\`\`
+
+### Authentication Service
+
+\`\`\`typescript
+// server/src/services/AuthService.ts
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { db } from '@/config/database';
+import { users, sessions } from '@shared/schema';
+import { eq, and } from 'drizzle-orm';
+import crypto from 'crypto';
+
+export class AuthService {
+  static async register(userData: RegisterData) {
+    const existingUser = await db.select()
+      .from(users)
+      .where(eq(users.email, userData.email))
+      .limit(1);
+
+    if (existingUser.length > 0) {
+      throw new Error('User already exists');
+    }
+
+    const passwordHash = await bcrypt.hash(userData.password, 12);
+    
+    const [user] = await db.insert(users).values({
+      email: userData.email,
+      passwordHash,
+      firstName: userData.firstName,
+      lastName: userData.lastName
+    }).returning();
+
+    // Send verification email
+    await this.sendVerificationEmail(user.email);
+
+    return { message: 'Registration successful. Please check your email.' };
+  }
+
+  static async login(credentials: LoginCredentials) {
+    const [user] = await db.select()
+      .from(users)
+      .where(eq(users.email, credentials.email))
+      .limit(1);
+
+    if (!user || !await bcrypt.compare(credentials.password, user.passwordHash)) {
+      throw new Error('Invalid credentials');
+    }
+
+    if (!user.isEmailVerified) {
+      throw new Error('Please verify your email address');
+    }
+
+    const token = this.generateAccessToken(user.id);
+    const refreshToken = this.generateRefreshToken();
+
+    await db.insert(sessions).values({
+      userId: user.id,
+      token: this.hashToken(token),
+      refreshToken: this.hashToken(refreshToken),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+    });
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role
+      },
+      token,
+      refreshToken
+    };
+  }
+
+  static generateAccessToken(userId: number): string {
+    return jwt.sign(
+      { userId, type: 'access' },
+      process.env.JWT_SECRET!,
+      { expiresIn: '15m' }
+    );
+  }
+
+  static generateRefreshToken(): string {
+    return crypto.randomBytes(32).toString('hex');
+  }
+
+  static hashToken(token: string): string {
+    return crypto.createHash('sha256').update(token).digest('hex');
+  }
+}
+\`\`\`
+
+## 6. AUTHENTICATION & SECURITY
+
+### JWT Authentication Middleware
+
+\`\`\`typescript
+// server/src/middleware/auth.ts
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { db } from '@/config/database';
+import { users, sessions } from '@shared/schema';
+import { eq, and, gt } from 'drizzle-orm';
+
+interface AuthRequest extends Request {
+  user?: {
+    id: number;
+    email: string;
+    role: string;
+  };
+}
+
+export const authMiddleware = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+
+    if (decoded.type !== 'access') {
+      return res.status(401).json({ error: 'Invalid token type' });
+    }
+
+    const [user] = await db.select({
+      id: users.id,
+      email: users.email,
+      role: users.role
+    })
+    .from(users)
+    .where(eq(users.id, decoded.userId))
+    .limit(1);
+
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+};
+
+export const requireRole = (roles: string[]) => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
+    next();
+  };
+};
+\`\`\`
+
+### Security Configuration
+
+\`\`\`typescript
+// server/src/middleware/security.ts
+import rateLimit from 'express-rate-limit';
+import { Request } from 'express';
+
+export const rateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP',
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => {
+    return req.user?.id ? \`user:\${req.user.id}\` : req.ip;
+  }
+});
+
+export const strictRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5, // Strict limit for sensitive endpoints
+  message: 'Too many attempts, please try again later'
+});
+
+// Input sanitization
+export const sanitizeInput = (req: Request, res: Response, next: NextFunction) => {
+  const sanitize = (obj: any): any => {
+    if (typeof obj === 'string') {
+      return obj.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    }
+    if (Array.isArray(obj)) {
+      return obj.map(sanitize);
+    }
+    if (obj && typeof obj === 'object') {
+      const sanitized: any = {};
+      for (const key in obj) {
+        sanitized[key] = sanitize(obj[key]);
+      }
+      return sanitized;
+    }
+    return obj;
+  };
+
+  req.body = sanitize(req.body);
+  req.query = sanitize(req.query);
+  next();
+};
+\`\`\`
+
+## 7. DEPLOYMENT & INFRASTRUCTURE
+
+### Docker Configuration
+
+\`\`\`dockerfile
+# Dockerfile
+FROM node:18-alpine AS base
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
+
+FROM node:18-alpine AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM base AS production
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/public ./public
+EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
+USER node
+CMD ["npm", "start"]
+\`\`\`
+
+### Kubernetes Deployment
+
+\`\`\`yaml
+# kubernetes/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: main-app
+  template:
+    metadata:
+      labels:
+        app: main-app
+    spec:
+      containers:
+      - name: app
+        image: your-registry/app:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: database-url
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: jwt-secret
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+\`\`\`
+
+### CI/CD Pipeline
+
+\`\`\`yaml
+# .github/workflows/deploy.yml
+name: Deploy Application
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test
+      - run: npm run lint
+      - run: npm run type-check
+
+  build-and-deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build Docker image
+        run: docker build -t \${{ secrets.REGISTRY }}/app:\${{ github.sha }} .
+      - name: Push to registry
+        run: |
+          echo \${{ secrets.REGISTRY_PASSWORD }} | docker login -u \${{ secrets.REGISTRY_USERNAME }} --password-stdin
+          docker push \${{ secrets.REGISTRY }}/app:\${{ github.sha }}
+      - name: Deploy to Kubernetes
+        run: kubectl set image deployment/app-deployment app=\${{ secrets.REGISTRY }}/app:\${{ github.sha }}
+\`\`\`
+
+## 8. TESTING & QUALITY ASSURANCE
+
+### Testing Strategy
+
+\`\`\`typescript
+// client/src/__tests__/LoginForm.test.tsx
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { LoginForm } from '@/components/forms/LoginForm';
+import { AuthProvider } from '@/contexts/AuthContext';
+
+const MockAuthProvider = ({ children }: { children: React.ReactNode }) => (
+  <AuthProvider value={{ login: jest.fn(), isLoading: false }}>
+    {children}
+  </AuthProvider>
+);
+
+describe('LoginForm', () => {
+  it('renders login form fields', () => {
+    render(
+      <MockAuthProvider>
+        <LoginForm />
+      </MockAuthProvider>
+    );
+
+    expect(screen.getByPlaceholderText('Email address')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
+    expect(screen.getByText('Sign In')).toBeInTheDocument();
+  });
+
+  it('validates email format', async () => {
+    render(
+      <MockAuthProvider>
+        <LoginForm />
+      </MockAuthProvider>
+    );
+
+    const emailInput = screen.getByPlaceholderText('Email address');
+    const submitButton = screen.getByText('Sign In');
+
+    fireEvent.change(emailInput, { target: { value: 'invalid-email' } });
+    fireEvent.click(submitButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Invalid email address')).toBeInTheDocument();
+    });
+  });
+});
+\`\`\`
+
+### API Testing
+
+\`\`\`typescript
+// server/src/__tests__/auth.test.ts
+import request from 'supertest';
+import { app } from '../app';
+import { db } from '../config/database';
+import { users } from '@shared/schema';
+
+describe('Authentication API', () => {
+  beforeEach(async () => {
+    await db.delete(users);
+  });
+
+  describe('POST /api/auth/register', () => {
+    it('creates new user successfully', async () => {
+      const userData = {
+        email: 'test@example.com',
+        password: 'password123',
+        firstName: 'John',
+        lastName: 'Doe'
+      };
+
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send(userData)
+        .expect(201);
+
+      expect(response.body.message).toBe('Registration successful. Please check your email.');
+    });
+
+    it('prevents duplicate registration', async () => {
+      const userData = {
+        email: 'test@example.com',
+        password: 'password123',
+        firstName: 'John',
+        lastName: 'Doe'
+      };
+
+      await request(app).post('/api/auth/register').send(userData);
+
+      const response = await request(app)
+        .post('/api/auth/register')
+        .send(userData)
+        .expect(400);
+
+      expect(response.body.error).toBe('User already exists');
+    });
+  });
+});
+\`\`\`
+
+### Performance Testing
+
+\`\`\`typescript
+// tests/performance/load-test.ts
+import { check } from 'k6';
+import http from 'k6/http';
+
+export let options = {
+  stages: [
+    { duration: '5m', target: 100 }, // Ramp up
+    { duration: '10m', target: 100 }, // Stay at 100 users
+    { duration: '5m', target: 0 }, // Ramp down
+  ],
+  thresholds: {
+    http_req_duration: ['p(99)<1500'], // 99% of requests must complete below 1.5s
+    http_req_failed: ['rate<0.1'], // Error rate must be below 10%
+  },
+};
+
+export default function () {
+  const response = http.get('http://localhost:3000/api/health');
+  
+  check(response, {
+    'status is 200': (r) => r.status === 200,
+    'response time < 500ms': (r) => r.timings.duration < 500,
+  });
+}
+\`\`\`
+
+## PRODUCTION DEPLOYMENT CHECKLIST
+
+### Pre-Deployment Verification
+- [ ] All tests passing (unit, integration, e2e)
+- [ ] Security audit completed
+- [ ] Performance benchmarks met
+- [ ] Database migrations tested
+- [ ] Environment variables configured
+- [ ] SSL certificates configured
+- [ ] Monitoring and alerting set up
+- [ ] Backup procedures verified
+- [ ] Load balancer configuration tested
+- [ ] CDN configuration optimized
+
+### Post-Deployment Monitoring
+- [ ] Application health checks passing
+- [ ] Database performance metrics normal
+- [ ] Error rates within acceptable limits
+- [ ] Response times meeting SLA requirements
+- [ ] User authentication functioning correctly
+- [ ] File upload/download working properly
+- [ ] Real-time features operational
+- [ ] Email notifications being sent
+- [ ] Analytics data being collected
+- [ ] Security logs being generated
+
+This comprehensive master blueprint provides complete implementation guidance for building a production-ready ${appType} with modern web technologies, security best practices, and scalable architecture patterns.`;
+  }
+
+  /**
+   * Extract application type from query
+   */
+  extractAppType(query) {
+    const lowercaseQuery = query.toLowerCase();
+    
+    if (lowercaseQuery.includes('fitness') || lowercaseQuery.includes('health')) {
+      return 'Fitness & Health Application';
+    }
+    if (lowercaseQuery.includes('social') || lowercaseQuery.includes('community')) {
+      return 'Social Community Platform';
+    }
+    if (lowercaseQuery.includes('ecommerce') || lowercaseQuery.includes('shop') || lowercaseQuery.includes('store')) {
+      return 'E-commerce Platform';
+    }
+    if (lowercaseQuery.includes('education') || lowercaseQuery.includes('learning')) {
+      return 'Educational Platform';
+    }
+    if (lowercaseQuery.includes('project') || lowercaseQuery.includes('task') || lowercaseQuery.includes('manage')) {
+      return 'Project Management System';
+    }
+    
+    return 'Full-Stack Web Application';
+  }
+
+  /**
+   * Extract features from query
+   */
+  extractFeatures(query) {
+    const features = [];
+    const lowercaseQuery = query.toLowerCase();
+    
+    if (lowercaseQuery.includes('social')) features.push('Social Features & Community');
+    if (lowercaseQuery.includes('chat') || lowercaseQuery.includes('message')) features.push('Real-time Messaging System');
+    if (lowercaseQuery.includes('payment') || lowercaseQuery.includes('subscription')) features.push('Payment Processing & Subscriptions');
+    if (lowercaseQuery.includes('upload') || lowercaseQuery.includes('file')) features.push('File Upload & Management');
+    if (lowercaseQuery.includes('notification')) features.push('Push Notification System');
+    if (lowercaseQuery.includes('analytics') || lowercaseQuery.includes('dashboard')) features.push('Analytics & Reporting Dashboard');
+    if (lowercaseQuery.includes('search')) features.push('Advanced Search & Filtering');
+    if (lowercaseQuery.includes('mobile') || lowercaseQuery.includes('responsive')) features.push('Mobile-First Responsive Design');
+    if (lowercaseQuery.includes('api') || lowercaseQuery.includes('integration')) features.push('Third-party API Integrations');
+    if (lowercaseQuery.includes('real-time') || lowercaseQuery.includes('live')) features.push('Real-time Data Synchronization');
+    
+    // Fill remaining slots with default features
+    while (features.length < 10) {
+      const defaultFeatures = [
+        'User Authentication & Authorization',
+        'Data Visualization & Charts',
+        'Email Marketing Integration',
+        'Content Management System',
+        'Multi-language Support',
+        'SEO Optimization',
+        'Performance Monitoring',
+        'Automated Backup System',
+        'Role-based Access Control',
+        'Progressive Web App (PWA)'
+      ];
+      
+      for (const feature of defaultFeatures) {
+        if (!features.includes(feature) && features.length < 10) {
+          features.push(feature);
+        }
+      }
+    }
+    
+    return features;
   }
 
   /**
