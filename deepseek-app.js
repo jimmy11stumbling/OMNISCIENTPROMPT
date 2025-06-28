@@ -511,38 +511,68 @@ app.post('/api/chat/stream', async (req, res) => {
       global.deepSeekService = new WorkingDeepSeekService();
     }
 
+    // Set up timeout to prevent hanging connections - extended for comprehensive blueprints
+    const streamTimeout = setTimeout(() => {
+      console.log('[STREAMING] Timeout reached, ending stream');
+      try {
+        res.write('data: [DONE]\n\n');
+        res.end();
+      } catch (e) {
+        // Connection already closed
+      }
+    }, 60000); // 60 second timeout for master blueprints
+
     // Use real DeepSeek API streaming
     try {
       await global.deepSeekService.streamChatResponse(
         chatMessages,
         // onToken callback
         (token) => {
-          res.write(`data: ${JSON.stringify({
-            choices: [{
-              delta: {
-                content: token
-              }
-            }]
-          })}\n\n`);
+          try {
+            res.write(`data: ${JSON.stringify({
+              choices: [{
+                delta: {
+                  content: token
+                }
+              }]
+            })}\n\n`);
+          } catch (writeError) {
+            console.warn('[STREAMING] Write error:', writeError);
+          }
         },
         // onComplete callback
         (fullContent) => {
+          clearTimeout(streamTimeout);
           console.log(`[STREAMING] Complete response: ${fullContent.length} characters`);
-          res.write('data: [DONE]\n\n');
-          res.end();
+          try {
+            res.write('data: [DONE]\n\n');
+            res.end();
+          } catch (endError) {
+            console.warn('[STREAMING] End error:', endError);
+          }
         },
         // onError callback
         (error) => {
+          clearTimeout(streamTimeout);
           console.error('[STREAMING] Error:', error);
-          res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
-          res.end();
+          try {
+            res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+            res.end();
+          } catch (errorWriteError) {
+            console.warn('[STREAMING] Error write failed:', errorWriteError);
+          }
         }
       );
     } catch (error) {
+      clearTimeout(streamTimeout);
       console.error('[STREAMING] DeepSeek streaming failed:', error);
       // Fallback to error response
-      res.write(`data: ${JSON.stringify({ error: 'Streaming failed: ' + error.message })}\n\n`);
-      res.end();
+      try {
+        res.write(`data: ${JSON.stringify({ error: 'Streaming failed: ' + error.message })}\n\n`);
+        res.end();
+      } catch (fallbackError) {
+        console.warn('[STREAMING] Fallback write failed:', fallbackError);
+      }
     }
 
   } catch (error) {

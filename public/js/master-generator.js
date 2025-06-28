@@ -24,8 +24,32 @@ class MasterPromptGenerator {
     }
 
     init() {
+        this.setupGlobalErrorHandlers();
         this.setupEventListeners();
         this.initializeRealTimeConnection();
+    }
+
+    setupGlobalErrorHandlers() {
+        // Catch unhandled promise rejections
+        window.addEventListener('unhandledrejection', (event) => {
+            console.warn('Unhandled promise rejection caught:', event.reason);
+            event.preventDefault();
+            
+            // Handle streaming-related errors gracefully
+            if (event.reason && event.reason.message && 
+                (event.reason.message.includes('timeout') || 
+                 event.reason.message.includes('stream') ||
+                 event.reason.message.includes('aborted'))) {
+                console.log('Streaming error handled gracefully');
+                return;
+            }
+        });
+
+        // Catch general errors
+        window.addEventListener('error', (event) => {
+            console.warn('Global error caught:', event.error);
+            event.preventDefault();
+        });
     }
 
     async fetchRAGSources(query, platform) {
@@ -250,15 +274,12 @@ RULES:
 
             while (true) {
                 try {
-                    // Add timeout for each read operation
-                    const readPromise = reader.read();
-                    const timeoutPromise = new Promise((_, reject) => {
-                        setTimeout(() => reject(new Error('Read timeout')), activityTimeout);
-                    });
-
-                    const { done, value } = await Promise.race([readPromise, timeoutPromise]);
+                    const { done, value } = await reader.read();
                     
-                    if (done) break;
+                    if (done) {
+                        console.log('Stream completed naturally');
+                        break;
+                    }
 
                     lastActivity = Date.now();
                     buffer += decoder.decode(value, { stream: true });
@@ -269,6 +290,7 @@ RULES:
                         if (part.startsWith('data:')) {
                             const jsonStr = part.slice(5).trim();
                             if (jsonStr === '[DONE]') {
+                                console.log('Received [DONE] signal');
                                 this.completeStreaming(fullContent);
                                 return;
                             }
@@ -281,18 +303,14 @@ RULES:
                                     this.onTokenReceived(token);
                                 }
                             } catch (e) {
-                                console.warn('JSON parse error:', e);
+                                // Skip malformed JSON without logging
                             }
                         }
                     }
                     buffer = parts[parts.length - 1];
                 } catch (readError) {
-                    console.warn('Stream read error:', readError);
-                    if (readError.message.includes('timeout')) {
-                        // Break on timeout but complete with what we have
-                        break;
-                    }
-                    throw readError;
+                    console.error('Stream read error:', readError);
+                    break;
                 }
             }
         } catch (streamingError) {
@@ -300,8 +318,16 @@ RULES:
             // Complete with whatever content we have
             if (fullContent.length > 0) {
                 this.completeStreaming(fullContent);
+                return;
             } else {
                 throw streamingError;
+            }
+        } finally {
+            // Ensure reader is properly closed
+            try {
+                reader.releaseLock();
+            } catch (e) {
+                // Already closed
             }
         }
 
@@ -408,7 +434,11 @@ RULES:
                 
                 if (delay > 0) {
                     setTimeout(() => {
-                        this.processToken(token, promptResult, streamingCursor);
+                        try {
+                            this.processToken(token, promptResult, streamingCursor);
+                        } catch (processError) {
+                            console.warn('Delayed token processing error:', processError);
+                        }
                     }, delay);
                 } else {
                     this.processToken(token, promptResult, streamingCursor);
@@ -416,7 +446,11 @@ RULES:
             } catch (error) {
                 console.warn('Token processing error:', error);
                 // Fallback to direct processing
-                this.processToken(token, promptResult, streamingCursor);
+                try {
+                    this.processToken(token, promptResult, streamingCursor);
+                } catch (fallbackError) {
+                    console.warn('Fallback token processing failed:', fallbackError);
+                }
             }
         }
     }
@@ -571,21 +605,28 @@ RULES:
     }
 
     completeStreaming(fullContent) {
-        // Clean up streaming UI
-        this.cleanupStreamingUI();
-        
-        // Create response data for compatibility
-        this.currentPromptData = {
-            prompt: fullContent,
-            success: true,
-            metadata: {
-                usage: { total_tokens: this.tokenCounter || Math.floor(fullContent.length / 4) },
-                responseTime: Date.now() - this.streamStartTime
-            }
-        };
-        
-        this.displayMetadata(this.currentPromptData);
-        this.showSuccess('Master blueprint generated successfully');
+        try {
+            // Clean up streaming UI
+            this.cleanupStreamingUI();
+            
+            // Create response data for compatibility
+            this.currentPromptData = {
+                prompt: fullContent,
+                success: true,
+                metadata: {
+                    usage: { total_tokens: this.tokenCounter || Math.floor(fullContent.length / 4) },
+                    responseTime: Date.now() - this.streamStartTime
+                }
+            };
+            
+            this.displayMetadata(this.currentPromptData);
+            this.showSuccess('Master blueprint generated successfully');
+            this.updateUI('idle');
+        } catch (error) {
+            console.error('Error completing streaming:', error);
+            this.showError('Blueprint generated but display error occurred');
+            this.updateUI('idle');
+        }
     }
 
     pauseStreaming() {

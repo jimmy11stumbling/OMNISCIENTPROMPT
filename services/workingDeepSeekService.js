@@ -110,25 +110,53 @@ class WorkingDeepSeekService {
       
       console.log('[WORKING-DEEPSEEK] Generating demo streaming response');
       
-      // Stream the response token by token
+      // Stream the response token by token with smaller chunks for faster delivery
       const tokens = response.split(' ');
       let fullContent = '';
       
-      for (let i = 0; i < tokens.length; i++) {
-        const token = i === 0 ? tokens[i] : ' ' + tokens[i];
-        fullContent += token;
-        onToken(token);
+      // Use optimized streaming for large content
+      const streamTokens = async () => {
+        // For comprehensive blueprints, use larger chunks for much faster delivery
+        const chunkSize = 20; // Send 20 tokens at once for fast streaming
         
-        // Add realistic delay between tokens
-        await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 100));
-      }
+        for (let i = 0; i < tokens.length; i += chunkSize) {
+          const chunk = tokens.slice(i, i + chunkSize);
+          const chunkText = chunk.map((token, idx) => 
+            (i === 0 && idx === 0) ? token : ' ' + token
+          ).join('');
+          
+          fullContent += chunkText;
+          
+          try {
+            onToken(chunkText);
+          } catch (tokenError) {
+            console.warn('Token delivery error:', tokenError);
+          }
+          
+          // Minimal delay only every 100 chunks for speed
+          if (i % 100 === 0) {
+            await new Promise(resolve => setImmediate(resolve));
+          }
+        }
+        
+        console.log('[WORKING-DEEPSEEK] Demo streaming completed');
+        try {
+          onComplete(fullContent);
+        } catch (completeError) {
+          console.warn('Completion callback error:', completeError);
+        }
+      };
       
-      console.log('[WORKING-DEEPSEEK] Demo streaming completed');
-      onComplete(fullContent);
+      // Start streaming asynchronously
+      await streamTokens();
       
     } catch (error) {
       console.error('[WORKING-DEEPSEEK] Demo streaming error:', error);
-      onError(error);
+      try {
+        onError(error);
+      } catch (errorCallbackError) {
+        console.warn('Error callback failed:', errorCallbackError);
+      }
     }
   }
 
