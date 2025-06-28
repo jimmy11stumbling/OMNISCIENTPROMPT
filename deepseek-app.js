@@ -599,12 +599,14 @@ Use the following platform-specific documentation context to create an authentic
 ${ragContext}
 
 Requirements:
-- Generate exactly 15,000+ characters minimum (STRICTLY ENFORCED)
-- Include all 8 comprehensive sections with extensive detail
+- Generate EXPLICITLY DETAILED full-stack application blueprint using FULL 8192 token capacity
+- Create comprehensive production-ready implementation with seamless database integration
+- Include complete database schemas, migrations, and ORM configurations
+- Provide detailed API endpoints, authentication flows, and real-time features
 - Use only authentic platform-specific features from the documentation above
-- Provide complete code examples and production-ready implementation
 - Focus on the detected platform: ${primaryPlatform}
-- Continue writing until blueprint exceeds 15,000 characters minimum
+- Ensure seamless integration between frontend, backend, and database layers
+- Continue writing until complete blueprint uses full 8192 token capacity (15,000+ characters minimum)
 
 Begin generating the complete master blueprint now:`;
           

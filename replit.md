@@ -116,6 +116,15 @@ This is a comprehensive AI-powered prompt generation platform that leverages Dee
 
 ```
 Changelog:
+- June 28, 2025 - Updated system prompts for 8192 token utilization with explicit database integration
+  - ✅ Modified all platform-specific prompts to emphasize full 8192 token capacity usage
+  - ✅ Enhanced system prompts with explicit database integration requirements
+  - ✅ Added comprehensive Drizzle ORM and database schema specifications
+  - ✅ Included seamless database integration patterns for all platforms
+  - ✅ Fixed DeepSeek API max_tokens error by maintaining 8192 token limit
+  - ✅ Updated blueprint structure to focus on database-driven full-stack applications
+  - ✅ Character counter now shows accurate real-time counts during streaming
+  - ✅ Statistics persist after blueprint completion for user visibility
 - June 28, 2025 - FINAL: Comprehensive platform knowledge system fully operational
   - ✅ Fixed all database schema issues preventing seamless RAG integration
   - ✅ Implemented working comprehensive multi-platform knowledge retrieval system
