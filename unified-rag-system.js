@@ -185,6 +185,12 @@ class UnifiedRAGSystem {
     this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
     this.lastSyncTime = 0;
 
+    // Try to connect to database using global connection if available
+    if (!this.pool && global.database) {
+      this.pool = global.database;
+      console.log('[UNIFIED-RAG] Using global database connection for protocol documents');
+    }
+
     // Initialize if database is available
     if (this.pool) {
       this.initializeDatabase();

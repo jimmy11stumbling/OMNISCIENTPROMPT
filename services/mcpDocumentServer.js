@@ -23,7 +23,9 @@ class MCPDocumentServer extends EventEmitter {
       prompts: true,
       logging: true
     };
-    this.ragSystem = new UnifiedRAGSystem();
+    // Use global database connection if available
+    const dbConnection = global.database || database;
+    this.ragSystem = new UnifiedRAGSystem(dbConnection);
     this.initializeServer();
   }
 

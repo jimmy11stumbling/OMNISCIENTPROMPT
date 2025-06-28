@@ -1755,8 +1755,9 @@ app.post('/api/mcp/analyze', async (req, res) => {
   }
 });
 
-// Initialize RAG system and validator
-const ragSystem = new UnifiedRAGSystem(pool);
+// Initialize RAG system and validator with global database access
+global.database = database; // Make database globally available for MCP server
+const ragSystem = new UnifiedRAGSystem(database);
 const realTimeValidator = new RealTimeValidator();
 
 // Start server
