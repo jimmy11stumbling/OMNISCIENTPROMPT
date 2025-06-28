@@ -1,0 +1,1045 @@
+# BOLT AI FITNESS APP MASTER BLUEPRINT WITH DEEPSEEK MCP & A2A INTEGRATION
+
+## 1. PROJECT SETUP & WEBCONTAINER CONFIGURATION
+
+### AI-Generated Project Structure
+```
+/fitness-app
+  /client (Vite + React/TypeScript)
+    /src
+      /components (AI-generated UI)
+      /pages
+      /hooks (Custom AI fitness hooks)
+      /lib (A2A integration)
+  /server (Node.js/Express)
+    /prisma (AI schema)
+    /routes (AI endpoint generation)
+    /services (DeepSeek MCP integration)
+  /shared (TypeScript interfaces)
+  bolt.config.json (WebContainer optimization)
+```
+
+### AI-Optimized package.json
+```json
+{
+  "name": "fitness-ai-app",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "client": "cd client && vite",
+    "server": "cd server && nodemon index.ts",
+    "generate:schema": "bolt ai generate:schema --prompt 'Fitness app with users, workouts, nutrition tracking'",
+    "deploy": "bolt deploy --preview --live"
+  },
+  "dependencies": {
+    "@bolt-ai/webcontainer": "^1.2.0",
+    "@prisma/client": "^5.0.0",
+    "express": "^4.18.2",
+    "react": "^18.2.0",
+    "react-query": "^3.39.3",
+    "socket.io": "^4.7.1",
+    "json-rpc-2.0": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.15",
+    "@types/express": "^4.17.17",
+    "typescript": "^5.1.6",
+    "prisma": "^5.0.0",
+    "vite": "^4.4.5"
+  }
+}
+```
+
+### WebContainer-Specific Configuration
+```typescript
+// bolt.config.json
+{
+  "webcontainer": {
+    "nodeVersion": "18",
+    "portMappings": {
+      "3000": "client",
+      "5000": "server"
+    },
+    "aiAssistance": {
+      "codeCompletion": true,
+      "schemaGeneration": true,
+      "endpointGeneration": true
+    },
+    "deepseek": {
+      "mcpEndpoint": "https://mcp.deepseek.ai/jsonrpc",
+      "a2aEnabled": true
+    }
+  }
+}
+```
+
+## 2. DATABASE DESIGN & ORM INTEGRATION
+
+### AI-Generated Prisma Schema
+```prisma
+// server/prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  password      String
+  name          String
+  age           Int
+  weight        Float
+  height        Float
+  fitnessLevel  FitnessLevel
+  goals         Goal[]
+  workouts      Workout[]
+  nutritionLogs NutritionLog[]
+  aiPreferences AIPreferences?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+enum FitnessLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  ATHLETE
+}
+
+model Goal {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  type        GoalType
+  targetValue Float
+  deadline    DateTime
+  completed   Boolean  @default(false)
+}
+
+enum GoalType {
+  WEIGHT_LOSS
+  MUSCLE_GAIN
+  ENDURANCE
+  FLEXIBILITY
+}
+
+model Workout {
+  id          String     @id @default(uuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  name        String
+  description String
+  duration    Int
+  intensity   Intensity
+  exercises   Exercise[]
+  aiFeedback  Json?
+  createdAt   DateTime   @default(now())
+}
+
+enum Intensity {
+  LOW
+  MEDIUM
+  HIGH
+  EXTREME
+}
+
+model Exercise {
+  id          String   @id @default(uuid())
+  workoutId   String
+  workout     Workout  @relation(fields: [workoutId], references: [id])
+  name        String
+  sets        Int
+  reps        Int
+  weight      Float?
+  duration    Int?
+  restPeriod  Int?
+}
+
+model NutritionLog {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  date        DateTime @default(now())
+  calories    Int
+  protein     Float
+  carbs       Float
+  fat         Float
+  water       Float
+  aiAnalysis  Json?
+}
+
+model AIPreferences {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  style       String   @default("professional")
+  frequency   Int      @default(3)
+  reminders   Boolean  @default(true)
+  deepseek    Boolean  @default(true)
+}
+```
+
+### Database Migration Script
+```bash
+# AI-generated migration command
+bolt ai run --prompt "Generate Prisma migration for fitness schema with full text search and relations" --output server/prisma/migrations
+
+# Manual alternative
+npx prisma migrate dev --name init
+npx prisma generate
+```
+
+## 3. BACKEND API WITH DEEPSEEK MCP INTEGRATION
+
+### Express Server Configuration
+```typescript
+// server/index.ts
+import express from 'express';
+import { PrismaClient } from '@prisma/client';
+import { JSONRPCServer } from 'json-rpc-2.0';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import { DeepSeekService } from './services/deepseek';
+
+const prisma = new PrismaClient();
+const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: { origin: '*' }
+});
+
+// MCP JSON-RPC Server Setup
+const mcpServer = new JSONRPCServer();
+const deepseek = new DeepSeekService();
+
+// Register MCP methods
+mcpServer.addMethod('fitness.getRecommendations', async (params) => {
+  return deepseek.getFitnessRecommendations(params);
+});
+
+mcpServer.addMethod('nutrition.analyze', async ({ userId, logId }) => {
+  return deepseek.analyzeNutrition(userId, logId);
+});
+
+app.use(express.json());
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'healthy', mcpConnected: deepseek.isConnected });
+});
+
+// Real-time WebSocket connection
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
+  
+  socket.on('get_realtime_feedback', async (data) => {
+    const feedback = await deepseek.getRealtimeFeedback(data);
+    socket.emit('realtime_feedback', feedback);
+  });
+});
+
+// Apply MCP middleware
+app.post('/mcp', (req, res) => {
+  const jsonRPCRequest = req.body;
+  mcpServer.receive(jsonRPCRequest).then((jsonRPCResponse) => {
+    if (jsonRPCResponse) {
+      res.json(jsonRPCResponse);
+    } else {
+      res.sendStatus(204);
+    }
+  });
+});
+
+httpServer.listen(5000, () => {
+  console.log('Server running on port 5000');
+  deepseek.connect();
+});
+```
+
+### DeepSeek MCP Integration Service
+```typescript
+// server/services/deepseek.ts
+import { PrismaClient } from '@prisma/client';
+import { JSONRPCClient } from 'json-rpc-2.0';
+import fetch from 'node-fetch';
+
+export class DeepSeekService {
+  private client: JSONRPCClient;
+  private prisma: PrismaClient;
+  public isConnected: boolean = false;
+
+  constructor() {
+    this.prisma = new PrismaClient();
+    this.client = new JSONRPCClient(async (jsonRPCRequest) => {
+      try {
+        const response = await fetch('https://mcp.deepseek.ai/jsonrpc', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(jsonRPCRequest)
+        });
+        
+        if (response.status === 200) {
+          const jsonRPCResponse = await response.json();
+          this.client.receive(jsonRPCResponse);
+          this.isConnected = true;
+        } else {
+          throw new Error(response.statusText);
+        }
+      } catch (error) {
+        this.isConnected = false;
+        throw error;
+      }
+    });
+  }
+
+  async connect() {
+    try {
+      await this.client.request('ping', {});
+      this.isConnected = true;
+    } catch (error) {
+      console.error('DeepSeek MCP connection failed:', error);
+    }
+  }
+
+  async getFitnessRecommendations(params: {
+    userId: string;
+    currentWorkout?: string;
+    fitnessLevel?: string;
+  }) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: params.userId },
+      include: { goals: true, aiPreferences: true }
+    });
+
+    if (!user) throw new Error('User not found');
+
+    return this.client.request('fitness.recommend', {
+      userData: {
+        age: user.age,
+        weight: user.weight,
+        height: user.height,
+        fitnessLevel: user.fitnessLevel,
+        goals: user.goals,
+        preferences: user.aiPreferences
+      },
+      context: params.currentWorkout
+    });
+  }
+
+  async analyzeNutrition(userId: string, logId: string) {
+    const [user, log] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id: userId } }),
+      this.prisma.nutritionLog.findUnique({ where: { id: logId } })
+    ]);
+
+    if (!user || !log) throw new Error('Data not found');
+
+    return this.client.request('nutrition.analyze', {
+      userMetrics: {
+        weight: user.weight,
+        height: user.height,
+        fitnessLevel: user.fitnessLevel
+      },
+      nutritionData: {
+        calories: log.calories,
+        protein: log.protein,
+        carbs: log.carbs,
+        fat: log.fat
+      }
+    });
+  }
+
+  async getRealtimeFeedback(data: any) {
+    return this.client.request('fitness.realtimeFeedback', data);
+  }
+}
+```
+
+### AI-Generated API Endpoints
+```typescript
+// server/routes/auth.ts
+import { Router } from 'express';
+import { PrismaClient } from '@prisma/client';
+import jwt from 'jsonwebtoken';
+
+const router = Router();
+const prisma = new PrismaClient();
+const JWT_SECRET = process.env.JWT_SECRET || 'fitness-secret';
+
+router.post('/register', async (req, res) => {
+  const { email, password, name, age, weight, height, fitnessLevel } = req.body;
+  
+  try {
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: await Bun.password.hash(password),
+        name,
+        age,
+        weight,
+        height,
+        fitnessLevel,
+        aiPreferences: {
+          create: {}
+        }
+      }
+    });
+
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET);
+    res.json({ token });
+  } catch (error) {
+    res.status(400).json({ error: 'Registration failed' });
+  }
+});
+
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user || !(await Bun.password.verify(password, user.password))) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+
+  const token = jwt.sign({ userId: user.id }, JWT_SECRET);
+  res.json({ token });
+});
+
+export default router;
+```
+
+```typescript
+// server/routes/workouts.ts
+import { Router } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { authenticate } from '../middleware/auth';
+
+const router = Router();
+const prisma = new PrismaClient();
+
+router.use(authenticate);
+
+router.get('/', async (req, res) => {
+  const workouts = await prisma.workout.findMany({
+    where: { userId: req.userId },
+    include: { exercises: true }
+  });
+  res.json(workouts);
+});
+
+router.post('/', async (req, res) => {
+  const { name, description, duration, intensity, exercises } = req.body;
+  
+  const workout = await prisma.workout.create({
+    data: {
+      name,
+      description,
+      duration,
+      intensity,
+      userId: req.userId,
+      exercises: {
+        create: exercises.map((ex: any) => ({
+          name: ex.name,
+          sets: ex.sets,
+          reps: ex.reps,
+          weight: ex.weight,
+          duration: ex.duration,
+          restPeriod: ex.restPeriod
+        }))
+      }
+    },
+    include: { exercises: true }
+  });
+
+  res.status(201).json(workout);
+});
+
+router.get('/:id', async (req, res) => {
+  const workout = await prisma.workout.findUnique({
+    where: { id: req.params.id, userId: req.userId },
+    include: { exercises: true }
+  });
+  
+  if (!workout) return res.status(404).json({ error: 'Workout not found' });
+  res.json(workout);
+});
+
+export default router;
+```
+
+## 4. FRONTEND COMPONENTS WITH AI-ASSISTED UI
+
+### AI-Generated React Components
+```typescript
+// client/src/components/AIWorkoutPlanner.tsx
+import { useState } from 'react';
+import { useMutation } from 'react-query';
+import { useDeepSeek } from '../hooks/useDeepSeek';
+
+interface WorkoutSuggestion {
+  name: string;
+  description: string;
+  duration: number;
+  exercises: Array<{
+    name: string;
+    sets: number;
+    reps: number;
+    duration?: number;
+  }>;
+}
+
+export function AIWorkoutPlanner({ userId }: { userId: string }) {
+  const [goal, setGoal] = useState('');
+  const [duration, setDuration] = useState(30);
+  const [suggestions, setSuggestions] = useState<WorkoutSuggestion[]>([]);
+  const { getRecommendations } = useDeepSeek();
+  
+  const { mutate: generateWorkout, isLoading } = useMutation(
+    async () => {
+      return getRecommendations({
+        userId,
+        fitnessGoal: goal,
+        availableTime: duration
+      });
+    },
+    {
+      onSuccess: (data) => {
+        setSuggestions(data.suggestions);
+      }
+    }
+  );
+
+  return (
+    <div className="p-6 bg-white rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold mb-4">AI Workout Planner</h2>
+      
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Fitness Goal
+          </label>
+          <input
+            type="text"
+            value={goal}
+            onChange={(e) => setGoal(e.target.value)}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+            placeholder="e.g. Build muscle, Lose weight, Improve endurance"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Duration (minutes)
+          </label>
+          <input
+            type="number"
+            value={duration}
+            onChange={(e) => setDuration(Number(e.target.value))}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+            min="10"
+            max="120"
+          />
+        </div>
+        
+        <button
+          onClick={() => generateWorkout()}
+          disabled={isLoading}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-300"
+        >
+          {isLoading ? 'Generating...' : 'Generate Workout Plan'}
+        </button>
+      </div>
+      
+      {suggestions.length > 0 && (
+        <div className="mt-6 space-y-4">
+          <h3 className="text-xl font-semibold">AI Suggestions</h3>
+          {suggestions.map((workout, i) => (
+            <div key={i} className="p-4 border rounded-lg">
+              <h4 className="font-bold">{workout.name}</h4>
+              <p className="text-sm text-gray-600">{workout.description}</p>
+              
+              <div className="mt-2">
+                <h5 className="font-medium">Exercises:</h5>
+                <ul className="list-disc pl-5 space-y-1">
+                  {workout.exercises.map((ex, j) => (
+                    <li key={j}>
+                      {ex.name} - {ex.sets} sets × {ex.reps} reps
+                      {ex.duration && ` for ${ex.duration} sec`}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Real-Time Fitness Dashboard
+```typescript
+// client/src/pages/Dashboard.tsx
+import { useEffect, useState } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { useQuery } from 'react-query';
+import { WorkoutChart, NutritionChart } from '../components/Charts';
+import { AIWorkoutPlanner } from '../components/AIWorkoutPlanner';
+import { useAuth } from '../hooks/useAuth';
+
+interface RealtimeFeedback {
+  caloriesBurned: number;
+  heartRate: number;
+  formAnalysis: string;
+}
+
+export function Dashboard() {
+  const { user } = useAuth();
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [feedback, setFeedback] = useState<RealtimeFeedback | null>(null);
+  
+  const { data: workouts } = useQuery('workouts', async () => {
+    const res = await fetch('/api/workouts');
+    return res.json();
+  });
+  
+  const { data: nutrition } = useQuery('nutrition', async () => {
+    const res = await fetch('/api/nutrition');
+    return res.json();
+  });
+
+  useEffect(() => {
+    const newSocket = io('http://localhost:5000');
+    setSocket(newSocket);
+    
+    newSocket.on('realtime_feedback', (data) => {
+      setFeedback(data);
+    });
+    
+    return () => {
+      newSocket.disconnect();
+    };
+  }, []);
+
+  const startWorkout = () => {
+    socket?.emit('get_realtime_feedback', { 
+      userId: user?.id,
+      workoutType: 'strength' 
+    });
+  };
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+      <div className="md:col-span-2 space-y-6">
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-bold mb-4">Workout Progress</h2>
+          <WorkoutChart data={workouts} />
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-bold mb-4">Nutrition Tracking</h2>
+          <NutritionChart data={nutrition} />
+        </div>
+      </div>
+      
+      <div className="space-y-6">
+        <AIWorkoutPlanner userId={user?.id} />
+        
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-bold mb-4">Real-Time Feedback</h2>
+          <button 
+            onClick={startWorkout}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 mb-4"
+          >
+            Start Workout Session
+          </button>
+          
+          {feedback && (
+            <div className="space-y-2">
+              <p><strong>Calories Burned:</strong> {feedback.caloriesBurned}</p>
+              <p><strong>Heart Rate:</strong> {feedback.heartRate} bpm</p>
+              <p><strong>Form Analysis:</strong> {feedback.formAnalysis}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+## 5. AUTHENTICATION & SECURITY
+
+### JWT Authentication Middleware
+```typescript
+// server/middleware/auth.ts
+import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+const JWT_SECRET = process.env.JWT_SECRET || 'fitness-secret';
+
+export async function authenticate(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader) {
+    return res.status(401).json({ error: 'Authorization header missing' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as { userId: string };
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { id: true, email: true, name: true }
+    });
+
+    if (!user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    req.userId = user.id;
+    next();
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+}
+```
+
+### Frontend Auth Hook
+```typescript
+// client/src/hooks/useAuth.ts
+import { useState, useEffect } from 'react';
+import { useQueryClient } from 'react-query';
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
+}
+
+export function useAuth() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const token = localStorage.getItem('fitness_token');
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (res.ok) {
+          const userData = await res.json();
+          setUser(userData);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+
+    if (!res.ok) throw new Error('Login failed');
+
+    const { token } = await res.json();
+    localStorage.setItem('fitness_token', token);
+
+    const userRes = await fetch('/api/auth/me', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const userData = await userRes.json();
+    setUser(userData);
+  };
+
+  const register = async (
+    email: string, 
+    password: string, 
+    name: string,
+    age: number,
+    weight: number,
+    height: number,
+    fitnessLevel: string
+  ) => {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        email, 
+        password, 
+        name,
+        age,
+        weight,
+        height,
+        fitnessLevel
+      })
+    });
+
+    if (!res.ok) throw new Error('Registration failed');
+
+    const { token } = await res.json();
+    localStorage.setItem('fitness_token', token);
+
+    const userRes = await fetch('/api/auth/me', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const userData = await userRes.json();
+    setUser(userData);
+  };
+
+  const logout = () => {
+    localStorage.removeItem('fitness_token');
+    setUser(null);
+    queryClient.clear();
+  };
+
+  return { user, loading, login, register, logout };
+}
+```
+
+## 6. REAL-TIME FEATURES USING WEBSOCKETS
+
+### Enhanced Real-Time Feedback System
+```typescript
+// server/services/realtime.ts
+import { Server } from 'socket.io';
+import { PrismaClient } from '@prisma/client';
+import { DeepSeekService } from './deepseek';
+
+const prisma = new PrismaClient();
+
+export class RealtimeService {
+  private io: Server;
+  private deepseek: DeepSeekService;
+  private activeSessions: Map<string, NodeJS.Timeout> = new Map();
+
+  constructor(io: Server, deepseek: DeepSeekService) {
+    this.io = io;
+    this.deepseek = deepseek;
+    this.setupConnectionHandlers();
+  }
+
+  private setupConnectionHandlers() {
+    this.io.on('connection', (socket) => {
+      console.log('Client connected:', socket.id);
+      
+      socket.on('start_workout', async (data) => {
+        const { userId, workoutId } = data;
+        
+        // Validate user and workout
+        const [user, workout] = await Promise.all([
+          prisma.user.findUnique({ where: { id: userId } }),
+          prisma.workout.findUnique({ 
+            where: { id: workoutId },
+            include: { exercises: true }
+          })
+        ]);
+        
+        if (!user || !workout) {
+          socket.emit('error', 'Invalid user or workout');
+          return;
+        }
+        
+        // Start sending periodic feedback
+        const interval = setInterval(async () => {
+          const feedback = await this.deepseek.getRealtimeFeedback({
+            userId,
+            workoutId,
+            currentExercise: workout.exercises[0]?.name,
+            duration: workout.duration
+          });
+          
+          socket.emit('workout_feedback', feedback);
+        }, 5000);
+        
+        this.activeSessions.set(socket.id, interval);
+        
+        socket.on('disconnect', () => {
+          clearInterval(interval);
+          this.activeSessions.delete(socket.id);
+        });
+      });
+      
+      socket.on('end_workout', () => {
+        const interval = this.activeSessions.get(socket.id);
+        if (interval) {
+          clearInterval(interval);
+          this.activeSessions.delete(socket.id);
+        }
+      });
+    });
+  }
+}
+```
+
+### Client-Side Real-Time Hook
+```typescript
+// client/src/hooks/useRealtimeWorkout.ts
+import { useEffect, useState } from 'react';
+import { io, Socket } from 'socket.io-client';
+
+interface WorkoutFeedback {
+  caloriesBurned: number;
+  heartRate: number;
+  formAnalysis: string;
+  suggestedAdjustments: string[];
+}
+
+export function useRealtimeWorkout(userId: string) {
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [feedback, setFeedback] = useState<WorkoutFeedback | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  
+  useEffect(() => {
+    const newSocket = io('http://localhost:5000');
+    setSocket(newSocket);
+    
+    newSocket.on('connect', () => {
+      setIsConnected(true);
+    });
+    
+    newSocket.on('disconnect', () => {
+      setIsConnected(false);
+    });
+    
+    newSocket.on('workout_feedback', (data: WorkoutFeedback) => {
+      setFeedback(data);
+    });
+    
+    newSocket.on('error', (error: string) => {
+      console.error('Socket error:', error);
+    });
+    
+    return () => {
+      newSocket.disconnect();
+    };
+  }, []);
+  
+  const startWorkout = (workoutId: string) => {
+    socket?.emit('start_workout', { userId, workoutId });
+  };
+  
+  const endWorkout = () => {
+    socket?.emit('end_workout');
+    setFeedback(null);
+  };
+  
+  return {
+    feedback,
+    isConnected,
+    startWorkout,
+    endWorkout
+  };
+}
+```
+
+## 7. DEPLOYMENT CONFIGURATION
+
+### Bolt-Specific Deployment Script
+```json
+// .bolt/deploy.json
+{
+  "targets": {
+    "preview": {
+      "type": "netlify",
+      "siteName": "fitness-ai-preview",
+      "buildCommand": "npm run build",
+      "outputDir": "client/dist",
+      "environment": {
+        "VITE_API_URL": "https://fitness-api.example.com",
+        "VITE_MCP_ENDPOINT": "https://mcp.deepseek.ai/jsonrpc"
+      }
+    },
+    "production": {
+      "type": "vercel",
+      "projectId": "fitness-ai-prod",
+      "buildCommand": "npm run build",
+      "outputDir": "client/dist",
+      "serverlessFunctions": {
+        "api": "server",
+        "memory": 1024,
+        "maxDuration": 10
+      },
+      "environment": {
+        "DATABASE_URL": "postgres://user:pass@host:5432/db",
+        "JWT_SECRET": "production-secret-123"
+      }
+    }
+  },
+  "hooks": {
+    "preDeploy": "npm test",
+    "postDeploy": "node scripts/notify.js"
+  }
+}
+```
+
+### CI/CD Pipeline Configuration
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy Fitness AI App
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          
+      - name: Install dependencies
+        run: npm ci
+          
+      - name: Run tests
+        run: npm test
+          
+      - name: Build application
+        run: npm run build
+          
+      - name: Deploy to Netlify (Preview)
+        if: github.ref == 'refs/heads/main'
+        uses: netlify/actions/cli@master
+        with:
+          args: deploy --dir=client/dist --prod
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          
+      - name: Deploy to Verc
