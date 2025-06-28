@@ -69,9 +69,9 @@ async function comprehensiveSeed() {
           
           for (const chunk of chunks) {
             await database.queryAsync(`
-              INSERT INTO rag_documents (title, content, platform, type, keywords, last_updated)
-              VALUES (?, ?, ?, ?, ?, datetime('now'))
-            `, [chunk.title, chunk.content, platform, chunk.type, JSON.stringify(chunk.keywords)]);
+              INSERT INTO rag_documents (title, content, platform, keywords, created_at)
+              VALUES (?, ?, ?, ?, datetime('now'))
+            `, [chunk.title, chunk.content, platform, JSON.stringify(chunk.keywords)]);
             
             totalDocuments++;
             platformCounts[platform]++;
@@ -214,6 +214,9 @@ function splitLargeSection(content, baseTitle, maxSize) {
 }
 
 function createChunk(content, platform, index) {
+  if (typeof content !== 'string') {
+    content = String(content);
+  }
   const title = extractTitle(content) || `${platform.charAt(0).toUpperCase() + platform.slice(1)} Documentation ${index}`;
   return {
     title,
@@ -224,6 +227,9 @@ function createChunk(content, platform, index) {
 }
 
 function extractTitle(content) {
+  if (typeof content !== 'string') {
+    content = String(content);
+  }
   const lines = content.split('\n').filter(line => line.trim());
   if (lines.length === 0) return null;
   
