@@ -1244,8 +1244,9 @@ class MultiProtocolAIApp {
                         },
                         body: JSON.stringify({
                             messages: [{ role: 'user', content: message }],
-                            platform: platform,
-                            reasoning: useReasoning
+                            platform: platform || null,
+                            reasoning: useReasoning,
+                            stream: true
                         })
                     });
 

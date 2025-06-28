@@ -482,19 +482,48 @@ app.post('/api/chat/continue', async (req, res) => {
 // Enhanced DeepSeek streaming chat endpoint
 app.post('/api/chat/stream', async (req, res) => {
   try {
-    const { message, messages, stream = true } = req.body;
+    const { message, messages, platform, reasoning, stream = true } = req.body;
     
     // Handle both single message and messages array formats
     let chatMessages;
+    let userQuery;
     if (message) {
       chatMessages = [{ role: 'user', content: message }];
+      userQuery = message;
     } else if (messages && Array.isArray(messages)) {
       chatMessages = messages;
+      userQuery = messages[messages.length - 1]?.content || '';
     } else {
       return res.status(400).json({ error: 'Message or messages array is required' });
     }
 
     console.log('[STREAMING] Starting real-time streaming response...');
+    
+    // Get RAG context before streaming
+    let ragContext = '';
+    let platformDocs = [];
+    try {
+      // Search RAG database for relevant documentation
+      const ragResults = await ragDB.searchDocuments(userQuery, platform, 5);
+      if (ragResults && ragResults.length > 0) {
+        console.log(`[RAG-CONTEXT] Found ${ragResults.length} relevant documents for ${platform || 'general'} query`);
+        platformDocs = ragResults;
+        ragContext = ragResults.map(doc => 
+          `${doc.title}: ${doc.snippet}`
+        ).join('\n\n');
+        
+        // Enhance chat messages with context
+        if (ragContext) {
+          const contextualMessage = `Based on the following documentation:\n\n${ragContext}\n\nUser Question: ${userQuery}`;
+          chatMessages = [
+            { role: 'system', content: 'You are a helpful AI assistant with access to comprehensive platform documentation. Use the provided documentation context to give accurate, specific answers about development platforms and tools.' },
+            { role: 'user', content: contextualMessage }
+          ];
+        }
+      }
+    } catch (ragError) {
+      console.warn('[RAG-CONTEXT] RAG search failed:', ragError);
+    }
 
     // Set up Server-Sent Events for streaming
     res.writeHead(200, {
