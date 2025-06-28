@@ -6,6 +6,7 @@
     <title>MCP Hub - Model Context Protocol</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/js/realtime.js"></script>
+    <script src="/js/universal-settings.js"></script>
     <style>
         .protocol-status { transition: all 0.3s ease; }
         .agent-card { background: linear-gradient(135deg, #1f2937 0%, #111827 100%); transition: transform 0.2s; }
@@ -36,7 +37,7 @@
                     <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                     <span class="text-sm">MCP Active</span>
                 </div>
-                <button class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">Protocol Settings</button>
+                <button id="settingsBtn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">Settings</button>
             </div>
         </div>
     </nav>

@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="/css/progress-indicator.css">
     <script src="/js/progress-indicator.js"></script>
     <script src="/js/realtime.js"></script>
+    <script src="/js/universal-settings.js"></script>
     <script src="/js/master-generator.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
@@ -29,10 +30,72 @@
                     <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                     <span class="text-sm">Connected</span>
                 </div>
-                <button class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">Settings</button>
+                <button id="settingsBtn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">Settings</button>
             </div>
         </div>
     </nav>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold">Settings</h3>
+                    <button id="closeSettings" class="text-gray-400 hover:text-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Default Platform</label>
+                        <select id="defaultPlatform" class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
+                            <option value="">No Default</option>
+                            <option value="replit">Replit</option>
+                            <option value="lovable">Lovable</option>
+                            <option value="bolt">Bolt</option>
+                            <option value="cursor">Cursor</option>
+                            <option value="windsurf">Windsurf</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="autoSave" class="mr-2">
+                            <span class="text-sm">Auto-save generated prompts</span>
+                        </label>
+                    </div>
+                    
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="enableNotifications" class="mr-2" checked>
+                            <span class="text-sm">Enable notifications</span>
+                        </label>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Theme</label>
+                        <select id="themeSelect" class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
+                            <option value="dark">Dark Mode</option>
+                            <option value="light">Light Mode</option>
+                            <option value="auto">Auto</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-3 mt-6">
+                    <button id="saveSettings" class="flex-1 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">
+                        Save Settings
+                    </button>
+                    <button id="resetSettings" class="flex-1 bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded text-sm">
+                        Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="container mx-auto px-4 py-8 max-w-4xl">
         <header class="text-center mb-8">

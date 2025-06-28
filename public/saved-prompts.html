@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="/css/progress-indicator.css">
     <script src="/js/progress-indicator.js"></script>
     <script src="/js/realtime.js"></script>
+    <script src="/js/universal-settings.js"></script>
+    <script src="/js/saved-prompts.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
     <!-- Navigation -->
@@ -30,6 +32,7 @@
                     <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                     <span class="text-sm">Connected</span>
                 </div>
+                <button id="settingsBtn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">Settings</button>
             </div>
         </div>
     </nav>
@@ -91,6 +94,9 @@
             </div>
             <div id="promptsList" class="divide-y divide-gray-700">
                 <!-- Prompts will be loaded here -->
+            </div>
+            <div id="pagination" class="p-6">
+                <!-- Pagination will be loaded here -->
             </div>
         </div>
     </div>

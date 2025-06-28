@@ -994,10 +994,181 @@ RULES:
     }
 }
 
+// Settings Manager Class
+class SettingsManager {
+    constructor() {
+        this.settings = this.loadSettings();
+        this.initializeEventListeners();
+    }
+
+    initializeEventListeners() {
+        // Settings button
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsModal = document.getElementById('settingsModal');
+        const closeSettings = document.getElementById('closeSettings');
+        const saveSettings = document.getElementById('saveSettings');
+        const resetSettings = document.getElementById('resetSettings');
+
+        if (settingsBtn) {
+            settingsBtn.addEventListener('click', () => this.openSettings());
+        }
+
+        if (closeSettings) {
+            closeSettings.addEventListener('click', () => this.closeSettings());
+        }
+
+        if (saveSettings) {
+            saveSettings.addEventListener('click', () => this.saveUserSettings());
+        }
+
+        if (resetSettings) {
+            resetSettings.addEventListener('click', () => this.resetUserSettings());
+        }
+
+        // Close modal when clicking outside
+        if (settingsModal) {
+            settingsModal.addEventListener('click', (e) => {
+                if (e.target === settingsModal) {
+                    this.closeSettings();
+                }
+            });
+        }
+    }
+
+    loadSettings() {
+        const defaultSettings = {
+            defaultPlatform: '',
+            autoSave: false,
+            enableNotifications: true,
+            theme: 'dark'
+        };
+
+        try {
+            const saved = localStorage.getItem('deepseekai_settings');
+            return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
+        } catch (error) {
+            console.warn('Failed to load settings:', error);
+            return defaultSettings;
+        }
+    }
+
+    openSettings() {
+        const modal = document.getElementById('settingsModal');
+        if (modal) {
+            // Populate current settings
+            this.populateSettingsForm();
+            modal.classList.remove('hidden');
+        }
+    }
+
+    closeSettings() {
+        const modal = document.getElementById('settingsModal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+
+    populateSettingsForm() {
+        const defaultPlatform = document.getElementById('defaultPlatform');
+        const autoSave = document.getElementById('autoSave');
+        const enableNotifications = document.getElementById('enableNotifications');
+        const themeSelect = document.getElementById('themeSelect');
+
+        if (defaultPlatform) defaultPlatform.value = this.settings.defaultPlatform;
+        if (autoSave) autoSave.checked = this.settings.autoSave;
+        if (enableNotifications) enableNotifications.checked = this.settings.enableNotifications;
+        if (themeSelect) themeSelect.value = this.settings.theme;
+    }
+
+    saveUserSettings() {
+        const defaultPlatform = document.getElementById('defaultPlatform');
+        const autoSave = document.getElementById('autoSave');
+        const enableNotifications = document.getElementById('enableNotifications');
+        const themeSelect = document.getElementById('themeSelect');
+
+        this.settings = {
+            defaultPlatform: defaultPlatform?.value || '',
+            autoSave: autoSave?.checked || false,
+            enableNotifications: enableNotifications?.checked || true,
+            theme: themeSelect?.value || 'dark'
+        };
+
+        try {
+            localStorage.setItem('deepseekai_settings', JSON.stringify(this.settings));
+            this.applySettings();
+            this.showNotification('Settings saved successfully', 'success');
+            this.closeSettings();
+        } catch (error) {
+            console.error('Failed to save settings:', error);
+            this.showNotification('Failed to save settings', 'error');
+        }
+    }
+
+    resetUserSettings() {
+        this.settings = {
+            defaultPlatform: '',
+            autoSave: false,
+            enableNotifications: true,
+            theme: 'dark'
+        };
+
+        localStorage.removeItem('deepseekai_settings');
+        this.populateSettingsForm();
+        this.applySettings();
+        this.showNotification('Settings reset to defaults', 'info');
+    }
+
+    applySettings() {
+        // Apply default platform
+        const platformSelect = document.getElementById('platform');
+        if (platformSelect && this.settings.defaultPlatform) {
+            platformSelect.value = this.settings.defaultPlatform;
+        }
+
+        // Apply theme
+        document.body.className = `bg-gray-900 text-white min-h-screen theme-${this.settings.theme}`;
+    }
+
+    showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm transform transition-all duration-300 translate-x-full`;
+        
+        const colors = {
+            success: 'bg-green-600 text-white',
+            error: 'bg-red-600 text-white',
+            info: 'bg-blue-600 text-white'
+        };
+
+        notification.className += ` ${colors[type] || colors.info}`;
+        notification.textContent = message;
+
+        document.body.appendChild(notification);
+
+        // Animate in
+        setTimeout(() => {
+            notification.classList.remove('translate-x-full');
+        }, 100);
+
+        // Auto remove
+        setTimeout(() => {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 3000);
+    }
+
+    getSettings() {
+        return this.settings;
+    }
+}
+
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.masterGenerator = new MasterPromptGenerator();
+    window.settingsManager = new SettingsManager();
 });
 
 // Export for global use
 window.MasterPromptGenerator = MasterPromptGenerator;
+window.SettingsManager = SettingsManager;
