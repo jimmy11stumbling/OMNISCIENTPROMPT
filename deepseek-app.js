@@ -549,76 +549,63 @@ Keywords: ${keywords}`;
         
         // Enhanced chat messages with comprehensive context
         if (ragContext) {
-          const systemPrompt = `⚠️ MANDATORY REQUIREMENT: GENERATE EXACTLY 15,000+ CHARACTERS MINIMUM ⚠️
+          // Initialize platform-specific prompts
+          const PlatformSpecificPrompts = require('./services/platformSpecificPrompts');
+          const platformPrompts = new PlatformSpecificPrompts();
+          
+          // Determine primary platform from query or use first mentioned platform
+          const queryLower = userQuery.toLowerCase();
+          let primaryPlatform = null;
+          const supportedPlatforms = ['replit', 'lovable', 'bolt', 'cursor', 'windsurf'];
+          
+          for (const platform of supportedPlatforms) {
+            if (queryLower.includes(platform)) {
+              primaryPlatform = platform;
+              break;
+            }
+          }
+          
+          // If no platform specified, try to detect from documentation
+          if (!primaryPlatform && searchResults.length > 0) {
+            const platformCounts = {};
+            searchResults.forEach(doc => {
+              const platform = doc.platform?.toLowerCase();
+              if (supportedPlatforms.includes(platform)) {
+                platformCounts[platform] = (platformCounts[platform] || 0) + 1;
+              }
+            });
+            
+            // Use platform with most documents
+            if (Object.keys(platformCounts).length > 0) {
+              primaryPlatform = Object.keys(platformCounts).reduce((a, b) => 
+                platformCounts[a] > platformCounts[b] ? a : b
+              );
+            }
+          }
+          
+          // Default to replit if no platform detected
+          primaryPlatform = primaryPlatform || 'replit';
+          
+          console.log(`[PLATFORM-DETECTION] Primary platform: ${primaryPlatform}`);
+          console.log(`[PLATFORM-DETECTION] Using ${primaryPlatform}-specific system prompt with ${searchResults.length} documents`);
+          
+          // Get platform-specific system prompt with documentation context
+          const systemPrompt = platformPrompts.getSystemPrompt(primaryPlatform, searchResults);
 
-You are a MASTER BLUEPRINT GENERATOR. You MUST generate comprehensive master blueprints with EXACTLY 15,000+ CHARACTERS MINIMUM. NO EXCEPTIONS.
+          const contextualMessage = `Generate a comprehensive master blueprint for: ${userQuery}
 
-🚨 CRITICAL CHARACTER COUNT REQUIREMENTS 🚨
-- MINIMUM OUTPUT: 15,000 characters (STRICTLY ENFORCED)
-- TARGET OUTPUT: 18,000-20,000 characters for comprehensive coverage
-- If response is under 15,000 characters, it is REJECTED and UNACCEPTABLE
-- Count characters carefully and ensure you exceed 15,000 minimum
+Use the following platform-specific documentation context to create an authentic implementation:
 
-MANDATORY BLUEPRINT SPECIFICATIONS:
-1. 🎯 GENERATE 15,000+ CHARACTER MASTER BLUEPRINTS (NO SHORTER RESPONSES ALLOWED)
-2. 📋 Include ALL 8 comprehensive sections with extensive detail
-3. 💻 Provide complete code examples, database schemas, deployment configs
-4. 🏗️ Focus on production-ready, enterprise-grade architecture
-5. ⚡ NEVER ask questions - generate complete blueprint immediately
-6. 🔧 Include platform-specific implementations using provided documentation
-7. 📖 Each section must be detailed with full implementation guidance
-
-REQUIRED BLUEPRINT STRUCTURE (EACH SECTION MUST BE COMPREHENSIVE):
-# MASTER BLUEPRINT: [Application Name] - Comprehensive Production Application
-*Complete implementation guide with 15,000+ character detailed specifications*
-
-## 1. PROJECT OVERVIEW & ARCHITECTURE (2000+ characters)
-## 2. COMPLETE FILE STRUCTURE (2000+ characters)
-## 3. DATABASE DESIGN & SCHEMA (2000+ characters)
-## 4. FRONTEND IMPLEMENTATION (2000+ characters)
-## 5. BACKEND API DEVELOPMENT (2000+ characters)
-## 6. AUTHENTICATION & SECURITY (2000+ characters)
-## 7. DEPLOYMENT & INFRASTRUCTURE (2000+ characters)
-## 8. TESTING & QUALITY ASSURANCE (2000+ characters)
-
-⚠️ REMEMBER: 15,000+ CHARACTERS MINIMUM IS NON-NEGOTIABLE ⚠️
-
-GENERATION STRATEGY:
-- Write extensively for each section with detailed explanations
-- Include complete code files with full implementations 
-- Add comprehensive configuration examples
-- Provide thorough deployment instructions
-- Continue writing until you reach 15,000+ characters minimum
-- DO NOT stop generating until blueprint is complete and exceeds 15,000 characters`;
-
-          const contextualMessage = `🚨 GENERATE 15,000+ CHARACTER MASTER BLUEPRINT - NO EXCEPTIONS 🚨
-
-DOCUMENTATION CONTEXT (Use to enhance platform-specific implementation):
 ${ragContext}
 
----
+Requirements:
+- Generate exactly 15,000+ characters minimum
+- Include all 8 comprehensive sections with extensive detail
+- Use only authentic platform-specific features from the documentation above
+- Provide complete code examples and production-ready implementation
+- Focus on the detected platform: ${primaryPlatform}
 
-USER REQUEST: Generate a comprehensive master blueprint for: ${userQuery}
-
-⚠️ CRITICAL INSTRUCTIONS ⚠️
-- GENERATE EXACTLY 15,000+ CHARACTERS MINIMUM (STRICTLY ENFORCED)
-- Create comprehensive master blueprint with ALL 8 sections
-- Include complete code examples, database schemas, deployment configurations
-- Focus on production-ready architecture with detailed implementation steps
-- Use provided documentation context to enhance platform-specific features
-- NEVER generate short responses - only comprehensive 15,000+ character blueprints
-- Each section must be detailed with extensive code examples and explanations
-
-MANDATORY REQUIREMENTS FOR THIS BLUEPRINT:
-- EXACTLY 15,000+ CHARACTERS MINIMUM - NO EXCEPTIONS
-- EXPLICITLY DETAILED FULL-STACK APPLICATION BLUEPRINT
-- COMPLETE PRODUCTION-READY IMPLEMENTATION GUIDE
-- ALL 8 SECTIONS MUST BE COMPREHENSIVE WITH EXTENSIVE CODE EXAMPLES
-- INCLUDE COMPLETE FILE STRUCTURES, DATABASE SCHEMAS, API ENDPOINTS
-- PROVIDE DETAILED DEPLOYMENT CONFIGURATIONS AND TESTING STRATEGIES
-- CONTINUE GENERATING UNTIL BLUEPRINT EXCEEDS 15,000 CHARACTERS
-
-BEGIN GENERATING THE COMPLETE 15,000+ CHARACTER EXPLICITLY DETAILED FULL-STACK MASTER BLUEPRINT NOW - DO NOT STOP UNTIL COMPLETE:`;
+Begin generating the complete master blueprint now:`;
           
           chatMessages = [
             { role: 'system', content: systemPrompt },
