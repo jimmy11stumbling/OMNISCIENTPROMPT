@@ -678,6 +678,9 @@ RULES:
             
             this.showSuccess(`Blueprint completed: ${actualCharCount.toLocaleString()} characters`);
             this.updateUI('idle');
+            
+            // Automatically save the prompt after completion
+            this.autoSavePrompt();
         } catch (error) {
             console.error('Error completing streaming:', error);
             this.showError('Blueprint generated but display error occurred');
@@ -960,6 +963,42 @@ RULES:
         } catch (error) {
             console.error('Save error:', error);
             this.showError('Failed to save prompt');
+        }
+    }
+
+    async autoSavePrompt() {
+        if (!this.currentPromptData) {
+            console.warn('No prompt data to auto-save');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/prompts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    title: this.generateTitle(),
+                    originalQuery: document.getElementById('query').value,
+                    platform: document.getElementById('platform').value,
+                    generatedPrompt: this.currentPromptData.prompt,
+                    reasoning: this.currentPromptData.reasoning,
+                    ragContext: this.ragSourceCount || 0,
+                    tokensUsed: this.currentPromptData.metadata?.usage?.total_tokens || 0,
+                    responseTime: this.currentPromptData.metadata?.responseTime || 0
+                })
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('[AUTO-SAVE] Prompt saved automatically with ID:', result.id);
+                this.showInfo(`Blueprint auto-saved (ID: ${result.id})`);
+            } else {
+                console.error('[AUTO-SAVE] Failed to save prompt:', response.status);
+            }
+        } catch (error) {
+            console.error('[AUTO-SAVE] Error saving prompt:', error);
         }
     }
 
