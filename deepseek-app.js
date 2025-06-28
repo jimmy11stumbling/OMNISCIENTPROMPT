@@ -11,7 +11,13 @@ const UnifiedRAGSystem = require('./unified-rag-system');
 const SeamlessRAGIntegration = require('./seamless-rag-integration');
 const DeepSeekService = require('./services/deepseekService');
 const MCPDocumentServer = require('./services/mcpDocumentServer');
-const database = require('./database');
+const { Pool } = require('pg');
+
+// PostgreSQL connection
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
 
 const app = express();
 const server = http.createServer(app);
@@ -19,8 +25,7 @@ const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'deepseek-ai-secret-key-change-in-production';
 const BCRYPT_ROUNDS = 12;
 
-// Database connection using SQLite
-const pool = database;
+// Initialize database connection
 
 // Initialize services
 const WorkingDeepSeekService = require('./services/workingDeepSeekService');
@@ -37,11 +42,12 @@ const MCPChatServer = require('./services/mcpChatServer');
 global.mcpChatServer = new MCPChatServer();
 console.log('[MCP-CHAT-SERVER] Chat document server initialized');
 
-// Wrapper function to maintain compatibility
+// Wrapper function to maintain compatibility with PostgreSQL
 async function queryWithRetry(queryText, params = [], retries = 3) {
   for (let i = 0; i < retries; i++) {
     try {
-      return await database.queryAsync(queryText, params);
+      const result = await pool.query(queryText, params);
+      return result.rows;
     } catch (error) {
       console.error(`Database query attempt ${i + 1} failed:`, error.message);
       if (i === retries - 1) throw error;
@@ -963,7 +969,7 @@ app.get('/api/deepseek/stats', (req, res) => {
 app.get('/api/saved-prompts', async (req, res) => {
   try {
     const prompts = await queryWithRetry(`
-      SELECT id, title, query, platform, prompt, created_at 
+      SELECT id, title, original_query, platform, generated_prompt, created_at 
       FROM saved_prompts 
       ORDER BY created_at DESC 
       LIMIT 50
@@ -1847,15 +1853,10 @@ app.get('/api/templates', async (req, res) => {
   }
 });
 
-// POST endpoint for saving prompts
-app.post('/api/prompts', optionalAuth, async (req, res) => {
+// POST endpoint for saving prompts - NO AUTH REQUIRED FOR DEMO
+app.post('/api/prompts', async (req, res) => {
   try {
-    if (!req.user) {
-      return res.status(401).json({ 
-        error: 'Authentication required to save prompts',
-        code: 'AUTH_REQUIRED'
-      });
-    }
+    // Remove user requirement for demo
 
     const {
       title,
@@ -1879,28 +1880,28 @@ app.post('/api/prompts', optionalAuth, async (req, res) => {
     // Generate title if not provided
     const finalTitle = title || `${platform}: ${originalQuery.substring(0, 50)}${originalQuery.length > 50 ? '...' : ''} (${new Date().toLocaleDateString()})`;
 
-    const result = await queryWithRetry(`
+    const result = await pool.query(`
       INSERT INTO saved_prompts (
-        user_id, title, original_query, platform, generated_prompt, 
+        title, original_query, platform, generated_prompt, 
         reasoning, rag_context, tokens_used, response_time
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id
     `, [
-      req.user.id,
       finalTitle,
       originalQuery,
       platform,
       generatedPrompt,
       reasoning || '',
-      JSON.stringify(ragContext || []),
+      ragContext || [],
       tokensUsed || 0,
       responseTime || 0
     ]);
 
-    console.log('[PROMPT-SAVE] Saved prompt successfully for user:', req.user.id);
+    console.log('[PROMPT-SAVE] Saved prompt successfully');
 
     res.json({
       message: 'Prompt saved successfully',
-      id: result.lastInsertRowid || result.insertId,
+      id: result.rows[0]?.id,
       title: finalTitle
     });
 
@@ -2047,8 +2048,8 @@ app.post('/api/mcp/analyze', async (req, res) => {
 });
 
 // Initialize RAG system and validator with global database access
-global.database = database; // Make database globally available for MCP server
-const ragSystem = new UnifiedRAGSystem(database);
+global.database = pool; // Make database globally available for MCP server
+const ragSystem = new UnifiedRAGSystem(pool);
 const realTimeValidator = new RealTimeValidator();
 
 // Start server

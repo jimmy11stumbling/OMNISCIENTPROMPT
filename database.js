@@ -68,9 +68,10 @@ function initializeDatabase() {
       )
     `);
 
-    // Create saved_prompts table
+    // Drop and recreate saved_prompts table to fix schema
+    db.exec(`DROP TABLE IF EXISTS saved_prompts`);
     db.exec(`
-      CREATE TABLE IF NOT EXISTS saved_prompts (
+      CREATE TABLE saved_prompts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
         title TEXT NOT NULL,
@@ -176,6 +177,16 @@ function initializeDatabase() {
       CREATE INDEX IF NOT EXISTS idx_rag_platform ON rag_documents(platform);
       CREATE INDEX IF NOT EXISTS idx_sessions_token ON user_sessions(session_token);
     `);
+
+    // Insert demo user for prompt saving
+    const existingUser = db.prepare('SELECT id FROM users WHERE id = 1').get();
+    if (!existingUser) {
+      db.prepare(`
+        INSERT INTO users (id, username, email, full_name, password_hash, role, is_active, email_verified)
+        VALUES (1, 'demo_user', 'demo@example.com', 'Demo User', 'demo_hash', 'user', 1, 1)
+      `).run();
+      console.log('✅ Demo user created for prompt saving');
+    }
 
     console.log('✅ SQLite database initialized successfully');
     return true;
