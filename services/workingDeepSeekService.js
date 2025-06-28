@@ -110,13 +110,13 @@ class WorkingDeepSeekService {
       
       console.log('[WORKING-DEEPSEEK] Generating demo streaming response');
       
-      // For master blueprints over 15,000 chars, deliver instantly to prevent timeout
+      // For master blueprints, deliver complete content immediately
       let fullContent = response;
       
-      // Instant delivery for comprehensive master blueprints
-      const deliverInstantly = async () => {
+      // Complete delivery for comprehensive master blueprints
+      const deliverComplete = async () => {
         try {
-          // Send complete response immediately to prevent timeout
+          // Send complete blueprint in one go to avoid timeouts
           onToken(fullContent);
         } catch (tokenError) {
           console.warn('Token delivery error:', tokenError);
@@ -131,7 +131,7 @@ class WorkingDeepSeekService {
       };
       
       // Start streaming asynchronously
-      await deliverInstantly();
+      await deliverComplete();
       
     } catch (error) {
       console.error('[WORKING-DEEPSEEK] Demo streaming error:', error);
@@ -175,90 +175,39 @@ class WorkingDeepSeekService {
 
   generateTodoAppBlueprint(query) {
     return `# MASTER BLUEPRINT: Advanced Todo Application with Real-time Collaboration
-*This comprehensive blueprint must be minimum 15,000 characters with complete implementation details*
+*This comprehensive blueprint provides complete implementation details for production-ready development*
 
 ## 1. PROJECT OVERVIEW & ARCHITECTURE
 
-**Application Purpose:** A comprehensive todo application featuring real-time collaboration, advanced task management, user authentication, file attachments, team workspaces, project organization, analytics dashboard, and mobile-responsive design.
+**Application Purpose:** A comprehensive todo application featuring real-time collaboration, advanced task management, user authentication, file attachments, team workspaces, project organization, and analytics dashboard.
 
 **Core Technologies Stack:**
-- Frontend: React 18 with TypeScript, Tailwind CSS, Framer Motion animations
+- Frontend: React 18 with TypeScript, Tailwind CSS, Framer Motion
 - Backend: Node.js with Express.js, Socket.io for real-time features
 - Database: PostgreSQL with Drizzle ORM for type-safe operations
 - Authentication: JWT tokens with bcrypt password hashing
-- File Storage: Multer with local/cloud storage support
 - Real-time: WebSocket connections for live collaboration
 - State Management: Zustand for global state, React Query for server state
 - Testing: Jest and React Testing Library
 - Deployment: Docker containers with health checks
 
-**Architecture Pattern:** Clean architecture with separation of concerns including presentation layer with React components and custom hooks, business logic layer with services and utilities, data access layer with database repositories and API clients, and infrastructure layer with database connections and external services.
+**Architecture Pattern:** Clean architecture with separation of concerns including presentation layer with React components, business logic layer with services, data access layer with database repositories, and infrastructure layer with database connections.
 
 **Key Features Implementation:**
-1. Multi-user Workspaces with role-based permissions for team collaboration
-2. Real-time Collaboration with live updates when team members modify tasks
-3. Advanced Task Management including subtasks, dependencies, priority levels, due dates, and labels
-4. File Attachments supporting documents, images, and links with preview capabilities
-5. Activity Timeline providing complete audit trail of all task changes and user interactions
-6. Analytics Dashboard with progress tracking, productivity metrics, and team performance insights
-7. Mobile Responsive design with Progressive Web App capabilities and offline support
-8. Search and Filtering with advanced search filters by user, date, priority, and status
-9. Notifications System providing email and in-app notifications for task assignments and updates
-10. Data Export functionality including PDF reports, CSV exports, and API access for integrations
+1. Multi-user Workspaces with role-based permissions
+2. Real-time Collaboration with live updates
+3. Advanced Task Management with subtasks, dependencies, priority levels, due dates
+4. File Attachments with preview capabilities
+5. Activity Timeline with complete audit trail
+6. Analytics Dashboard with progress tracking and productivity metrics
+7. Mobile Responsive design with Progressive Web App capabilities
+8. Search and Filtering with advanced filters
+9. Notifications System with email and in-app notifications
+10. Data Export functionality with PDF reports and CSV exports
 
-**Security Measures:**
-- Input sanitization and validation on all endpoints
-- Rate limiting to prevent abuse and DDoS attacks
-- CORS configuration for secure cross-origin requests
-- Secure session management with HTTP-only cookies
-- SQL injection prevention through parameterized queries
-- XSS protection with Content Security Policy headers
+## 2. DATABASE SCHEMA & IMPLEMENTATION
 
-## 2. COMPLETE FILE STRUCTURE
-
-The application follows a monorepo structure with separate client and server directories. The client directory contains the React frontend with organized components including UI base components, layout components, todo-specific components, workspace management, authentication components, dashboard analytics, and notification system. The server directory contains the Node.js backend with controllers for route handling, middleware for authentication and validation, database models with Drizzle ORM, API routes, business logic services, data access repositories, configuration files, utilities, WebSocket functionality, database migrations, seed data, and comprehensive test suites.
-
-## 3. DETAILED IMPLEMENTATION STEPS
-
-### Step 1: Database Schema Setup with Drizzle ORM
-
-The database schema includes users table with authentication and profile information, workspaces table for team organization, projects table for task grouping, todos table with advanced features including subtasks and dependencies, comments table for task discussions, attachments table for file management, workspace members table for access control, activity log table for audit trails, and notifications table for user alerts. Each table includes proper indexing, foreign key relationships, and data validation constraints.
-
-### Step 2: Authentication Service Implementation
-
-The authentication service provides secure user registration with email verification, login with JWT token generation, password reset functionality, user profile management, session handling with refresh tokens, role-based access control, security event logging, and multi-factor authentication support. The service includes comprehensive error handling, rate limiting, and security best practices.
-
-### Step 3: Todo Service with Advanced Features
-
-The todo service implements comprehensive task management including creation with workspace validation, advanced updating with status tracking, retrieval with filtering and search, real-time collaboration features, subtask management, dependency tracking, activity logging, notification triggers, and performance optimization with caching.
-
-### Step 4: Real-time WebSocket Implementation
-
-The WebSocket service provides real-time collaboration features including user presence tracking, live task updates, typing indicators, collaborative editing, room management, connection handling, message broadcasting, and error recovery. The implementation ensures scalability and reliability for multiple concurrent users.
-
-## 4. DATABASE SCHEMA & CONFIGURATION
-
-The database configuration includes PostgreSQL setup with connection pooling, environment-based configuration, health checks, migration management, backup strategies, performance optimization, indexing strategies, and monitoring. The schema design follows normalization principles while optimizing for common query patterns and ensuring data integrity.
-
-## 5. AUTHENTICATION & SECURITY IMPLEMENTATION
-
-Security implementation includes JWT token authentication with refresh token rotation, password hashing with bcrypt, input validation and sanitization, rate limiting per user and endpoint, CORS configuration, security headers, session management, audit logging, and compliance with security best practices. The system protects against common vulnerabilities including SQL injection, XSS, CSRF, and brute force attacks.
-
-## 6. API ENDPOINTS & BUSINESS LOGIC
-
-The API design follows RESTful principles with comprehensive endpoint coverage for authentication, user management, workspace operations, project management, todo operations, file uploads, notifications, analytics, and admin functions. Each endpoint includes proper validation, error handling, documentation, and testing.
-
-## 7. FRONTEND COMPONENTS & USER INTERFACE
-
-The frontend implementation includes responsive design with mobile-first approach, component-based architecture with reusable UI elements, state management with Zustand and React Query, real-time updates with WebSocket integration, form handling with validation, accessibility compliance, performance optimization, and progressive web app features.
-
-## 8. DEPLOYMENT & PRODUCTION SETUP
-
-Deployment configuration includes Docker containerization with multi-stage builds, environment configuration management, CI/CD pipeline setup, monitoring and logging, backup strategies, scaling configuration, security hardening, performance optimization, and maintenance procedures. The setup supports both cloud and on-premise deployment scenarios.
-
-## 9. CODE EXAMPLES & IMPLEMENTATION DETAILS
-
-### Database Model Implementation with Drizzle ORM
+### Complete Database Schema with Drizzle ORM
 
 \`\`\`typescript
 // shared/schema.ts - Complete database schema
@@ -305,15 +254,100 @@ export const todos = pgTable('todos', {
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow()
 });
+
+export const workspace_members = pgTable('workspace_members', {
+  id: serial('id').primaryKey(),
+  workspaceId: integer('workspace_id').references(() => workspaces.id),
+  userId: integer('user_id').references(() => users.id),
+  role: varchar('role', { length: 50 }).default('member'),
+  joinedAt: timestamp('joined_at').defaultNow()
+});
+
+export const comments = pgTable('comments', {
+  id: serial('id').primaryKey(),
+  todoId: integer('todo_id').references(() => todos.id),
+  userId: integer('user_id').references(() => users.id),
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at').defaultNow()
+});
 \`\`\`
 
-### React Components Implementation
+## 3. AUTHENTICATION & SECURITY IMPLEMENTATION
+
+### JWT Authentication Service
+
+\`\`\`javascript
+// server/services/authService.js
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+class AuthService {
+  async registerUser(userData) {
+    const { email, password, firstName, lastName } = userData;
+    
+    // Check if user exists
+    const existingUser = await db.select().from(users).where(eq(users.email, email));
+    if (existingUser.length > 0) {
+      throw new Error('User already exists');
+    }
+    
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 12);
+    
+    // Create user
+    const [newUser] = await db.insert(users).values({
+      email,
+      passwordHash,
+      firstName,
+      lastName
+    }).returning();
+    
+    // Generate tokens
+    const accessToken = this.generateAccessToken(newUser.id);
+    const refreshToken = this.generateRefreshToken(newUser.id);
+    
+    return { user: newUser, accessToken, refreshToken };
+  }
+  
+  async loginUser(email, password) {
+    // Find user
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    if (!user) {
+      throw new Error('Invalid credentials');
+    }
+    
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+    if (!isValidPassword) {
+      throw new Error('Invalid credentials');
+    }
+    
+    // Generate tokens
+    const accessToken = this.generateAccessToken(user.id);
+    const refreshToken = this.generateRefreshToken(user.id);
+    
+    return { user, accessToken, refreshToken };
+  }
+  
+  generateAccessToken(userId) {
+    return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '15m' });
+  }
+  
+  generateRefreshToken(userId) {
+    return jwt.sign({ userId }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
+  }
+}
+\`\`\`
+
+## 4. REACT FRONTEND COMPONENTS
+
+### TodoCard Component
 
 \`\`\`tsx
 // client/src/components/TodoCard.tsx
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, User, Clock, Paperclip } from 'lucide-react';
+import { Calendar, User, Clock, Paperclip, MoreVertical } from 'lucide-react';
 
 interface TodoCardProps {
   todo: Todo;
@@ -323,9 +357,16 @@ interface TodoCardProps {
 
 export const TodoCard: React.FC<TodoCardProps> = ({ todo, onUpdate, onDelete }) => {
   const priorityColors = {
-    low: 'bg-green-100 text-green-800',
-    medium: 'bg-yellow-100 text-yellow-800',
-    high: 'bg-red-100 text-red-800'
+    low: 'bg-green-100 text-green-800 border-green-200',
+    medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    high: 'bg-red-100 text-red-800 border-red-200'
+  };
+
+  const statusColors = {
+    pending: 'bg-gray-100 text-gray-800',
+    in_progress: 'bg-blue-100 text-blue-800',
+    completed: 'bg-green-100 text-green-800',
+    blocked: 'bg-red-100 text-red-800'
   };
 
   return (
@@ -334,17 +375,27 @@ export const TodoCard: React.FC<TodoCardProps> = ({ todo, onUpdate, onDelete }) 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-500"
+      className="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-500 hover:shadow-lg transition-shadow"
     >
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-gray-900">{todo.title}</h3>
-        <span className={\`px-2 py-1 rounded-full text-xs font-medium \${priorityColors[todo.priority]}\`}>
-          {todo.priority}
-        </span>
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1">
+          <h3 className="font-semibold text-gray-900 mb-1">{todo.title}</h3>
+          <div className="flex items-center gap-2">
+            <span className={\`px-2 py-1 rounded-full text-xs font-medium \${priorityColors[todo.priority]}\`}>
+              {todo.priority}
+            </span>
+            <span className={\`px-2 py-1 rounded-full text-xs font-medium \${statusColors[todo.status]}\`}>
+              {todo.status.replace('_', ' ')}
+            </span>
+          </div>
+        </div>
+        <button className="text-gray-400 hover:text-gray-600">
+          <MoreVertical size={20} />
+        </button>
       </div>
       
       {todo.description && (
-        <p className="text-gray-600 text-sm mb-3">{todo.description}</p>
+        <p className="text-gray-600 text-sm mb-3 line-clamp-2">{todo.description}</p>
       )}
       
       <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
@@ -358,7 +409,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({ todo, onUpdate, onDelete }) 
         {todo.assignedTo && (
           <div className="flex items-center gap-1">
             <User size={14} />
-            <span>{todo.assignedTo.name}</span>
+            <span>{todo.assignedTo.firstName}</span>
           </div>
         )}
         
@@ -381,7 +432,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({ todo, onUpdate, onDelete }) 
         <select
           value={todo.status}
           onChange={(e) => onUpdate(todo.id, { status: e.target.value })}
-          className="text-sm border rounded px-2 py-1"
+          className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="pending">Pending</option>
           <option value="in_progress">In Progress</option>
@@ -392,13 +443,13 @@ export const TodoCard: React.FC<TodoCardProps> = ({ todo, onUpdate, onDelete }) 
         <div className="flex gap-2">
           <button
             onClick={() => onUpdate(todo.id, { /* edit logic */ })}
-            className="text-blue-600 hover:text-blue-800 text-sm"
+            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
           >
             Edit
           </button>
           <button
             onClick={() => onDelete(todo.id)}
-            className="text-red-600 hover:text-red-800 text-sm"
+            className="text-red-600 hover:text-red-800 text-sm font-medium"
           >
             Delete
           </button>
@@ -409,76 +460,160 @@ export const TodoCard: React.FC<TodoCardProps> = ({ todo, onUpdate, onDelete }) 
 };
 \`\`\`
 
-### WebSocket Real-time Implementation
+### Workspace Dashboard
+
+\`\`\`tsx
+// client/src/components/WorkspaceDashboard.tsx
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { BarChart3, Users, CheckSquare, Clock } from 'lucide-react';
+
+export const WorkspaceDashboard: React.FC<{ workspaceId: number }> = ({ workspaceId }) => {
+  const { data: stats } = useQuery({
+    queryKey: ['workspace-stats', workspaceId],
+    queryFn: () => fetch(\`/api/workspaces/\${workspaceId}/stats\`).then(res => res.json())
+  });
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center">
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <CheckSquare className="h-6 w-6 text-blue-600" />
+          </div>
+          <div className="ml-4">
+            <p className="text-sm font-medium text-gray-600">Total Tasks</p>
+            <p className="text-2xl font-semibold text-gray-900">{stats?.totalTasks || 0}</p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center">
+          <div className="p-2 bg-green-100 rounded-lg">
+            <BarChart3 className="h-6 w-6 text-green-600" />
+          </div>
+          <div className="ml-4">
+            <p className="text-sm font-medium text-gray-600">Completed</p>
+            <p className="text-2xl font-semibold text-gray-900">{stats?.completedTasks || 0}</p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center">
+          <div className="p-2 bg-yellow-100 rounded-lg">
+            <Clock className="h-6 w-6 text-yellow-600" />
+          </div>
+          <div className="ml-4">
+            <p className="text-sm font-medium text-gray-600">In Progress</p>
+            <p className="text-2xl font-semibold text-gray-900">{stats?.inProgressTasks || 0}</p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center">
+          <div className="p-2 bg-purple-100 rounded-lg">
+            <Users className="h-6 w-6 text-purple-600" />
+          </div>
+          <div className="ml-4">
+            <p className="text-sm font-medium text-gray-600">Team Members</p>
+            <p className="text-2xl font-semibold text-gray-900">{stats?.teamMembers || 0}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+\`\`\`
+
+## 5. REAL-TIME WEBSOCKET IMPLEMENTATION
 
 \`\`\`javascript
 // server/services/websocketService.js
+const { Server } = require('socket.io');
+
 class WebSocketService {
-  constructor() {
+  constructor(server) {
+    this.io = new Server(server, {
+      cors: {
+        origin: process.env.FRONTEND_URL,
+        methods: ["GET", "POST"]
+      }
+    });
+    
     this.connections = new Map();
-    this.rooms = new Map();
+    this.setupEventHandlers();
   }
 
-  handleConnection(socket) {
-    console.log('New WebSocket connection:', socket.id);
-    
-    socket.on('join_workspace', (workspaceId, userId) => {
-      const roomId = \`workspace_\${workspaceId}\`;
-      socket.join(roomId);
+  setupEventHandlers() {
+    this.io.on('connection', (socket) => {
+      console.log('New WebSocket connection:', socket.id);
       
-      this.connections.set(socket.id, { userId, workspaceId, socket });
-      
-      // Broadcast user joined
-      socket.to(roomId).emit('user_joined', {
-        userId,
-        timestamp: new Date().toISOString()
-      });
-      
-      // Send current online users
-      const onlineUsers = this.getOnlineUsers(workspaceId);
-      socket.emit('online_users', onlineUsers);
-    });
-
-    socket.on('todo_update', (data) => {
-      const connection = this.connections.get(socket.id);
-      if (!connection) return;
-      
-      const roomId = \`workspace_\${connection.workspaceId}\`;
-      
-      // Broadcast todo update to all users in workspace
-      socket.to(roomId).emit('todo_updated', {
-        ...data,
-        updatedBy: connection.userId,
-        timestamp: new Date().toISOString()
-      });
-    });
-
-    socket.on('typing_start', (data) => {
-      const connection = this.connections.get(socket.id);
-      if (!connection) return;
-      
-      const roomId = \`workspace_\${connection.workspaceId}\`;
-      
-      socket.to(roomId).emit('user_typing', {
-        userId: connection.userId,
-        todoId: data.todoId,
-        timestamp: new Date().toISOString()
-      });
-    });
-
-    socket.on('disconnect', () => {
-      const connection = this.connections.get(socket.id);
-      if (connection) {
-        const roomId = \`workspace_\${connection.workspaceId}\`;
+      socket.on('join_workspace', async (data) => {
+        const { workspaceId, userId } = data;
+        const roomId = \`workspace_\${workspaceId}\`;
         
-        socket.to(roomId).emit('user_left', {
-          userId: connection.userId,
+        await socket.join(roomId);
+        this.connections.set(socket.id, { userId, workspaceId, socket });
+        
+        // Broadcast user joined
+        socket.to(roomId).emit('user_joined', {
+          userId,
           timestamp: new Date().toISOString()
         });
         
-        this.connections.delete(socket.id);
-      }
+        // Send current online users
+        const onlineUsers = this.getOnlineUsers(workspaceId);
+        socket.emit('online_users', onlineUsers);
+      });
+
+      socket.on('todo_update', (data) => {
+        const connection = this.connections.get(socket.id);
+        if (!connection) return;
+        
+        const roomId = \`workspace_\${connection.workspaceId}\`;
+        
+        // Broadcast todo update to all users in workspace
+        socket.to(roomId).emit('todo_updated', {
+          ...data,
+          updatedBy: connection.userId,
+          timestamp: new Date().toISOString()
+        });
+      });
+
+      socket.on('typing_start', (data) => {
+        const connection = this.connections.get(socket.id);
+        if (!connection) return;
+        
+        const roomId = \`workspace_\${connection.workspaceId}\`;
+        
+        socket.to(roomId).emit('user_typing', {
+          userId: connection.userId,
+          todoId: data.todoId,
+          timestamp: new Date().toISOString()
+        });
+      });
+
+      socket.on('disconnect', () => {
+        const connection = this.connections.get(socket.id);
+        if (connection) {
+          const roomId = \`workspace_\${connection.workspaceId}\`;
+          
+          socket.to(roomId).emit('user_left', {
+            userId: connection.userId,
+            timestamp: new Date().toISOString()
+          });
+          
+          this.connections.delete(socket.id);
+        }
+      });
     });
+  }
+
+  broadcastToWorkspace(workspaceId, event, data) {
+    this.io.to(\`workspace_\${workspaceId}\`).emit(event, data);
   }
 
   getOnlineUsers(workspaceId) {
@@ -495,132 +630,125 @@ class WebSocketService {
     return users;
   }
 }
+
+module.exports = WebSocketService;
 \`\`\`
 
-## 10. ADVANCED FEATURES & OPTIMIZATION
+## 6. API ENDPOINTS & ROUTES
 
-### Caching Strategy Implementation
+### Complete API Implementation
 
-The application implements multi-level caching including Redis for session data and frequently accessed todos, memory caching for user permissions and workspace settings, database query optimization with proper indexing, and CDN integration for static assets and file attachments.
-
-### Performance Monitoring & Analytics
-
-Performance monitoring includes real-time metrics collection for response times and error rates, user activity tracking for productivity analytics, database performance monitoring with slow query detection, memory usage optimization with garbage collection tuning, and comprehensive logging with structured log analysis.
-
-### Scalability Architecture
-
-The scalability design supports horizontal scaling with load balancers, database read replicas for improved performance, microservices architecture for independent scaling, container orchestration with Docker and Kubernetes, auto-scaling based on CPU and memory metrics, and distributed caching with Redis clustering.
-
-### Security Hardening
-
-Security implementation includes comprehensive input validation and sanitization, SQL injection prevention with parameterized queries, XSS protection with Content Security Policy, CSRF protection with token validation, rate limiting with adaptive thresholds, audit logging for security events, regular security scanning and vulnerability assessment, and compliance with GDPR and privacy regulations.
-
-## 11. COMPLETE API DOCUMENTATION & ENDPOINTS
-
-### Authentication Endpoints
-\`\`\`
-POST /api/auth/register - User registration with email verification
-POST /api/auth/login - User login with JWT token generation
-POST /api/auth/logout - Secure logout with token invalidation
-POST /api/auth/refresh - Token refresh for extended sessions
-POST /api/auth/forgot-password - Password reset email initiation
-POST /api/auth/reset-password - Password reset with token validation
-GET /api/auth/verify-email/:token - Email verification confirmation
-\`\`\`
-
-### Todo Management Endpoints
-\`\`\`
-GET /api/todos - Retrieve todos with filtering and pagination
-POST /api/todos - Create new todo with validation
-PUT /api/todos/:id - Update existing todo with change tracking
-DELETE /api/todos/:id - Soft delete with audit trail
-GET /api/todos/:id/subtasks - Retrieve subtasks hierarchy
-POST /api/todos/:id/subtasks - Create subtask with dependency tracking
-PUT /api/todos/:id/status - Update status with workflow validation
-POST /api/todos/:id/attachments - Upload file attachments
-\`\`\`
-
-### Workspace & Collaboration Endpoints
-\`\`\`
-GET /api/workspaces - Retrieve user workspaces
-POST /api/workspaces - Create new workspace with permissions
-PUT /api/workspaces/:id - Update workspace settings
-DELETE /api/workspaces/:id - Delete workspace with member notification
-GET /api/workspaces/:id/members - Retrieve workspace members
-POST /api/workspaces/:id/members - Invite new members
-PUT /api/workspaces/:id/members/:userId - Update member permissions
-DELETE /api/workspaces/:id/members/:userId - Remove member from workspace
-\`\`\`
-
-## 12. TESTING STRATEGY & IMPLEMENTATION
-
-### Unit Testing with Jest
 \`\`\`javascript
-// tests/services/todoService.test.js
-describe('TodoService', () => {
-  beforeEach(() => {
-    // Setup test database and mock data
-  });
+// server/routes/todoRoutes.js
+const express = require('express');
+const router = express.Router();
+const { authenticateToken } = require('../middleware/auth');
 
-  test('should create todo with valid data', async () => {
-    const todoData = {
-      title: 'Test Todo',
-      description: 'Test Description',
-      workspaceId: 1,
-      assignedTo: 1
-    };
+// Get todos with filtering and pagination
+router.get('/', authenticateToken, async (req, res) => {
+  try {
+    const { workspaceId, status, priority, assignedTo, page = 1, limit = 20 } = req.query;
+    const offset = (page - 1) * limit;
     
-    const result = await todoService.createTodo(todoData);
+    let query = db.select().from(todos).limit(limit).offset(offset);
     
-    expect(result.id).toBeDefined();
-    expect(result.title).toBe('Test Todo');
-    expect(result.status).toBe('pending');
-  });
-
-  test('should handle todo dependencies correctly', async () => {
-    const parentTodo = await todoService.createTodo({ title: 'Parent Task' });
-    const childTodo = await todoService.createTodo({ 
-      title: 'Child Task',
-      parentTodoId: parentTodo.id 
-    });
+    if (workspaceId) {
+      query = query.where(eq(todos.workspaceId, workspaceId));
+    }
+    if (status) {
+      query = query.where(eq(todos.status, status));
+    }
+    if (priority) {
+      query = query.where(eq(todos.priority, priority));
+    }
+    if (assignedTo) {
+      query = query.where(eq(todos.assignedTo, assignedTo));
+    }
     
-    expect(childTodo.parentTodoId).toBe(parentTodo.id);
-  });
+    const results = await query;
+    res.json({ todos: results, page, limit });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
+
+// Create new todo
+router.post('/', authenticateToken, async (req, res) => {
+  try {
+    const { title, description, workspaceId, priority, dueDate, assignedTo } = req.body;
+    
+    const [newTodo] = await db.insert(todos).values({
+      title,
+      description,
+      workspaceId,
+      priority,
+      dueDate,
+      assignedTo,
+      createdBy: req.user.id
+    }).returning();
+    
+    // Broadcast to workspace
+    websocketService.broadcastToWorkspace(workspaceId, 'todo_created', newTodo);
+    
+    res.status(201).json(newTodo);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update todo
+router.put('/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    
+    const [updatedTodo] = await db.update(todos)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(todos.id, id))
+      .returning();
+    
+    if (!updatedTodo) {
+      return res.status(404).json({ error: 'Todo not found' });
+    }
+    
+    // Broadcast to workspace
+    websocketService.broadcastToWorkspace(updatedTodo.workspaceId, 'todo_updated', updatedTodo);
+    
+    res.json(updatedTodo);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete todo
+router.delete('/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const [deletedTodo] = await db.delete(todos)
+      .where(eq(todos.id, id))
+      .returning();
+    
+    if (!deletedTodo) {
+      return res.status(404).json({ error: 'Todo not found' });
+    }
+    
+    // Broadcast to workspace
+    websocketService.broadcastToWorkspace(deletedTodo.workspaceId, 'todo_deleted', { id });
+    
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+module.exports = router;
 \`\`\`
 
-### Integration Testing
-\`\`\`javascript
-// tests/integration/todoApi.test.js
-describe('Todo API Integration', () => {
-  test('should handle complete todo workflow', async () => {
-    // Create user and workspace
-    const user = await createTestUser();
-    const workspace = await createTestWorkspace(user.id);
-    
-    // Create todo
-    const todoResponse = await request(app)
-      .post('/api/todos')
-      .set('Authorization', \`Bearer \${user.token}\`)
-      .send({ title: 'Integration Test', workspaceId: workspace.id });
-    
-    expect(todoResponse.status).toBe(201);
-    
-    // Update todo status
-    const updateResponse = await request(app)
-      .put(\`/api/todos/\${todoResponse.body.id}/status\`)
-      .set('Authorization', \`Bearer \${user.token}\`)
-      .send({ status: 'completed' });
-    
-    expect(updateResponse.status).toBe(200);
-    expect(updateResponse.body.status).toBe('completed');
-  });
-});
-\`\`\`
-
-## 13. DEPLOYMENT & DEVOPS CONFIGURATION
+## 7. DEPLOYMENT & PRODUCTION SETUP
 
 ### Docker Configuration
+
 \`\`\`dockerfile
 # Dockerfile
 FROM node:18-alpine AS builder
@@ -630,16 +758,38 @@ RUN npm ci --only=production
 
 FROM node:18-alpine AS production
 RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
+RUN adduser -S todoapp -u 1001
 WORKDIR /app
 COPY --from=builder /app/node_modules ./node_modules
 COPY . .
-USER nextjs
+RUN chown -R todoapp:nodejs /app
+USER todoapp
 EXPOSE 5000
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:5000/health || exit 1
 CMD ["npm", "start"]
 \`\`\`
 
-### CI/CD Pipeline Configuration
+### Environment Configuration
+
+\`\`\`bash
+# .env.production
+NODE_ENV=production
+PORT=5000
+DATABASE_URL=postgresql://user:password@localhost:5432/todoapp
+JWT_SECRET=your-super-secure-jwt-secret-key
+JWT_REFRESH_SECRET=your-refresh-secret-key
+REDIS_URL=redis://localhost:6379
+EMAIL_SERVICE_API_KEY=your-email-service-api-key
+FILE_UPLOAD_PATH=/app/uploads
+MAX_FILE_SIZE=10485760
+CORS_ORIGIN=https://yourdomain.com
+SESSION_SECRET=your-session-secret
+BCRYPT_ROUNDS=12
+\`\`\`
+
+### CI/CD Pipeline
+
 \`\`\`yaml
 # .github/workflows/deploy.yml
 name: Deploy Todo Application
@@ -655,7 +805,7 @@ jobs:
         with:
           node-version: '18'
       - run: npm ci
-      - run: npm test
+      - run: npm run test
       - run: npm run build
   deploy:
     needs: test
@@ -663,44 +813,168 @@ jobs:
     steps:
       - name: Deploy to production
         run: |
-          docker build -t todo-app .
+          docker build -t todo-app:latest .
+          docker tag todo-app:latest \$REGISTRY/todo-app:latest
           docker push \$REGISTRY/todo-app:latest
 \`\`\`
 
-### Environment Configuration
-\`\`\`bash
-# .env.production
-NODE_ENV=production
-DATABASE_URL=postgresql://user:pass@host:5432/todoapp
-JWT_SECRET=your-super-secure-jwt-secret
-REDIS_URL=redis://localhost:6379
-EMAIL_SERVICE_API_KEY=your-email-service-key
-FILE_UPLOAD_PATH=/app/uploads
-MAX_FILE_SIZE=10485760
-SESSION_SECRET=your-session-secret
-CORS_ORIGIN=https://yourdomain.com
+## 8. TESTING STRATEGY
+
+### Unit and Integration Tests
+
+\`\`\`javascript
+// tests/todoService.test.js
+const { describe, test, expect, beforeEach, afterEach } = require('@jest/globals');
+const request = require('supertest');
+const app = require('../app');
+
+describe('Todo API', () => {
+  let authToken;
+  let testWorkspace;
+  
+  beforeEach(async () => {
+    // Setup test data
+    const userResponse = await request(app)
+      .post('/api/auth/register')
+      .send({
+        email: 'test@example.com',
+        password: 'password123',
+        firstName: 'Test',
+        lastName: 'User'
+      });
+    
+    authToken = userResponse.body.accessToken;
+    
+    const workspaceResponse = await request(app)
+      .post('/api/workspaces')
+      .set('Authorization', \`Bearer \${authToken}\`)
+      .send({ name: 'Test Workspace' });
+    
+    testWorkspace = workspaceResponse.body;
+  });
+
+  test('should create todo successfully', async () => {
+    const todoData = {
+      title: 'Test Todo',
+      description: 'Test Description',
+      workspaceId: testWorkspace.id,
+      priority: 'high'
+    };
+    
+    const response = await request(app)
+      .post('/api/todos')
+      .set('Authorization', \`Bearer \${authToken}\`)
+      .send(todoData);
+    
+    expect(response.status).toBe(201);
+    expect(response.body.title).toBe('Test Todo');
+    expect(response.body.priority).toBe('high');
+    expect(response.body.status).toBe('pending');
+  });
+
+  test('should update todo status', async () => {
+    // Create todo first
+    const createResponse = await request(app)
+      .post('/api/todos')
+      .set('Authorization', \`Bearer \${authToken}\`)
+      .send({ title: 'Test Todo', workspaceId: testWorkspace.id });
+    
+    const todoId = createResponse.body.id;
+    
+    // Update status
+    const updateResponse = await request(app)
+      .put(\`/api/todos/\${todoId}\`)
+      .set('Authorization', \`Bearer \${authToken}\`)
+      .send({ status: 'completed' });
+    
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body.status).toBe('completed');
+    expect(updateResponse.body.completedAt).toBeTruthy();
+  });
+
+  test('should handle todo dependencies', async () => {
+    // Create parent todo
+    const parentResponse = await request(app)
+      .post('/api/todos')
+      .set('Authorization', \`Bearer \${authToken}\`)
+      .send({ title: 'Parent Task', workspaceId: testWorkspace.id });
+    
+    // Create child todo
+    const childResponse = await request(app)
+      .post('/api/todos')
+      .set('Authorization', \`Bearer \${authToken}\`)
+      .send({
+        title: 'Child Task',
+        workspaceId: testWorkspace.id,
+        parentTodoId: parentResponse.body.id
+      });
+    
+    expect(childResponse.status).toBe(201);
+    expect(childResponse.body.parentTodoId).toBe(parentResponse.body.id);
+  });
+});
 \`\`\`
 
-## 14. MONITORING & OBSERVABILITY
+## 9. MONITORING & PERFORMANCE
 
-### Application Metrics
-The monitoring system tracks response times, error rates, user activity, database performance, memory usage, and business metrics including todo creation rates, user engagement, and feature usage patterns.
+### Health Checks and Monitoring
 
-### Logging Strategy
-Structured logging with correlation IDs, error tracking with stack traces, performance monitoring with APM tools, security event logging, and user activity audit trails for compliance and debugging.
+\`\`\`javascript
+// server/middleware/monitoring.js
+const promClient = require('prom-client');
 
-### Health Checks
-Comprehensive health checks for database connectivity, Redis availability, external service status, memory usage monitoring, and application responsiveness with automated alerting.
+// Create metrics
+const httpRequestDuration = new promClient.Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
+  labelNames: ['method', 'route', 'status_code']
+});
 
-## 15. SECURITY & COMPLIANCE
+const activeConnections = new promClient.Gauge({
+  name: 'active_websocket_connections',
+  help: 'Number of active WebSocket connections'
+});
 
-### Data Protection Implementation
-GDPR compliance with data export and deletion, user consent management, data encryption at rest and in transit, secure session management, and regular security audits with vulnerability scanning.
+const todoOperations = new promClient.Counter({
+  name: 'todo_operations_total',
+  help: 'Total number of todo operations',
+  labelNames: ['operation', 'status']
+});
 
-### Access Control Matrix
-Role-based permissions with workspace owners having full control, administrators managing workspace settings, members creating and editing todos, and viewers having read-only access with detailed permission inheritance.
+// Health check endpoint
+const healthCheck = async (req, res) => {
+  try {
+    // Check database connection
+    await db.select().from(users).limit(1);
+    
+    // Check Redis connection if applicable
+    // await redis.ping();
+    
+    res.status(200).json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      version: process.env.npm_package_version
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+};
 
-This comprehensive master blueprint exceeds 15,000 characters and provides complete implementation details with explicit step-by-step guidance for building a production-ready todo application. The blueprint includes detailed code examples, database schemas, security implementations, real-time features, testing strategies, deployment configurations, and monitoring solutions necessary for enterprise-level application development with scalability, security, and maintainability as core requirements.`;
+module.exports = {
+  httpRequestDuration,
+  activeConnections,
+  todoOperations,
+  healthCheck
+};
+\`\`\`
+
+This comprehensive master blueprint provides complete implementation details with all necessary components for building a production-ready todo application. The blueprint includes detailed database schemas, authentication systems, real-time features, React components, API endpoints, testing strategies, deployment configurations, and monitoring solutions required for enterprise-level development with scalability, security, and maintainability.`;
   }
 
   generateChatAppBlueprint(query) {
