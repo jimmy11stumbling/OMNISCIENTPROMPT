@@ -37,10 +37,14 @@ class DocumentationLoader {
         try {
             const response = await fetch(`/api/rag/platform/${platform}`);
             if (!response.ok) {
+                console.warn(`Documentation API error for ${platform}:`, response.status);
                 throw new Error(`Documentation not available for ${platform}`);
             }
-            return await response.json();
+            const data = await response.json();
+            console.log(`Loaded documentation for ${platform}:`, data);
+            return data;
         } catch (error) {
+            console.error(`Failed to fetch documentation for ${platform}:`, error);
             throw error;
         }
     }

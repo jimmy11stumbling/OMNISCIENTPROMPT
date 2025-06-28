@@ -54,7 +54,7 @@
                     <option value="cursor">Cursor</option>
                     <option value="windsurf">Windsurf</option>
                 </select>
-                <button id="searchBtn" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded font-medium">
+                <button id="searchButton" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded font-medium">
                     Search
                 </button>
             </div>
@@ -76,9 +76,29 @@
             </div>
         </div>
 
-        <!-- Documentation Grid -->
-        <div id="documentationGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Documents will be populated here -->
+        <!-- Platform Content Area -->
+        <div class="platform-content">
+            <!-- Document Types Breakdown -->
+            <div class="mb-8">
+                <h3 class="text-xl font-bold mb-4">Document Types</h3>
+                <div class="document-types-list grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Document types will be populated here -->
+                </div>
+            </div>
+
+            <!-- Recent Documents -->
+            <div class="mb-8">
+                <h3 class="text-xl font-bold mb-4">Recent Documents</h3>
+                <div class="recent-documents-list grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Recent documents will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- No Documentation Message -->
+        <div class="no-documentation-message hidden text-center py-12">
+            <div class="text-gray-400 text-lg">No documentation found for this platform</div>
+            <div class="text-gray-500 text-sm mt-2">Documentation may still be loading or unavailable</div>
         </div>
 
         <!-- Statistics -->
@@ -128,7 +148,11 @@
         }
     </style>
 
+    <!-- Include our comprehensive RAG Database Display Manager -->
+    <script src="/js/rag-database-display.js"></script>
+    
     <script>
+        // Legacy interface for backward compatibility
         class RAGInterface {
             constructor() {
                 this.currentPlatform = 'replit';
