@@ -30,6 +30,9 @@ class MasterPromptGenerator {
 
     async fetchRAGSources(query, platform) {
         try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            
             const response = await fetch('/api/rag/search', {
                 method: 'POST',
                 headers: {
@@ -39,15 +42,21 @@ class MasterPromptGenerator {
                     query: query,
                     platform: platform,
                     limit: 10
-                })
+                }),
+                signal: controller.signal
             });
+
+            clearTimeout(timeoutId);
 
             if (response.ok) {
                 const data = await response.json();
                 this.ragSourceCount = data.documents ? data.documents.length : 0;
+            } else {
+                console.warn('RAG search failed:', response.status);
+                this.ragSourceCount = 0;
             }
         } catch (error) {
-            console.log('RAG sources fetch failed:', error);
+            console.warn('RAG sources fetch failed:', error);
             this.ragSourceCount = 0;
         }
     }
@@ -152,8 +161,19 @@ class MasterPromptGenerator {
             await this.streamRealTimeResponse(requestData);
         } catch (streamError) {
             console.warn('Streaming failed, falling back to regular generation:', streamError);
+            this.cleanupStreamingUI();
+            
+            // Show error and fallback message
+            this.showError('Streaming interrupted, completing with standard generation...');
+            
             // Fallback to regular generation
-            await this.regularPromptGeneration(requestData);
+            try {
+                await this.regularPromptGeneration(requestData);
+            } catch (fallbackError) {
+                console.error('Both streaming and fallback failed:', fallbackError);
+                this.showError('Generation failed. Please check your connection and try again.');
+                this.updateUI('idle');
+            }
         }
     }
 
@@ -189,46 +209,86 @@ class MasterPromptGenerator {
         let buffer = '';
         let fullContent = '';
 
-        // Fetch RAG sources first
-        await this.fetchRAGSources(requestData.query, requestData.platform);
-        
-        // Show result section and clear content
-        this.showResultSection();
-        const promptResult = document.getElementById('promptResult');
+        try {
+            // Fetch RAG sources first with timeout
+            await Promise.race([
+                this.fetchRAGSources(requestData.query, requestData.platform),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('RAG timeout')), 5000))
+            ]).catch(e => {
+                console.warn('RAG sources fetch failed:', e);
+                this.ragSourceCount = 0;
+            });
+            
+            // Show result section and clear content
+            this.showResultSection();
+            const promptResult = document.getElementById('promptResult');
 
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
+            let lastActivity = Date.now();
+            const activityTimeout = 30000; // 30 second inactivity timeout
 
-            buffer += decoder.decode(value, { stream: true });
-            const parts = buffer.split('\n\n');
+            while (true) {
+                try {
+                    // Add timeout for each read operation
+                    const readPromise = reader.read();
+                    const timeoutPromise = new Promise((_, reject) => {
+                        setTimeout(() => reject(new Error('Read timeout')), activityTimeout);
+                    });
 
-            for (let i = 0; i < parts.length - 1; i++) {
-                const part = parts[i].trim();
-                if (part.startsWith('data:')) {
-                    const jsonStr = part.slice(5).trim();
-                    if (jsonStr === '[DONE]') {
-                        this.completeStreaming(fullContent);
-                        return;
-                    }
+                    const { done, value } = await Promise.race([readPromise, timeoutPromise]);
                     
-                    try {
-                        const parsed = JSON.parse(jsonStr);
-                        const token = parsed.choices?.[0]?.delta?.content;
-                        if (token) {
-                            fullContent += token;
-                            this.onTokenReceived(token);
+                    if (done) break;
+
+                    lastActivity = Date.now();
+                    buffer += decoder.decode(value, { stream: true });
+                    const parts = buffer.split('\n\n');
+
+                    for (let i = 0; i < parts.length - 1; i++) {
+                        const part = parts[i].trim();
+                        if (part.startsWith('data:')) {
+                            const jsonStr = part.slice(5).trim();
+                            if (jsonStr === '[DONE]') {
+                                this.completeStreaming(fullContent);
+                                return;
+                            }
+                            
+                            try {
+                                const parsed = JSON.parse(jsonStr);
+                                const token = parsed.choices?.[0]?.delta?.content;
+                                if (token) {
+                                    fullContent += token;
+                                    this.onTokenReceived(token);
+                                }
+                            } catch (e) {
+                                console.warn('JSON parse error:', e);
+                            }
                         }
-                    } catch (e) {
-                        console.warn('JSON parse error:', e);
                     }
+                    buffer = parts[parts.length - 1];
+                } catch (readError) {
+                    console.warn('Stream read error:', readError);
+                    if (readError.message.includes('timeout')) {
+                        // Break on timeout but complete with what we have
+                        break;
+                    }
+                    throw readError;
                 }
             }
-            buffer = parts[parts.length - 1];
+        } catch (streamingError) {
+            console.error('Streaming process error:', streamingError);
+            // Complete with whatever content we have
+            if (fullContent.length > 0) {
+                this.completeStreaming(fullContent);
+            } else {
+                throw streamingError;
+            }
         }
 
         // Complete streaming with accumulated content
-        this.completeStreaming(fullContent);
+        if (fullContent.length > 0) {
+            this.completeStreaming(fullContent);
+        } else {
+            throw new Error('No content received from stream');
+        }
     }
 
     async regularPromptGeneration(requestData) {
@@ -320,37 +380,57 @@ class MasterPromptGenerator {
         const streamingCursor = document.getElementById('streamingCursor');
         
         if (promptResult) {
-            // Apply speed control
-            setTimeout(() => {
-                promptResult.textContent += token;
-                this.tokenCounter++;
+            try {
+                // Apply speed control with error handling
+                const delay = Math.max(0, (1000 / this.streamSpeed) - 50);
                 
-                // Track token timing for speed calculation
-                const now = Date.now();
-                this.tokenTimes.push(now);
-                if (this.tokenTimes.length > 20) {
-                    this.tokenTimes.shift(); // Keep last 20 for rolling average
+                if (delay > 0) {
+                    setTimeout(() => {
+                        this.processToken(token, promptResult, streamingCursor);
+                    }, delay);
+                } else {
+                    this.processToken(token, promptResult, streamingCursor);
                 }
-                
-                // Analyze content for quality and sections
-                this.analyzeToken(token, promptResult.textContent);
-                
-                // Move cursor to end of content
-                if (streamingCursor) {
-                    promptResult.appendChild(streamingCursor);
-                }
-                
-                // Auto-scroll to bottom
-                const container = promptResult.parentElement;
-                if (container) {
-                    container.scrollTop = container.scrollHeight;
-                }
-                
-                const resultSection = document.getElementById('resultSection');
-                if (resultSection) {
-                    resultSection.scrollTop = resultSection.scrollHeight;
-                }
-            }, Math.max(0, (1000 / this.streamSpeed) - 50));
+            } catch (error) {
+                console.warn('Token processing error:', error);
+                // Fallback to direct processing
+                this.processToken(token, promptResult, streamingCursor);
+            }
+        }
+    }
+
+    processToken(token, promptResult, streamingCursor) {
+        try {
+            promptResult.textContent += token;
+            this.tokenCounter++;
+            
+            // Track token timing for speed calculation
+            const now = Date.now();
+            this.tokenTimes.push(now);
+            if (this.tokenTimes.length > 20) {
+                this.tokenTimes.shift(); // Keep last 20 for rolling average
+            }
+            
+            // Analyze content for quality and sections
+            this.analyzeToken(token, promptResult.textContent);
+            
+            // Move cursor to end of content
+            if (streamingCursor) {
+                promptResult.appendChild(streamingCursor);
+            }
+            
+            // Auto-scroll to bottom
+            const container = promptResult.parentElement;
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
+            
+            const resultSection = document.getElementById('resultSection');
+            if (resultSection) {
+                resultSection.scrollTop = resultSection.scrollHeight;
+            }
+        } catch (error) {
+            console.warn('Token display error:', error);
         }
     }
 
