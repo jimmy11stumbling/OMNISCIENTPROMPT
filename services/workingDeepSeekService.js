@@ -6,7 +6,7 @@
 class WorkingDeepSeekService {
   constructor() {
     this.apiKey = process.env.DEEPSEEK_API_KEY || null;
-    this.baseUrl = 'https://api.deepseek.com';
+    this.baseUrl = 'https://api.deepseek.com/v1';
     this.models = {
       chat: 'deepseek-chat',
       reasoner: 'deepseek-reasoner'
@@ -70,30 +70,31 @@ class WorkingDeepSeekService {
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') {
+        const parts = buffer.split('\n\n');
+        
+        for (let i = 0; i < parts.length - 1; i++) {
+          const part = parts[i].trim();
+          if (part.startsWith('data:')) {
+            const jsonStr = part.slice(5).trim();
+            if (jsonStr === '[DONE]') {
               console.log('[WORKING-DEEPSEEK] Streaming completed');
               onComplete(fullContent);
               return;
             }
 
             try {
-              const parsed = JSON.parse(data);
-              const content = parsed.choices?.[0]?.delta?.content;
-              if (content) {
-                fullContent += content;
-                onToken(content);
+              const parsed = JSON.parse(jsonStr);
+              const token = parsed.choices?.[0]?.delta?.content;
+              if (token) {
+                fullContent += token;
+                onToken(token);
               }
             } catch (e) {
-              // Skip malformed JSON
+              console.warn('[WORKING-DEEPSEEK] JSON parse error:', e.message);
             }
           }
         }
+        buffer = parts[parts.length - 1];
       }
 
       console.log('[WORKING-DEEPSEEK] Streaming completed');
