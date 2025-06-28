@@ -499,27 +499,108 @@ app.post('/api/chat/stream', async (req, res) => {
 
     console.log('[STREAMING] Starting real-time streaming response...');
     
-    // Get RAG context before streaming
+    // Get RAG context before streaming - enhanced for no-code platforms
     let ragContext = '';
     let platformDocs = [];
     try {
-      // Search RAG database for relevant documentation
-      const ragResults = await ragDB.searchDocuments(userQuery, platform, 5);
-      if (ragResults && ragResults.length > 0) {
-        console.log(`[RAG-CONTEXT] Found ${ragResults.length} relevant documents for ${platform || 'general'} query`);
-        platformDocs = ragResults;
-        ragContext = ragResults.map(doc => 
-          `${doc.title}: ${doc.snippet}`
-        ).join('\n\n');
+      // Enhanced search strategy for no-code platforms
+      let searchResults = [];
+      
+      // First, try platform-specific search
+      if (platform) {
+        searchResults = await ragDB.searchDocuments(userQuery, platform, 8);
+        console.log(`[RAG-CONTEXT] Platform-specific search for ${platform}: ${searchResults.length} documents`);
+      }
+      
+      // If no platform-specific results or general query, search across all platforms
+      if (!searchResults || searchResults.length < 3) {
+        const generalResults = await ragDB.searchDocuments(userQuery, null, 10);
+        console.log(`[RAG-CONTEXT] General search: ${generalResults.length} documents`);
         
-        // Enhance chat messages with context
+        // Filter for no-code platforms if query mentions them
+        const platformKeywords = ['lovable', 'bolt', 'cursor', 'windsurf', 'replit', 'vercel', 'netlify'];
+        const queryLower = userQuery.toLowerCase();
+        const mentionedPlatforms = platformKeywords.filter(p => queryLower.includes(p));
+        
+        if (mentionedPlatforms.length > 0) {
+          const filteredResults = generalResults.filter(doc => 
+            mentionedPlatforms.some(p => doc.platform?.toLowerCase() === p || doc.title?.toLowerCase().includes(p))
+          );
+          searchResults = [...searchResults, ...filteredResults].slice(0, 8);
+          console.log(`[RAG-CONTEXT] Filtered for platforms ${mentionedPlatforms.join(', ')}: ${filteredResults.length} documents`);
+        } else {
+          searchResults = [...searchResults, ...generalResults].slice(0, 8);
+        }
+      }
+      
+      if (searchResults && searchResults.length > 0) {
+        console.log(`[RAG-CONTEXT] Final result: ${searchResults.length} relevant documents`);
+        platformDocs = searchResults;
+        
+        // Debug: Log the actual search results to understand the data structure
+        console.log(`[RAG-DEBUG] First result:`, JSON.stringify(searchResults[0], null, 2));
+        
+        // Create rich context with comprehensive documentation content
+        ragContext = searchResults.map(doc => {
+          const title = doc.title || 'Untitled Document';
+          const platform = doc.platform ? `[${doc.platform.toUpperCase()}]` : '[GENERAL]';
+          // Use full content for better context, not just snippets
+          const content = doc.content || doc.snippet || doc.description || 'No content available';
+          const docType = doc.type || doc.document_type || 'general';
+          const keywords = doc.keywords ? (Array.isArray(doc.keywords) ? doc.keywords.join(', ') : doc.keywords) : 'none';
+          
+          return `${platform} ${title}
+Type: ${docType}
+Content: ${content}
+Keywords: ${keywords}`;
+        }).join('\n\n========================================\n\n');
+        
+        // Log the full context being sent to AI
+        console.log(`[RAG-CONTEXT] Full context length: ${ragContext.length} characters`);
+        console.log(`[RAG-CONTEXT] Context preview:`, ragContext.substring(0, 500));
+        
+        // Enhanced chat messages with comprehensive context
         if (ragContext) {
-          const contextualMessage = `Based on the following documentation:\n\n${ragContext}\n\nUser Question: ${userQuery}`;
+          const systemPrompt = `You are an expert AI assistant with access to comprehensive documentation for no-code and AI-powered development platforms. Your primary role is to provide detailed, accurate answers based EXCLUSIVELY on the provided documentation context.
+
+CRITICAL INSTRUCTIONS:
+1. ALWAYS use the provided documentation context as your primary source of information
+2. Provide specific, detailed answers based on the documentation content
+3. Include exact features, capabilities, and implementation steps from the context
+4. Never say there isn't enough context - use ALL available information from the documentation
+5. Structure answers with clear sections: Overview, Key Features, How to Use, Examples
+6. Reference specific platform names and features mentioned in the documentation
+
+Platform Expertise Areas:
+- Lovable.dev: AI fullstack engineer, component systems, Supabase integration
+- Bolt.new: AI development environment, real-time coding
+- Cursor: AI code editor, chat features, composer tools
+- Windsurf: Collaborative development platform
+- Replit: Cloud development environment
+
+Format your response with:
+1. Clear overview of the platform/topic
+2. Detailed feature explanations from the documentation
+3. Step-by-step usage instructions
+4. Practical examples and best practices`;
+
+          const contextualMessage = `DOCUMENTATION CONTEXT (Use this as your primary information source):
+
+${ragContext}
+
+---
+
+USER QUESTION: ${userQuery}
+
+INSTRUCTIONS: Provide a comprehensive, detailed answer using the documentation context above. Include all relevant information, features, and implementation guidance found in the context. Structure your response clearly and reference specific documentation details.`;
+          
           chatMessages = [
-            { role: 'system', content: 'You are a helpful AI assistant with access to comprehensive platform documentation. Use the provided documentation context to give accurate, specific answers about development platforms and tools.' },
+            { role: 'system', content: systemPrompt },
             { role: 'user', content: contextualMessage }
           ];
         }
+      } else {
+        console.log(`[RAG-CONTEXT] No relevant documents found for query: ${userQuery}`);
       }
     } catch (ragError) {
       console.warn('[RAG-CONTEXT] RAG search failed:', ragError);
