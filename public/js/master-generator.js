@@ -469,6 +469,13 @@ RULES:
             promptResult.textContent += token;
             this.tokenCounter++;
             
+            // Update real-time character count display
+            const currentCharCount = promptResult.textContent.length;
+            const charCount = document.getElementById('charCount');
+            if (charCount) {
+                charCount.textContent = `Characters: ${currentCharCount.toLocaleString()}`;
+            }
+            
             // Track token timing for speed calculation
             const now = Date.now();
             this.tokenTimes.push(now);
@@ -615,21 +622,61 @@ RULES:
 
     completeStreaming(fullContent) {
         try {
-            // Clean up streaming UI
-            this.cleanupStreamingUI();
+            const actualCharCount = fullContent.length;
+            console.log(`[COMPLETION] Actual character count: ${actualCharCount}`);
+            
+            // Keep streaming stats visible with final counts
+            const streamingStats = document.getElementById('streamingStats');
+            if (streamingStats) {
+                streamingStats.classList.remove('hidden');
+                
+                // Update final character count
+                const charCount = document.getElementById('charCount');
+                if (charCount) {
+                    charCount.textContent = `Characters: ${actualCharCount.toLocaleString()}`;
+                }
+                
+                // Update token count
+                const tokenCount = document.getElementById('tokenCount');
+                if (tokenCount) {
+                    const tokens = this.tokenCounter || Math.floor(actualCharCount / 4);
+                    tokenCount.textContent = `Tokens: ${tokens.toLocaleString()}`;
+                }
+                
+                // Update timing
+                const totalTime = Date.now() - this.streamStartTime;
+                const timingInfo = document.getElementById('timingInfo');
+                if (timingInfo) {
+                    timingInfo.textContent = `Time: ${(totalTime / 1000).toFixed(1)}s`;
+                }
+            }
+            
+            // Hide only progress controls, keep stats
+            const progressContainer = document.getElementById('progressContainer');
+            const pauseBtn = document.getElementById('pauseStream');
+            const resumeBtn = document.getElementById('resumeStream');
+            
+            if (progressContainer) progressContainer.classList.add('hidden');
+            if (pauseBtn) pauseBtn.classList.add('hidden');
+            if (resumeBtn) resumeBtn.classList.add('hidden');
+            
+            if (this.streamingInterval) {
+                clearInterval(this.streamingInterval);
+                this.streamingInterval = null;
+            }
             
             // Create response data for compatibility
             this.currentPromptData = {
                 prompt: fullContent,
                 success: true,
                 metadata: {
-                    usage: { total_tokens: this.tokenCounter || Math.floor(fullContent.length / 4) },
-                    responseTime: Date.now() - this.streamStartTime
+                    usage: { total_tokens: this.tokenCounter || Math.floor(actualCharCount / 4) },
+                    responseTime: Date.now() - this.streamStartTime,
+                    characterCount: actualCharCount
                 }
             };
             
-            this.displayMetadata(this.currentPromptData);
-            this.showSuccess('Master blueprint generated successfully');
+            this.showSuccess(`Blueprint completed: ${actualCharCount.toLocaleString()} characters`);
             this.updateUI('idle');
         } catch (error) {
             console.error('Error completing streaming:', error);
