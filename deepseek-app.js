@@ -10,6 +10,7 @@ const nodemailer = require('nodemailer');
 const UnifiedRAGSystem = require('./unified-rag-system');
 const SeamlessRAGIntegration = require('./seamless-rag-integration');
 const DeepSeekService = require('./services/deepseekService');
+const MCPDocumentServer = require('./services/mcpDocumentServer');
 const database = require('./database');
 
 const app = express();
@@ -25,6 +26,11 @@ const pool = database;
 const WorkingDeepSeekService = require('./services/workingDeepSeekService');
 global.deepSeekService = new WorkingDeepSeekService();
 console.log('[DEEPSEEK] Service initialized');
+
+// Initialize MCP Document Server
+const mcpServer = new MCPDocumentServer();
+global.mcpDocumentServer = mcpServer;
+console.log('[MCP-SERVER] Document server initialized');
 
 // Wrapper function to maintain compatibility
 async function queryWithRetry(queryText, params = [], retries = 3) {
@@ -1651,6 +1657,101 @@ app.delete('/api/prompts/:id', optionalAuth, async (req, res) => {
       error: 'Failed to delete prompt',
       code: 'DELETE_PROMPT_ERROR'
     });
+  }
+});
+
+// MCP Document Server API Endpoints
+app.post('/api/mcp/request', async (req, res) => {
+  try {
+    const response = await mcpServer.handleRequest(req.body);
+    res.json(response);
+  } catch (error) {
+    console.error('[MCP-API] Request handling error:', error);
+    res.status(500).json({
+      jsonrpc: "2.0",
+      id: req.body.id,
+      error: {
+        code: -32603,
+        message: "Internal error",
+        data: error.message
+      }
+    });
+  }
+});
+
+// MCP Server Status Endpoint
+app.get('/api/mcp/status', async (req, res) => {
+  try {
+    const stats = await mcpServer.getDocumentStats();
+    res.json({
+      status: 'active',
+      protocol_version: mcpServer.protocol_version,
+      server_info: mcpServer.server_info,
+      capabilities: mcpServer.capabilities,
+      document_stats: stats,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('[MCP-STATUS] Error:', error);
+    res.status(500).json({ error: 'Failed to get MCP server status' });
+  }
+});
+
+// MCP Document Search Endpoint (Direct Access)
+app.post('/api/mcp/search', async (req, res) => {
+  try {
+    const { query, platform, limit } = req.body;
+    
+    const mcpRequest = {
+      jsonrpc: "2.0",
+      method: "tools/call",
+      params: {
+        name: "search_documents",
+        arguments: { query, platform, limit }
+      },
+      id: Date.now()
+    };
+
+    const response = await mcpServer.handleRequest(mcpRequest);
+    
+    if (response.error) {
+      return res.status(400).json(response.error);
+    }
+
+    const result = JSON.parse(response.result.content[0].text);
+    res.json(result);
+  } catch (error) {
+    console.error('[MCP-SEARCH] Error:', error);
+    res.status(500).json({ error: 'MCP search failed' });
+  }
+});
+
+// MCP Cross-Platform Analysis Endpoint
+app.post('/api/mcp/analyze', async (req, res) => {
+  try {
+    const { platforms, topic } = req.body;
+    
+    const mcpRequest = {
+      jsonrpc: "2.0",
+      method: "tools/call",
+      params: {
+        name: "cross_platform_analysis",
+        arguments: { platforms, topic }
+      },
+      id: Date.now()
+    };
+
+    const response = await mcpServer.handleRequest(mcpRequest);
+    
+    if (response.error) {
+      return res.status(400).json(response.error);
+    }
+
+    const result = JSON.parse(response.result.content[0].text);
+    res.json(result);
+  } catch (error) {
+    console.error('[MCP-ANALYZE] Error:', error);
+    res.status(500).json({ error: 'MCP analysis failed' });
   }
 });
 

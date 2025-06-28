@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP Document Access - DeepSeek AI Platform</title>
+    <link rel="stylesheet" href="/css/tailwind.css">
+    <style>
+        .mcp-console {
+            background: #1a1a1a;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            padding: 1rem;
+            border-radius: 8px;
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #333;
+        }
+        .mcp-input {
+            background: #000;
+            color: #00ff00;
+            border: 1px solid #333;
+            padding: 0.5rem;
+            font-family: 'Courier New', monospace;
+        }
+        .protocol-badge {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+        }
+        .status-active {
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <!-- Navigation -->
+    <nav class="bg-black border-b border-gray-800">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-xl font-bold">MCP Document Server</h1>
+                    <div class="protocol-badge text-white px-3 py-1 rounded-full text-sm">
+                        JSON-RPC 2.0
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div id="statusIndicator" class="w-3 h-3 bg-green-500 rounded-full status-active"></div>
+                        <span class="text-sm">MCP Server Active</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-6 py-8">
+        <!-- Header -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold mb-2">Model Context Protocol Document Access</h2>
+            <p class="text-gray-400">Universal AI-to-document connectivity - "USB-C for AI"</p>
+        </div>
+
+        <!-- Server Status -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-100 text-sm">Total Documents</p>
+                        <p class="text-3xl font-bold text-white" id="totalDocs">759</p>
+                        <p class="text-blue-200 text-xs mt-1">All platforms</p>
+                    </div>
+                    <div class="text-blue-200">📚</div>
+                </div>
+            </div>
+            
+            <div class="bg-gradient-to-br from-green-600 to-green-700 rounded-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-100 text-sm">Active Tools</p>
+                        <p class="text-3xl font-bold text-white" id="activeTools">5</p>
+                        <p class="text-green-200 text-xs mt-1">Available operations</p>
+                    </div>
+                    <div class="text-green-200">🔧</div>
+                </div>
+            </div>
+            
+            <div class="bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-purple-100 text-sm">Resources</p>
+                        <p class="text-3xl font-bold text-white" id="activeResources">6</p>
+                        <p class="text-purple-200 text-xs mt-1">URI endpoints</p>
+                    </div>
+                    <div class="text-purple-200">📡</div>
+                </div>
+            </div>
+            
+            <div class="bg-gradient-to-br from-orange-600 to-orange-700 rounded-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-orange-100 text-sm">Platforms</p>
+                        <p class="text-3xl font-bold text-white" id="platformCount">5</p>
+                        <p class="text-orange-200 text-xs mt-1">Connected systems</p>
+                    </div>
+                    <div class="text-orange-200">🔗</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MCP Protocol Interface -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Panel: MCP Operations -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h3 class="text-xl font-semibold mb-4">MCP Protocol Operations</h3>
+                
+                <!-- Tool Selection -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Select MCP Tool</label>
+                    <select id="mcpTool" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                        <option value="search_documents">Search Documents</option>
+                        <option value="get_platform_documents">Get Platform Documents</option>
+                        <option value="cross_platform_analysis">Cross-Platform Analysis</option>
+                        <option value="get_document_stats">Document Statistics</option>
+                        <option value="get_document_by_id">Get Document by ID</option>
+                    </select>
+                </div>
+
+                <!-- Parameters -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Query/Parameters</label>
+                    <input type="text" id="mcpQuery" placeholder="Enter search query or parameters..." 
+                           class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Platform Filter</label>
+                        <select id="platformFilter" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                            <option value="">All Platforms</option>
+                            <option value="replit">Replit</option>
+                            <option value="lovable">Lovable</option>
+                            <option value="bolt">Bolt</option>
+                            <option value="cursor">Cursor</option>
+                            <option value="windsurf">Windsurf</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Limit Results</label>
+                        <input type="number" id="resultLimit" value="10" min="1" max="100" 
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+                    </div>
+                </div>
+
+                <!-- Execute Button -->
+                <button id="executeMCP" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition duration-200">
+                    Execute MCP Request
+                </button>
+
+                <!-- Quick Actions -->
+                <div class="mt-6">
+                    <h4 class="text-lg font-medium mb-3">Quick Actions</h4>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="quickSearch('database')" class="bg-gray-700 hover:bg-gray-600 text-sm py-2 px-3 rounded">
+                            Search: Database
+                        </button>
+                        <button onclick="quickSearch('authentication')" class="bg-gray-700 hover:bg-gray-600 text-sm py-2 px-3 rounded">
+                            Search: Auth
+                        </button>
+                        <button onclick="getStats()" class="bg-gray-700 hover:bg-gray-600 text-sm py-2 px-3 rounded">
+                            Get Statistics
+                        </button>
+                        <button onclick="crossPlatformDemo()" class="bg-gray-700 hover:bg-gray-600 text-sm py-2 px-3 rounded">
+                            Cross-Platform
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: MCP Console -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h3 class="text-xl font-semibold mb-4">MCP Protocol Console</h3>
+                <div class="mcp-console" id="mcpConsole">
+                    <div class="text-green-400">[MCP] Model Context Protocol Server Ready</div>
+                    <div class="text-blue-400">[INFO] Protocol Version: 2024-11-05</div>
+                    <div class="text-blue-400">[INFO] Server: DeepSeek Document Server v1.0.0</div>
+                    <div class="text-green-400">[READY] 759+ documents accessible via JSON-RPC 2.0</div>
+                    <div class="text-yellow-400">[CAPABILITIES] Tools: ✓ Resources: ✓ Prompts: ✓</div>
+                    <div class="text-gray-400">────────────────────────────────────────────</div>
+                </div>
+                
+                <!-- Clear Console -->
+                <div class="mt-4 flex justify-between">
+                    <button onclick="clearConsole()" class="bg-red-600 hover:bg-red-700 text-white text-sm py-1 px-3 rounded">
+                        Clear Console
+                    </button>
+                    <div class="text-sm text-gray-400">
+                        Protocol: JSON-RPC 2.0 | Transport: HTTP/SSE
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Platform Coverage -->
+        <div class="mt-8 bg-gray-800 rounded-lg p-6">
+            <h3 class="text-xl font-semibold mb-4">Platform Document Coverage</h3>
+            <div class="grid grid-cols-5 gap-4" id="platformCoverage">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let mcpRequestId = 1;
+
+        // Initialize MCP Client Demo
+        document.addEventListener('DOMContentLoaded', async () => {
+            logToConsole('[INIT] Initializing MCP client demo...', 'info');
+            await loadServerStatus();
+            await loadPlatformCoverage();
+            logToConsole('[READY] MCP client demo ready for document access', 'success');
+        });
+
+        // Execute MCP Request
+        document.getElementById('executeMCP').addEventListener('click', async () => {
+            const tool = document.getElementById('mcpTool').value;
+            const query = document.getElementById('mcpQuery').value;
+            const platform = document.getElementById('platformFilter').value;
+            const limit = parseInt(document.getElementById('resultLimit').value);
+
+            await executeMCPTool(tool, { query, platform, limit });
+        });
+
+        // Execute MCP Tool
+        async function executeMCPTool(toolName, args) {
+            const requestId = mcpRequestId++;
+            
+            logToConsole(`[REQUEST ${requestId}] Executing tool: ${toolName}`, 'info');
+            logToConsole(`[PARAMS] ${JSON.stringify(args)}`, 'debug');
+
+            try {
+                const mcpRequest = {
+                    jsonrpc: "2.0",
+                    method: "tools/call",
+                    params: {
+                        name: toolName,
+                        arguments: args
+                    },
+                    id: requestId
+                };
+
+                const response = await fetch('/api/mcp/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(mcpRequest)
+                });
+
+                const result = await response.json();
+
+                if (result.error) {
+                    logToConsole(`[ERROR ${requestId}] ${result.error.message}`, 'error');
+                    logToConsole(`[ERROR DATA] ${result.error.data}`, 'error');
+                } else {
+                    logToConsole(`[SUCCESS ${requestId}] Tool executed successfully`, 'success');
+                    const content = JSON.parse(result.result.content[0].text);
+                    displayMCPResult(content);
+                }
+            } catch (error) {
+                logToConsole(`[ERROR ${requestId}] ${error.message}`, 'error');
+            }
+        }
+
+        // Display MCP Result
+        function displayMCPResult(result) {
+            if (result.documents) {
+                logToConsole(`[RESULT] Found ${result.documents.length} documents`, 'success');
+                result.documents.slice(0, 3).forEach((doc, index) => {
+                    logToConsole(`[DOC ${index + 1}] ${doc.title} (${doc.platform})`, 'info');
+                });
+                if (result.documents.length > 3) {
+                    logToConsole(`[INFO] ... and ${result.documents.length - 3} more documents`, 'info');
+                }
+            } else if (result.totalDocuments) {
+                logToConsole(`[STATS] Total: ${result.totalDocuments} documents`, 'success');
+                if (result.platformBreakdown) {
+                    Object.entries(result.platformBreakdown).forEach(([platform, count]) => {
+                        logToConsole(`[PLATFORM] ${platform}: ${count} docs`, 'info');
+                    });
+                }
+            } else if (result.analysis) {
+                logToConsole(`[ANALYSIS] Cross-platform analysis completed`, 'success');
+                Object.entries(result.analysis).forEach(([platform, data]) => {
+                    logToConsole(`[${platform.toUpperCase()}] ${data.relevantDocuments} relevant docs`, 'info');
+                });
+            }
+        }
+
+        // Quick Actions
+        function quickSearch(query) {
+            document.getElementById('mcpQuery').value = query;
+            document.getElementById('mcpTool').value = 'search_documents';
+            executeMCPTool('search_documents', { query, limit: 10 });
+        }
+
+        function getStats() {
+            document.getElementById('mcpTool').value = 'get_document_stats';
+            executeMCPTool('get_document_stats', {});
+        }
+
+        function crossPlatformDemo() {
+            document.getElementById('mcpTool').value = 'cross_platform_analysis';
+            executeMCPTool('cross_platform_analysis', {
+                platforms: ['replit', 'lovable', 'bolt'],
+                topic: 'database integration'
+            });
+        }
+
+        // Load Server Status
+        async function loadServerStatus() {
+            try {
+                const response = await fetch('/api/mcp/status');
+                const status = await response.json();
+                
+                if (status.document_stats) {
+                    document.getElementById('totalDocs').textContent = status.document_stats.totalDocuments || '759';
+                    document.getElementById('platformCount').textContent = Object.keys(status.document_stats.platformBreakdown || {}).length || '5';
+                }
+
+                logToConsole(`[STATUS] Server: ${status.server_info.name} v${status.server_info.version}`, 'info');
+                logToConsole(`[STATUS] Protocol: ${status.protocol_version}`, 'info');
+            } catch (error) {
+                logToConsole(`[ERROR] Failed to load server status: ${error.message}`, 'error');
+            }
+        }
+
+        // Load Platform Coverage
+        async function loadPlatformCoverage() {
+            try {
+                const response = await fetch('/api/mcp/status');
+                const status = await response.json();
+                
+                const coverageDiv = document.getElementById('platformCoverage');
+                const platforms = ['replit', 'lovable', 'bolt', 'cursor', 'windsurf'];
+                
+                platforms.forEach(platform => {
+                    const count = status.document_stats?.platformBreakdown?.[platform] || 0;
+                    const div = document.createElement('div');
+                    div.className = 'bg-gray-700 rounded-lg p-4 text-center';
+                    div.innerHTML = `
+                        <div class="text-2xl font-bold text-blue-400">${count}</div>
+                        <div class="text-sm text-gray-300 capitalize">${platform}</div>
+                        <div class="text-xs text-gray-500 mt-1">documents</div>
+                    `;
+                    coverageDiv.appendChild(div);
+                });
+            } catch (error) {
+                console.error('Failed to load platform coverage:', error);
+            }
+        }
+
+        // Console Logging
+        function logToConsole(message, type = 'info') {
+            const console = document.getElementById('mcpConsole');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const colors = {
+                info: 'text-blue-400',
+                success: 'text-green-400',
+                error: 'text-red-400',
+                warning: 'text-yellow-400',
+                debug: 'text-gray-400'
+            };
+
+            const div = document.createElement('div');
+            div.className = colors[type] || colors.info;
+            div.textContent = `[${timestamp}] ${message}`;
+            
+            console.appendChild(div);
+            console.scrollTop = console.scrollHeight;
+        }
+
+        // Clear Console
+        function clearConsole() {
+            const console = document.getElementById('mcpConsole');
+            console.innerHTML = `
+                <div class="text-green-400">[MCP] Console cleared - Model Context Protocol Server Ready</div>
+                <div class="text-gray-400">────────────────────────────────────────────</div>
+            `;
+        }
+    </script>
+</body>
+</html>
