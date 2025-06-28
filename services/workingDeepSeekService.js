@@ -48,8 +48,8 @@ class WorkingDeepSeekService {
           model: this.models.chat,
           messages: messages,
           stream: true,
-          temperature: 0.7,
-          max_tokens: 4000
+          temperature: 0.9,
+          max_tokens: 16000
         }),
         signal: controller.signal
       });

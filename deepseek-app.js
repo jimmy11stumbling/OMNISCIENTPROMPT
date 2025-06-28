@@ -581,7 +581,15 @@ REQUIRED BLUEPRINT STRUCTURE (EACH SECTION MUST BE COMPREHENSIVE):
 ## 7. DEPLOYMENT & INFRASTRUCTURE (2000+ characters)
 ## 8. TESTING & QUALITY ASSURANCE (2000+ characters)
 
-⚠️ REMEMBER: 15,000+ CHARACTERS MINIMUM IS NON-NEGOTIABLE ⚠️`;
+⚠️ REMEMBER: 15,000+ CHARACTERS MINIMUM IS NON-NEGOTIABLE ⚠️
+
+GENERATION STRATEGY:
+- Write extensively for each section with detailed explanations
+- Include complete code files with full implementations 
+- Add comprehensive configuration examples
+- Provide thorough deployment instructions
+- Continue writing until you reach 15,000+ characters minimum
+- DO NOT stop generating until blueprint is complete and exceeds 15,000 characters`;
 
           const contextualMessage = `🚨 GENERATE 15,000+ CHARACTER MASTER BLUEPRINT - NO EXCEPTIONS 🚨
 
@@ -601,7 +609,16 @@ USER REQUEST: Generate a comprehensive master blueprint for: ${userQuery}
 - NEVER generate short responses - only comprehensive 15,000+ character blueprints
 - Each section must be detailed with extensive code examples and explanations
 
-START GENERATING THE COMPLETE 15,000+ CHARACTER MASTER BLUEPRINT NOW:`;
+MANDATORY REQUIREMENTS FOR THIS BLUEPRINT:
+- EXACTLY 15,000+ CHARACTERS MINIMUM - NO EXCEPTIONS
+- EXPLICITLY DETAILED FULL-STACK APPLICATION BLUEPRINT
+- COMPLETE PRODUCTION-READY IMPLEMENTATION GUIDE
+- ALL 8 SECTIONS MUST BE COMPREHENSIVE WITH EXTENSIVE CODE EXAMPLES
+- INCLUDE COMPLETE FILE STRUCTURES, DATABASE SCHEMAS, API ENDPOINTS
+- PROVIDE DETAILED DEPLOYMENT CONFIGURATIONS AND TESTING STRATEGIES
+- CONTINUE GENERATING UNTIL BLUEPRINT EXCEEDS 15,000 CHARACTERS
+
+BEGIN GENERATING THE COMPLETE 15,000+ CHARACTER EXPLICITLY DETAILED FULL-STACK MASTER BLUEPRINT NOW - DO NOT STOP UNTIL COMPLETE:`;
           
           chatMessages = [
             { role: 'system', content: systemPrompt },
