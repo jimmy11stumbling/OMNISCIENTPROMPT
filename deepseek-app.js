@@ -279,6 +279,31 @@ app.post('/api/rag/search', async (req, res) => {
   }
 });
 
+// Get full document content by ID
+app.get('/api/rag/document/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await pool.query(`
+      SELECT id, title, content, platform, document_type, keywords, created_at
+      FROM rag_documents 
+      WHERE id = $1
+    `, [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    
+    res.json({
+      success: true,
+      document: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error fetching document:', error);
+    res.status(500).json({ error: 'Failed to fetch document' });
+  }
+});
+
 // Rate limiting middleware with cleanup
 const rateLimitStore = new Map();
 

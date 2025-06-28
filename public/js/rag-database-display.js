@@ -171,7 +171,8 @@ class RAGDatabaseDisplay {
         }
 
         docsContainer.innerHTML = recentDocuments.map(doc => `
-            <div class="bg-gray-700 p-4 rounded-lg hover:bg-gray-600 transition-colors">
+            <div class="bg-gray-700 p-4 rounded-lg hover:bg-gray-600 transition-colors cursor-pointer" 
+                 onclick="ragDisplay.viewDocumentById(${doc.id})">
                 <div class="flex justify-between items-start mb-2">
                     <h4 class="font-medium text-white truncate">${doc.title}</h4>
                     <span class="bg-gray-600 px-2 py-1 rounded text-xs text-gray-300 ml-2">
@@ -179,8 +180,13 @@ class RAGDatabaseDisplay {
                     </span>
                 </div>
                 <p class="text-gray-300 text-sm mb-2 line-clamp-2">${doc.preview}</p>
-                <div class="text-xs text-gray-400">
-                    ${new Date(doc.created_at).toLocaleDateString()}
+                <div class="flex justify-between items-center">
+                    <div class="text-xs text-gray-400">
+                        ${new Date(doc.created_at).toLocaleDateString()}
+                    </div>
+                    <button class="text-blue-400 hover:text-blue-300 text-sm">
+                        View Full Document →
+                    </button>
                 </div>
             </div>
         `).join('');
@@ -300,6 +306,178 @@ class RAGDatabaseDisplay {
         this.showNotification('Data refreshed successfully', 'success');
     }
 
+    viewDocument(platform, documentIndex) {
+        const platformData = this.platformData[platform];
+        if (!platformData || !platformData.recentDocuments || !platformData.recentDocuments[documentIndex]) {
+            this.showNotification('Document not found', 'error');
+            return;
+        }
+
+        const doc = platformData.recentDocuments[documentIndex];
+        this.openDocumentModal(doc, platform);
+    }
+
+    async viewDocumentById(documentId) {
+        try {
+            const response = await fetch(`/api/rag/document/${documentId}`);
+            if (!response.ok) {
+                this.showNotification('Failed to load document', 'error');
+                return;
+            }
+
+            const result = await response.json();
+            if (result.success && result.document) {
+                this.openDocumentModalWithFullContent(result.document);
+            } else {
+                this.showNotification('Document not found', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading document:', error);
+            this.showNotification('Error loading document', 'error');
+        }
+    }
+
+    openDocumentModal(doc, platform) {
+        // Create modal if it doesn't exist
+        let modal = document.getElementById('document-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'document-modal';
+            modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden';
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg max-w-4xl max-h-[80vh] w-full mx-4 flex flex-col">
+                    <div class="flex justify-between items-center p-6 border-b border-gray-700">
+                        <h2 class="text-xl font-bold text-white" id="modal-title"></h2>
+                        <button onclick="ragDisplay.closeDocumentModal()" class="text-gray-400 hover:text-white text-2xl">×</button>
+                    </div>
+                    <div class="p-6 overflow-y-auto flex-1">
+                        <div class="mb-4">
+                            <span class="bg-blue-600 px-3 py-1 rounded text-sm text-white" id="modal-platform"></span>
+                            <span class="bg-gray-600 px-3 py-1 rounded text-sm text-gray-300 ml-2" id="modal-type"></span>
+                            <span class="text-gray-400 text-sm ml-4" id="modal-date"></span>
+                        </div>
+                        <div class="text-gray-300 whitespace-pre-wrap" id="modal-content"></div>
+                    </div>
+                    <div class="p-6 border-t border-gray-700 flex justify-between">
+                        <button onclick="ragDisplay.copyDocumentContent()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white">
+                            Copy Content
+                        </button>
+                        <button onclick="ragDisplay.closeDocumentModal()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded text-white">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Populate modal with document data
+        document.getElementById('modal-title').textContent = doc.title;
+        document.getElementById('modal-platform').textContent = platform.toUpperCase();
+        document.getElementById('modal-type').textContent = doc.document_type;
+        document.getElementById('modal-date').textContent = new Date(doc.created_at).toLocaleDateString();
+        
+        // Load full document content
+        this.loadFullDocumentContent(doc, platform);
+        
+        // Show modal
+        modal.classList.remove('hidden');
+    }
+
+    openDocumentModalWithFullContent(doc) {
+        // Create modal if it doesn't exist
+        let modal = document.getElementById('document-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'document-modal';
+            modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden';
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg max-w-4xl max-h-[80vh] w-full mx-4 flex flex-col">
+                    <div class="flex justify-between items-center p-6 border-b border-gray-700">
+                        <h2 class="text-xl font-bold text-white" id="modal-title"></h2>
+                        <button onclick="ragDisplay.closeDocumentModal()" class="text-gray-400 hover:text-white text-2xl">×</button>
+                    </div>
+                    <div class="p-6 overflow-y-auto flex-1">
+                        <div class="mb-4">
+                            <span class="bg-blue-600 px-3 py-1 rounded text-sm text-white" id="modal-platform"></span>
+                            <span class="bg-gray-600 px-3 py-1 rounded text-sm text-gray-300 ml-2" id="modal-type"></span>
+                            <span class="text-gray-400 text-sm ml-4" id="modal-date"></span>
+                        </div>
+                        <div class="text-gray-300 whitespace-pre-wrap font-mono text-sm" id="modal-content"></div>
+                    </div>
+                    <div class="p-6 border-t border-gray-700 flex justify-between">
+                        <button onclick="ragDisplay.copyDocumentContent()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white">
+                            Copy Content
+                        </button>
+                        <button onclick="ragDisplay.closeDocumentModal()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded text-white">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Populate modal with full document data
+        document.getElementById('modal-title').textContent = doc.title;
+        document.getElementById('modal-platform').textContent = doc.platform.toUpperCase();
+        document.getElementById('modal-type').textContent = doc.document_type;
+        document.getElementById('modal-date').textContent = new Date(doc.created_at).toLocaleDateString();
+        document.getElementById('modal-content').textContent = doc.content;
+        
+        // Show modal
+        modal.classList.remove('hidden');
+    }
+
+    async loadFullDocumentContent(doc, platform) {
+        const contentElement = document.getElementById('modal-content');
+        contentElement.innerHTML = '<div class="text-center py-8"><div class="animate-spin w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full mx-auto"></div><p class="mt-2 text-gray-400">Loading full document...</p></div>';
+
+        try {
+            // Try to get full document content from the API
+            const response = await fetch('/api/rag/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query: doc.title.replace(/^\[.*?\]\s*/, ''), // Remove platform prefix
+                    platform: platform,
+                    limit: 1
+                })
+            });
+
+            if (response.ok) {
+                const results = await response.json();
+                if (results.results && results.results.length > 0) {
+                    const fullDoc = results.results[0];
+                    contentElement.textContent = fullDoc.content || doc.preview;
+                } else {
+                    contentElement.textContent = doc.preview || 'No content available';
+                }
+            } else {
+                contentElement.textContent = doc.preview || 'No content available';
+            }
+        } catch (error) {
+            console.error('Error loading full document:', error);
+            contentElement.textContent = doc.preview || 'Error loading document content';
+        }
+    }
+
+    closeDocumentModal() {
+        const modal = document.getElementById('document-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+
+    copyDocumentContent() {
+        const content = document.getElementById('modal-content').textContent;
+        navigator.clipboard.writeText(content).then(() => {
+            this.showNotification('Document content copied to clipboard', 'success');
+        }).catch(() => {
+            this.showNotification('Failed to copy content', 'error');
+        });
+    }
+
     showNotification(message, type = 'info') {
         console.log(`[RAG-DATABASE] ${type.toUpperCase()}: ${message}`);
         
@@ -332,7 +510,7 @@ class RAGDatabaseDisplay {
 // Initialize the RAG Database Display when the page loads
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[RAG-DATABASE] Page loaded, initializing display...');
-    new RAGDatabaseDisplay();
+    window.ragDisplay = new RAGDatabaseDisplay();
 });
 
 // Make it globally available
