@@ -270,7 +270,7 @@ RULES:
             const promptResult = document.getElementById('promptResult');
 
             let lastActivity = Date.now();
-            const activityTimeout = 30000; // 30 second inactivity timeout
+            const activityTimeout = 300000; // 5 minute inactivity timeout for master blueprints
 
             while (true) {
                 try {
