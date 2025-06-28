@@ -1550,6 +1550,110 @@ app.get('/api/templates', async (req, res) => {
   }
 });
 
+// POST endpoint for saving prompts
+app.post('/api/prompts', optionalAuth, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ 
+        error: 'Authentication required to save prompts',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+
+    const {
+      title,
+      originalQuery,
+      platform,
+      generatedPrompt,
+      reasoning,
+      ragContext,
+      tokensUsed,
+      responseTime
+    } = req.body;
+
+    // Validate required fields
+    if (!title || !originalQuery || !platform || !generatedPrompt) {
+      return res.status(400).json({
+        error: 'Missing required fields: title, originalQuery, platform, generatedPrompt',
+        code: 'VALIDATION_ERROR'
+      });
+    }
+
+    // Generate title if not provided
+    const finalTitle = title || `${platform}: ${originalQuery.substring(0, 50)}${originalQuery.length > 50 ? '...' : ''} (${new Date().toLocaleDateString()})`;
+
+    const result = await queryWithRetry(`
+      INSERT INTO saved_prompts (
+        user_id, title, original_query, platform, generated_prompt, 
+        reasoning, rag_context, tokens_used, response_time
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      req.user.id,
+      finalTitle,
+      originalQuery,
+      platform,
+      generatedPrompt,
+      reasoning || '',
+      JSON.stringify(ragContext || []),
+      tokensUsed || 0,
+      responseTime || 0
+    ]);
+
+    console.log('[PROMPT-SAVE] Saved prompt successfully for user:', req.user.id);
+
+    res.json({
+      message: 'Prompt saved successfully',
+      id: result.lastInsertRowid || result.insertId,
+      title: finalTitle
+    });
+
+  } catch (error) {
+    console.error('[PROMPT-SAVE] Save prompt error:', error);
+    res.status(500).json({ 
+      error: 'Failed to save prompt',
+      code: 'SAVE_PROMPT_ERROR',
+      details: error.message
+    });
+  }
+});
+
+// DELETE endpoint for removing saved prompts
+app.delete('/api/prompts/:id', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!req.user) {
+      return res.status(401).json({ 
+        error: 'Authentication required',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+
+    const result = await queryWithRetry(
+      'DELETE FROM saved_prompts WHERE id = ? AND user_id = ?',
+      [id, req.user.id]
+    );
+
+    if (result.changes === 0) {
+      return res.status(404).json({ 
+        error: 'Prompt not found',
+        code: 'PROMPT_NOT_FOUND'
+      });
+    }
+
+    console.log('[PROMPT-DELETE] Deleted prompt:', id, 'for user:', req.user.id);
+
+    res.json({ message: 'Prompt deleted successfully' });
+
+  } catch (error) {
+    console.error('[PROMPT-DELETE] Delete saved prompt error:', error);
+    res.status(500).json({ 
+      error: 'Failed to delete prompt',
+      code: 'DELETE_PROMPT_ERROR'
+    });
+  }
+});
+
 // Initialize RAG system and validator
 const ragSystem = new UnifiedRAGSystem(pool);
 const realTimeValidator = new RealTimeValidator();
