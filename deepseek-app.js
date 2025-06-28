@@ -189,21 +189,32 @@ app.get('/api/rag/platform/:platform', async (req, res) => {
   try {
     const { platform } = req.params;
     
-    const result = await database.queryAsync(`
+    const result = await pool.query(`
       SELECT COUNT(*) as count, document_type, MAX(created_at) as last_updated
       FROM rag_documents 
-      WHERE platform = ?
+      WHERE platform = $1
       GROUP BY document_type
     `, [platform]);
     
-    const totalResult = await database.queryAsync(`
-      SELECT COUNT(*) as total FROM rag_documents WHERE platform = ?
+    const totalResult = await pool.query(`
+      SELECT COUNT(*) as total FROM rag_documents WHERE platform = $1
     `, [platform]);
     
+    // Also get recent documents for the platform
+    const documentsResult = await pool.query(`
+      SELECT title, document_type, created_at, 
+             SUBSTRING(content, 1, 200) as preview
+      FROM rag_documents 
+      WHERE platform = $1
+      ORDER BY created_at DESC
+      LIMIT 10
+    `, [platform]);
+
     res.json({
       platform,
-      count: totalResult.rows[0]?.total || 0,
+      count: parseInt(totalResult.rows[0]?.count) || 0,
       documentTypes: result.rows,
+      recentDocuments: documentsResult.rows || [],
       lastUpdated: result.rows[0]?.last_updated || null
     });
   } catch (error) {
@@ -215,25 +226,25 @@ app.get('/api/rag/platform/:platform', async (req, res) => {
 // All platforms overview endpoint
 app.get('/api/rag/overview', async (req, res) => {
   try {
-    const result = await database.queryAsync(`
+    const result = await pool.query(`
       SELECT 
         platform,
         COUNT(*) as count,
         MAX(created_at) as last_updated,
-        GROUP_CONCAT(DISTINCT document_type) as types
+        STRING_AGG(DISTINCT document_type, ',') as types
       FROM rag_documents 
       GROUP BY platform
     `);
     
-    const totalResult = await database.queryAsync(`
+    const totalResult = await pool.query(`
       SELECT COUNT(*) as total FROM rag_documents
     `);
     
     res.json({
-      total: totalResult.rows[0]?.total || 0,
+      total: parseInt(totalResult.rows[0]?.count) || 0,
       platforms: result.rows.map(row => ({
         platform: row.platform,
-        count: row.count,
+        count: parseInt(row.count),
         lastUpdated: row.last_updated,
         documentTypes: row.types ? row.types.split(',') : []
       }))
