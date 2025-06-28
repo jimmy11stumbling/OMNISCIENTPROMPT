@@ -126,25 +126,30 @@ class WorkingDeepSeekService {
       // For master blueprints, deliver complete content immediately
       let fullContent = response;
       
-      // Complete delivery for comprehensive master blueprints
-      const deliverComplete = async () => {
+      // Stream content word by word for proper real-time delivery
+      const words = fullContent.split(' ');
+      let currentContent = '';
+      
+      for (let i = 0; i < words.length; i++) {
+        const word = i === 0 ? words[i] : ' ' + words[i];
+        currentContent += word;
+        
         try {
-          // Send complete blueprint in one go to avoid timeouts
-          onToken(fullContent);
+          onToken(word);
         } catch (tokenError) {
           console.warn('Token delivery error:', tokenError);
         }
         
-        console.log('[WORKING-DEEPSEEK] Demo streaming completed');
-        try {
-          onComplete(fullContent);
-        } catch (completeError) {
-          console.warn('Completion callback error:', completeError);
-        }
-      };
+        // Small delay for realistic streaming effect
+        await new Promise(resolve => setTimeout(resolve, 20));
+      }
       
-      // Start streaming asynchronously
-      await deliverComplete();
+      console.log('[WORKING-DEEPSEEK] Demo streaming completed');
+      try {
+        onComplete(fullContent);
+      } catch (completeError) {
+        console.warn('Completion callback error:', completeError);
+      }
       
     } catch (error) {
       console.error('[WORKING-DEEPSEEK] Demo streaming error:', error);
