@@ -1,0 +1,948 @@
+# FITNESS APP AI POWERED WITH MCP - BOLT MASTER BLUEPRINT
+
+## 1. Project Setup & WebContainer Configuration
+
+### AI-Generated Project Initialization
+```bash
+# Bolt AI-generated project scaffold
+npx create-bolt-app@latest fitness-ai-mcp --template=fullstack-ts --with-auth --with-realtime
+```
+
+### WebContainer-Optimized package.json
+```json
+{
+  "name": "fitness-ai-mcp",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "generate": "bolt-ai generate",
+    "migrate": "prisma migrate dev",
+    "studio": "prisma studio"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.0.0",
+    "@supabase/supabase-js": "^2.0.0",
+    "ai": "^2.0.0",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-query": "^3.39.3",
+    "socket.io": "^4.7.1",
+    "socket.io-client": "^4.7.1",
+    "vite": "^4.4.0",
+    "vitest": "^0.34.0",
+    "zod": "^3.21.4"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.2",
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@vitejs/plugin-react": "^4.0.3",
+    "prisma": "^5.0.0",
+    "typescript": "^5.0.0"
+  }
+}
+```
+
+### AI-Optimized Vite Config
+```typescript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 3000,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true
+      },
+      '/realtime': {
+        target: 'ws://localhost:5000',
+        ws: true
+      }
+    }
+  },
+  test: {
+    environment: 'happy-dom',
+    setupFiles: ['./vitest.setup.ts']
+  }
+})
+```
+
+## 2. Database Design & ORM Integration
+
+### AI-Generated Prisma Schema
+```prisma
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  password      String
+  name          String?
+  age           Int?
+  weight        Float?
+  height        Float?
+  fitnessLevel  FitnessLevel
+  goals         Goal[]
+  workouts      Workout[]
+  nutrition     Nutrition[]
+  mcpData       McpData[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([email], type: Fulltext)
+}
+
+enum FitnessLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  ELITE
+}
+
+model Goal {
+  id          String     @id @default(uuid())
+  title       String
+  description String
+  targetDate  DateTime
+  progress    Float      @default(0)
+  isCompleted Boolean    @default(false)
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  createdAt   DateTime   @default(now())
+}
+
+model Workout {
+  id          String     @id @default(uuid())
+  name        String
+  description String
+  duration    Int
+  calories    Int
+  exercises   Exercise[]
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  createdAt   DateTime   @default(now())
+}
+
+model Exercise {
+  id          String     @id @default(uuid())
+  name        String
+  sets        Int
+  reps        Int
+  weight      Float?
+  restTime    Int?
+  workoutId   String
+  workout     Workout    @relation(fields: [workoutId], references: [id])
+}
+
+model Nutrition {
+  id          String     @id @default(uuid())
+  mealType    MealType
+  calories    Int
+  protein     Float
+  carbs       Float
+  fats        Float
+  date        DateTime
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  createdAt   DateTime   @default(now())
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+model McpData {
+  id          String     @id @default(uuid())
+  heartRate   Int
+  bloodPressure String
+  oxygenLevel Float
+  stressLevel Float
+  sleepQuality Float
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  createdAt   DateTime   @default(now())
+}
+```
+
+### AI-Assisted Database Migration
+```bash
+# Bolt AI command for initial migration
+bolt-ai generate migration "Initial schema with users, goals, workouts, nutrition, and MCP data"
+
+# Generated migration file will include:
+# - Tables for all models
+# - Relationships and indexes
+# - Enum type definitions
+```
+
+## 3. Backend API with AI-Generated Endpoints
+
+### Express Server Setup
+```typescript
+// server/index.ts
+import express from 'express'
+import { PrismaClient } from '@prisma/client'
+import jwt from 'jsonwebtoken'
+import { Server } from 'socket.io'
+import { createServer } from 'http'
+import cors from 'cors'
+
+const prisma = new PrismaClient()
+const app = express()
+const server = createServer(app)
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+})
+
+app.use(cors())
+app.use(express.json())
+
+// AI-generated middleware for JWT authentication
+const authenticateToken = (req: any, res: any, next: any) => {
+  const authHeader = req.headers['authorization']
+  const token = authHeader && authHeader.split(' ')[1]
+  
+  if (!token) return res.sendStatus(401)
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!, (err: any, user: any) => {
+    if (err) return res.sendStatus(403)
+    req.user = user
+    next()
+  })
+}
+
+// Real-time connection handler
+io.on('connection', (socket) => {
+  console.log('Client connected')
+  
+  socket.on('joinUserRoom', (userId) => {
+    socket.join(userId)
+    console.log(`User ${userId} joined their room`)
+  })
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected')
+  })
+})
+
+// AI-generated API endpoints
+app.post('/api/auth/register', async (req, res) => {
+  // Registration logic with password hashing
+})
+
+app.post('/api/auth/login', async (req, res) => {
+  // Login logic with JWT generation
+})
+
+app.get('/api/user/profile', authenticateToken, async (req, res) => {
+  // Get user profile with fitness data
+})
+
+app.get('/api/workouts', authenticateToken, async (req, res) => {
+  // Get all workouts for user
+})
+
+app.post('/api/workouts', authenticateToken, async (req, res) => {
+  // Create new workout
+})
+
+app.get('/api/nutrition', authenticateToken, async (req, res) => {
+  // Get nutrition data
+})
+
+app.post('/api/mcp-data', authenticateToken, async (req, res) => {
+  // Store MCP sensor data
+})
+
+// AI-generated MCP Analysis Endpoint
+app.post('/api/mcp/analyze', authenticateToken, async (req, res) => {
+  try {
+    const { heartRate, bloodPressure, oxygenLevel, stressLevel, sleepQuality } = req.body
+    const userId = req.user.id
+
+    // AI analysis of MCP data
+    const analysis = await analyzeMcpData({
+      heartRate,
+      bloodPressure,
+      oxygenLevel,
+      stressLevel,
+      sleepQuality
+    })
+
+    // Store analyzed data
+    const mcpRecord = await prisma.mcpData.create({
+      data: {
+        heartRate,
+        bloodPressure,
+        oxygenLevel,
+        stressLevel,
+        sleepQuality,
+        userId
+      }
+    })
+
+    // Real-time update to client
+    io.to(userId).emit('mcpUpdate', {
+      ...mcpRecord,
+      analysis
+    })
+
+    res.json({ ...mcpRecord, analysis })
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to analyze MCP data' })
+  }
+})
+
+// AI-generated workout recommendation endpoint
+app.get('/api/recommendations/workout', authenticateToken, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: { mcpData: { take: 5, orderBy: { createdAt: 'desc' } } }
+    })
+
+    if (!user) return res.status(404).json({ error: 'User not found' })
+
+    const recommendation = await generateWorkoutRecommendation({
+      fitnessLevel: user.fitnessLevel,
+      recentMcpData: user.mcpData,
+      userGoals: await prisma.goal.findMany({
+        where: { userId: user.id, isCompleted: false }
+      })
+    })
+
+    res.json(recommendation)
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to generate recommendation' })
+  }
+})
+
+server.listen(5000, () => {
+  console.log('Server running on port 5000')
+})
+
+// AI Service Functions
+async function analyzeMcpData(data: any) {
+  // AI implementation for MCP data analysis
+  return {
+    fitnessScore: calculateFitnessScore(data),
+    recoveryRecommendation: generateRecoveryRecommendation(data),
+    workoutIntensity: calculateOptimalIntensity(data)
+  }
+}
+
+function calculateFitnessScore(data: any) {
+  // AI-powered fitness score calculation
+}
+
+function generateRecoveryRecommendation(data: any) {
+  // AI-generated recovery suggestions
+}
+
+function calculateOptimalIntensity(data: any) {
+  // AI model for workout intensity recommendation
+}
+
+async function generateWorkoutRecommendation(params: any) {
+  // AI model for personalized workout generation
+}
+```
+
+## 4. Frontend Components with AI-Assisted UI
+
+### AI-Generated React Components Structure
+```
+src/
+├── components/
+│   ├── auth/
+│   │   ├── LoginForm.tsx
+│   │   └── RegisterForm.tsx
+│   ├── dashboard/
+│   │   ├── FitnessOverview.tsx
+│   │   ├── McpDashboard.tsx
+│   │   ├── NutritionTracker.tsx
+│   │   └── WorkoutPlanner.tsx
+│   ├── common/
+│   │   ├── McpSensorVisualization.tsx
+│   │   ├── RealTimeStats.tsx
+│   │   └── WorkoutTimer.tsx
+│   └── ai/
+│       ├── McpAnalysis.tsx
+│       ├── WorkoutRecommendation.tsx
+│       └── NutritionSuggestion.tsx
+├── hooks/
+│   ├── useAuth.ts
+│   ├── useMcpData.ts
+│   └── useWorkouts.ts
+├── pages/
+│   ├── Dashboard.tsx
+│   ├── Login.tsx
+│   ├── McpAnalysis.tsx
+│   └── Workouts.tsx
+└── App.tsx
+```
+
+### AI-Powered MCP Dashboard Component
+```typescript
+// src/components/dashboard/McpDashboard.tsx
+import React, { useEffect, useState } from 'react'
+import { io } from 'socket.io-client'
+import { useQuery, useMutation } from 'react-query'
+import { McpData, McpAnalysis } from '../../types'
+import McpSensorVisualization from '../common/McpSensorVisualization'
+import RealTimeStats from '../common/RealTimeStats'
+
+const socket = io('/realtime')
+
+const McpDashboard: React.FC = () => {
+  const [realTimeData, setRealTimeData] = useState<McpData | null>(null)
+  const [analysis, setAnalysis] = useState<McpAnalysis | null>(null)
+  
+  const { data: historicalData } = useQuery('mcpHistory', async () => {
+    const response = await fetch('/api/mcp-data')
+    return response.json()
+  })
+
+  const analyzeMutation = useMutation(async (data: McpData) => {
+    const response = await fetch('/api/mcp/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+    return response.json()
+  })
+
+  useEffect(() => {
+    // Connect to real-time updates
+    socket.on('connect', () => {
+      console.log('Connected to real-time server')
+    })
+
+    socket.on('mcpUpdate', (data: { data: McpData; analysis: McpAnalysis }) => {
+      setRealTimeData(data.data)
+      setAnalysis(data.analysis)
+    })
+
+    return () => {
+      socket.off('connect')
+      socket.off('mcpUpdate')
+    }
+  }, [])
+
+  const handleNewData = (data: McpData) => {
+    analyzeMutation.mutate(data)
+  }
+
+  return (
+    <div className="mcp-dashboard">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="col-span-1">
+          <McpSensorVisualization 
+            data={realTimeData || historicalData?.[0]} 
+            onNewData={handleNewData}
+          />
+        </div>
+        <div className="col-span-2">
+          <RealTimeStats 
+            data={realTimeData} 
+            analysis={analysis}
+          />
+          {analysis && (
+            <div className="mt-4 p-4 bg-white rounded-lg shadow">
+              <h3 className="text-lg font-semibold">AI Recommendations</h3>
+              <p className="mt-2">{analysis.recoveryRecommendation}</p>
+              <p className="mt-2">
+                Suggested workout intensity: {analysis.workoutIntensity}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default McpDashboard
+```
+
+### AI-Generated Workout Recommendation Component
+```typescript
+// src/components/ai/WorkoutRecommendation.tsx
+import React, { useEffect, useState } from 'react'
+import { useQuery } from 'react-query'
+import { Workout } from '../../types'
+
+const WorkoutRecommendation: React.FC = () => {
+  const [recommendation, setRecommendation] = useState<Workout | null>(null)
+  
+  const { data: userData } = useQuery('userProfile', async () => {
+    const response = await fetch('/api/user/profile')
+    return response.json()
+  })
+
+  const { refetch: getRecommendation } = useQuery(
+    'workoutRecommendation',
+    async () => {
+      const response = await fetch('/api/recommendations/workout')
+      return response.json()
+    },
+    {
+      enabled: false,
+      onSuccess: (data) => setRecommendation(data)
+    }
+  )
+
+  useEffect(() => {
+    if (userData) {
+      getRecommendation()
+    }
+  }, [userData, getRecommendation])
+
+  return (
+    <div className="workout-recommendation p-4 bg-white rounded-lg shadow">
+      <h3 className="text-lg font-semibold mb-4">AI-Powered Workout Recommendation</h3>
+      
+      {recommendation ? (
+        <div>
+          <h4 className="font-medium">{recommendation.name}</h4>
+          <p className="text-sm text-gray-600 mt-1">{recommendation.description}</p>
+          
+          <div className="mt-4">
+            <h5 className="font-medium">Exercises:</h5>
+            <ul className="mt-2 space-y-2">
+              {recommendation.exercises.map((exercise, index) => (
+                <li key={index} className="flex justify-between">
+                  <span>{exercise.name}</span>
+                  <span className="text-gray-600">
+                    {exercise.sets} sets × {exercise.reps} reps
+                    {exercise.weight && ` @ ${exercise.weight}kg`}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          
+          <div className="mt-4 flex justify-between items-center">
+            <span className="text-sm text-gray-600">
+              Estimated calories: {recommendation.calories}
+            </span>
+            <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+              Start Workout
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p>Generating personalized workout recommendation...</p>
+      )}
+    </div>
+  )
+}
+
+export default WorkoutRecommendation
+```
+
+## 5. Authentication & Security Implementation
+
+### JWT Authentication Flow
+```typescript
+// src/hooks/useAuth.ts
+import { useState } from 'react'
+import { useQueryClient } from 'react-query'
+import { useNavigate } from 'react-router-dom'
+
+export const useAuth = () => {
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+
+  const login = async (email: string, password: string) => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
+      
+      if (!response.ok) {
+        throw new Error(await response.text())
+      }
+      
+      const { token, user } = await response.json()
+      localStorage.setItem('token', token)
+      queryClient.setQueryData('user', user)
+      navigate('/dashboard')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const register = async (email: string, password: string, name: string) => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name })
+      })
+      
+      if (!response.ok) {
+        throw new Error(await response.text())
+      }
+      
+      const { token, user } = await response.json()
+      localStorage.setItem('token', token)
+      queryClient.setQueryData('user', user)
+      navigate('/dashboard')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Registration failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const logout = () => {
+    localStorage.removeItem('token')
+    queryClient.clear()
+    navigate('/login')
+  }
+
+  return { login, register, logout, error, loading }
+}
+```
+
+### Protected Route Component
+```typescript
+// src/components/auth/ProtectedRoute.tsx
+import React, { useEffect, useState } from 'react'
+import { Navigate, useLocation } from 'react-router-dom'
+import { useQuery } from 'react-query'
+
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const location = useLocation()
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+  
+  const { data, error } = useQuery('validateToken', async () => {
+    const token = localStorage.getItem('token')
+    if (!token) throw new Error('No token found')
+    
+    const response = await fetch('/api/user/profile', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    
+    if (!response.ok) throw new Error('Invalid token')
+    return response.json()
+  }, {
+    retry: false,
+    staleTime: 1000 * 60 * 5 // 5 minutes
+  })
+
+  useEffect(() => {
+    if (data) {
+      setIsAuthenticated(true)
+    } else if (error) {
+      setIsAuthenticated(false)
+    }
+  }, [data, error])
+
+  if (isAuthenticated === null) {
+    return <div>Loading authentication status...</div>
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />
+  }
+
+  return <>{children}</>
+}
+
+export default ProtectedRoute
+```
+
+## 6. Real-time Features Implementation
+
+### WebSocket Integration for MCP Data
+```typescript
+// src/hooks/useMcpData.ts
+import { useEffect, useState } from 'react'
+import { io } from 'socket.io-client'
+
+type McpData = {
+  id: string
+  heartRate: number
+  bloodPressure: string
+  oxygenLevel: number
+  stressLevel: number
+  sleepQuality: number
+  createdAt: string
+}
+
+type McpAnalysis = {
+  fitnessScore: number
+  recoveryRecommendation: string
+  workoutIntensity: string
+}
+
+export const useMcpData = (userId: string) => {
+  const [realTimeData, setRealTimeData] = useState<McpData | null>(null)
+  const [analysis, setAnalysis] = useState<McpAnalysis | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+
+  useEffect(() => {
+    const socket = io('/realtime', {
+      auth: {
+        token: localStorage.getItem('token')
+      }
+    })
+
+    socket.on('connect', () => {
+      setIsConnected(true)
+      socket.emit('joinUserRoom', userId)
+    })
+
+    socket.on('disconnect', () => {
+      setIsConnected(false)
+    })
+
+    socket.on('mcpUpdate', (data: { data: McpData; analysis: McpAnalysis }) => {
+      setRealTimeData(data.data)
+      setAnalysis(data.analysis)
+    })
+
+    return () => {
+      socket.off('connect')
+      socket.off('disconnect')
+      socket.off('mcpUpdate')
+      socket.disconnect()
+    }
+  }, [userId])
+
+  return { realTimeData, analysis, isConnected }
+}
+```
+
+### Real-time Workout Tracking
+```typescript
+// src/hooks/useWorkoutTracking.ts
+import { useState, useEffect } from 'react'
+import { io } from 'socket.io-client'
+
+type ExerciseProgress = {
+  exerciseId: string
+  setsCompleted: number
+  repsCompleted: number[]
+  currentWeight: number
+}
+
+type WorkoutSession = {
+  workoutId: string
+  startTime: Date
+  endTime?: Date
+  exercises: ExerciseProgress[]
+  caloriesBurned?: number
+}
+
+export const useWorkoutTracking = (workoutId: string) => {
+  const [session, setSession] = useState<WorkoutSession | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+  const [socket, setSocket] = useState<any>(null)
+
+  useEffect(() => {
+    const newSocket = io('/realtime', {
+      auth: {
+        token: localStorage.getItem('token')
+      }
+    })
+
+    setSocket(newSocket)
+
+    newSocket.on('connect', () => {
+      setIsConnected(true)
+      newSocket.emit('joinWorkoutSession', workoutId)
+    })
+
+    newSocket.on('disconnect', () => {
+      setIsConnected(false)
+    })
+
+    newSocket.on('workoutUpdate', (update: any) => {
+      setSession(update)
+    })
+
+    return () => {
+      newSocket.disconnect()
+    }
+  }, [workoutId])
+
+  const startWorkout = () => {
+    if (socket && isConnected) {
+      socket.emit('startWorkout', { workoutId })
+    }
+  }
+
+  const completeExerciseSet = (exerciseId: string, reps: number[], weight: number) => {
+    if (socket && isConnected) {
+      socket.emit('completeSet', { workoutId, exerciseId, reps, weight })
+    }
+  }
+
+  const endWorkout = () => {
+    if (socket && isConnected) {
+      socket.emit('endWorkout', { workoutId })
+    }
+  }
+
+  return {
+    session,
+    isConnected,
+    startWorkout,
+    completeExerciseSet,
+    endWorkout
+  }
+}
+```
+
+## 7. Deployment Configuration
+
+### Bolt-Specific Deployment Script
+```typescript
+// deploy.config.ts
+import { defineDeployConfig } from '@bolt/deploy'
+
+export default defineDeployConfig({
+  platform: 'vercel', // or 'netlify'
+  environments: {
+    production: {
+      env: {
+        DATABASE_URL: process.env.DATABASE_URL,
+        ACCESS_TOKEN_SECRET: process.env.ACCESS_TOKEN_SECRET,
+        MCP_API_KEY: process.env.MCP_API_KEY
+      },
+      buildCommand: 'npm run build',
+      outputDirectory: 'dist'
+    },
+    staging: {
+      env: {
+        DATABASE_URL: process.env.STAGING_DATABASE_URL,
+        ACCESS_TOKEN_SECRET: process.env.STAGING_ACCESS_TOKEN_SECRET,
+        MCP_API_KEY: process.env.STAGING_MCP_API_KEY
+      },
+      buildCommand: 'npm run build',
+      outputDirectory: 'dist'
+    }
+  },
+  hooks: {
+    preDeploy: async () => {
+      console.log('Running database migrations...')
+      // Run prisma migrations
+    },
+    postDeploy: async (url) => {
+      console.log(`Deployment successful: ${url}`)
+      // Notify team or run tests
+    }
+  }
+})
+```
+
+### Environment Variables Setup
+```bash
+# Bolt AI-generated environment template
+# .env.local
+DATABASE_URL="file:./dev.db"
+ACCESS_TOKEN_SECRET="your_jwt_secret_here"
+MCP_API_KEY="your_mcp_api_key"
+
+# For production (set in Bolt dashboard)
+# DATABASE_URL="your_production_db_url"
+# ACCESS_TOKEN_SECRET="your_production_secret"
+# MCP_API_KEY="your_production_mcp_key"
+```
+
+## 8. AI Development Workflow
+
+### Bolt AI Prompt Templates
+```markdown
+# AI Development Prompts for Fitness App
+
+## Database Schema Enhancement
+"Generate a Prisma schema extension for tracking workout progress over time with analytics capabilities. Include fields for performance metrics, personal records, and progress visualization data."
+
+## API Endpoint Generation
+"Create an Express API endpoint for fetching a user's workout history with pagination, filtering by date range, and sorting options. Include TypeScript interfaces and input validation."
+
+## UI Component Generation
+"Generate a React component for displaying MCP sensor data in real-time with interactive charts using Chart.js. Include tooltips, zoom functionality, and comparison with historical averages."
+
+## AI Analysis Enhancement
+"Improve the MCP data analysis function to incorporate machine learning for predicting optimal workout times based on historical biometric data patterns."
+
+## Testing Strategy
+"Create a comprehensive Vitest testing strategy for the workout recommendation system, including mock data generation and validation of AI suggestions."
+
+## Performance Optimization
+"Suggest optimizations for the real-time WebSocket implementation to handle high-frequency MCP sensor data updates efficiently without overwhelming the client."
+
+## Security Hardening
+"Enhance the authentication system with rate limiting, brute force protection, and additional security headers following OWASP best practices."
+```
+
+### Continuous AI Development Workflow
+1. **Requirement Analysis**: Use Bolt AI to break down features into technical specifications
+2. **Code Generation**: Generate initial implementation with AI prompts
+3. **Review & Refine**: Manually review and refine AI-generated code
+4. **Testing**: Use AI to generate test cases and validate functionality
+5. **Optimization**: Apply AI suggestions for performance improvements
+6. **Documentation**: Auto-generate documentation from codebase
+7. **Iteration**: Repeat process for new features and improvements
+
+### AI-Powered Code Review Example
+```typescript
+// Example of AI-generated code review comments
+/**
+ * @ai-review
+ * The workout recommendation endpoint could be enhanced by:
+ * 1. Adding caching for frequent requests with similar parameters
+ * 2. Implementing a fallback mechanism when MCP data is unavailable
+ * 3. Adding validation for the recommendation parameters
+ * 4. Including user feedback collection to improve future recommendations
+ * 
+ * Suggested improvements:
+ * - Add Redis caching layer
+ * - Implement default recommendation templates
+ * - Add Zod validation for input parameters
+ * - Create feedback collection endpoint
+ */
+app.get('/api/recommendations/workout', authenticateToken, async (req, res) => {
+  // Existing implementation
+})
+```
+
+This comprehensive master blueprint provides a complete foundation for building an AI-powered fitness application with MCP integration on the Bolt platform. The implementation covers all critical aspects from database design to real-time features, with extensive use of Bolt's AI capabilities throughout the development lifecycle. The architecture is optimized for WebContainer execution and leverages Bolt's unique features like instant preview and collaborative development.

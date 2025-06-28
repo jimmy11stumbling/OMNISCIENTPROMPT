@@ -88,6 +88,15 @@ EXPLICIT REPLIT DATABASE INTEGRATION REQUIREMENTS:
 - Configure Replit Deployments for production with database scaling
 - Leverage Replit Agent capabilities for database-driven development
 
+MANDATORY MCP COMPLETE DOCUMENT ACCESS INTEGRATION:
+- MCP Server exposing ALL 759+ documents from complete knowledge base via JSON-RPC 2.0
+- Universal document connectivity: Replit, Lovable, Bolt, Cursor, Windsurf platforms
+- Resource URIs: resource://knowledge/all/{platform}/{documentId} for every document
+- Tools for comprehensive search: semantic, keyword, platform-filtered queries
+- Real-time document synchronization with subscription mechanisms
+- Complete knowledge base access - no documentation silos or restrictions
+- Authenticated secure protocol ensuring AI can connect to every document
+
 Generate comprehensive production-ready blueprints utilizing full 8192 token capacity.`;
   }
 
@@ -138,7 +147,16 @@ LOVABLE-SPECIFIC IMPLEMENTATION REQUIREMENTS:
 - File uploads using Supabase Storage with progress indicators
 - Authentication guards using React Router DOM outlet context
 - Component library integration with proper shadcn/ui theming
-- PWA manifest and service worker configuration for offline support`;
+- PWA manifest and service worker configuration for offline support
+
+UNIVERSAL MCP DOCUMENT CONNECTIVITY REQUIREMENTS:
+- MCP Server implementation exposing complete 759+ document corpus via JSON-RPC 2.0
+- Full knowledge base connectivity: all platform documentation (Replit, Lovable, Bolt, Cursor, Windsurf)
+- Resource URIs for universal document access: resource://knowledge/all/{documentId}
+- Cross-platform document search and retrieval tools via MCP protocol
+- Real-time knowledge base synchronization with subscription mechanisms
+- Authenticated document access ensuring complete visibility to AI systems
+- No documentation silos - every document accessible through standardized MCP interface`;
   }
 
   getBoltSystemPrompt() {
@@ -176,7 +194,23 @@ BOLT-SPECIFIC IMPLEMENTATION REQUIREMENTS:
 - Component architecture designed for AI-assisted development
 - Testing setup using Vitest for WebContainer compatibility
 - Deployment scripts for seamless hosting integration
-- AI workflow documentation for iterative development`;
+- AI workflow documentation for iterative development
+
+AUTHENTIC MCP (MODEL CONTEXT PROTOCOL) INTEGRATION:
+- MCP Server exposing ALL 759+ documents via JSON-RPC 2.0 protocol
+- Tools primitive: search operations, document retrieval, content analysis functions
+- Resources primitive: complete document access with URI-based identification (resource://docs/{platform}/{id})
+- Document connection capabilities: all platforms (Replit, Lovable, Bolt, Cursor, Windsurf)
+- Real-time document synchronization with MCP resource updates and subscriptions
+- Prompts primitive: platform-specific templates accessing complete knowledge base
+- Client-server architecture with full document corpus capability negotiation
+- Transport: Server-Sent Events for remote document server communication
+- Security: user consent for document access, data privacy controls, authenticated queries
+- Universal connectivity to entire documentation ecosystem ("USB-C for AI")
+- Complete capability exposure: tools/list, tools/call, resources/read, prompts/get methods
+- Document search tools: semantic search, keyword matching, platform filtering
+- Resource templates: dynamic URI generation for any document in the knowledge base
+- Subscription mechanisms: real-time updates when new documents are added to corpus`;
   }
 
   getCursorSystemPrompt() {
@@ -214,7 +248,16 @@ CURSOR-SPECIFIC IMPLEMENTATION REQUIREMENTS:
 - Git workflow optimized for AI-generated commits and branch management
 - Extension recommendations for enhanced AI development experience
 - AI model configuration for project-specific language and framework preferences
-- Composer templates for rapid feature generation and scaffolding`;
+- Composer templates for rapid feature generation and scaffolding
+
+COMPLETE MCP DOCUMENT CONNECTIVITY INTEGRATION:
+- MCP Server exposing ALL 759+ platform documents via standardized JSON-RPC 2.0
+- Full document corpus access: Replit, Lovable, Bolt, Cursor, Windsurf knowledge bases
+- Resource URIs for every document: resource://docs/{platform}/{documentId}
+- Search tools: semantic search across entire documentation ecosystem
+- Real-time document subscriptions and update notifications via MCP protocol
+- Authentication and authorization for secure document access patterns
+- Capability negotiation exposing complete knowledge base to AI systems`;
   }
 
   getWindsurfSystemPrompt() {
@@ -255,7 +298,16 @@ WINDSURF-SPECIFIC IMPLEMENTATION REQUIREMENTS:
 - Deployment pipeline with AI-optimized cloud infrastructure setup
 - Documentation written for AI comprehension and collaborative development
 - Performance monitoring integrated with AI analysis and optimization suggestions
-- Security patterns reviewed and enhanced by AI security analysis`;
+- Security patterns reviewed and enhanced by AI security analysis
+
+COMPREHENSIVE MCP DOCUMENT ACCESS INTEGRATION:
+- MCP Server implementation providing complete access to all 759+ documentation sources
+- Universal document connectivity across all no-code platforms via JSON-RPC 2.0 protocol
+- Resource primitive exposing every document with URI scheme: resource://knowledge/{platform}/{docId}
+- Tools for advanced document operations: search, filter, analyze, cross-reference
+- Real-time document synchronization with subscription-based update mechanisms
+- Platform-agnostic knowledge base access ensuring no documentation silos
+- Secure authenticated document access with user consent and privacy controls`;
   }
 
   getGenericSystemPrompt() {
