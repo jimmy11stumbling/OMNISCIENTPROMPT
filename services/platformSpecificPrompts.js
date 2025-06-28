@@ -30,7 +30,9 @@ CRITICAL MASTER BLUEPRINT REQUIREMENTS:
 - Include ALL 8 required sections with extensive detail
 - Provide complete code examples, database schemas, deployment configs
 - Focus on platform-specific implementations using provided documentation
-- NEVER generate short responses - only comprehensive 15,000+ character blueprints`;
+- NEVER generate short responses - only comprehensive 15,000+ character blueprints
+- Model configured with max_tokens: 8192 to support full blueprint generation
+- Continue writing until complete blueprint exceeds 15,000 characters minimum`;
   }
 
   getReplitSystemPrompt() {
