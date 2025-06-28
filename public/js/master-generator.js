@@ -8,6 +8,18 @@ class MasterPromptGenerator {
         this.isGenerating = false;
         this.abortController = null;
         this.currentPromptData = null;
+        
+        // Enhanced streaming properties
+        this.streamBuffer = [];
+        this.isPaused = false;
+        this.streamSpeed = 1;
+        this.estimatedTotal = 0;
+        this.lastTokenTime = null;
+        this.tokenTimes = [];
+        this.ragSourceCount = 0;
+        this.contentSections = [];
+        this.qualityScore = 0;
+        
         this.init();
     }
 
@@ -16,12 +28,41 @@ class MasterPromptGenerator {
         this.initializeRealTimeConnection();
     }
 
+    async fetchRAGSources(query, platform) {
+        try {
+            const response = await fetch('/api/rag/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    query: query,
+                    platform: platform,
+                    limit: 10
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                this.ragSourceCount = data.documents ? data.documents.length : 0;
+            }
+        } catch (error) {
+            console.log('RAG sources fetch failed:', error);
+            this.ragSourceCount = 0;
+        }
+    }
+
     setupEventListeners() {
         const form = document.getElementById('promptForm');
         const generateBtn = document.getElementById('generateBtn');
         const copyBtn = document.getElementById('copyBtn');
         const saveBtn = document.getElementById('saveBtn');
         const copyBlueprint = document.getElementById('copyBlueprint');
+
+        // Enhanced streaming controls
+        const pauseBtn = document.getElementById('pauseStream');
+        const resumeBtn = document.getElementById('resumeStream');
+        const speedSelect = document.getElementById('streamSpeed');
 
         if (form) {
             form.addEventListener('submit', (e) => {
@@ -40,6 +81,38 @@ class MasterPromptGenerator {
 
         if (saveBtn) {
             saveBtn.addEventListener('click', () => this.savePrompt());
+        }
+
+        // Streaming control listeners
+        if (pauseBtn) {
+            pauseBtn.addEventListener('click', () => this.pauseStreaming());
+        }
+
+        if (resumeBtn) {
+            resumeBtn.addEventListener('click', () => this.resumeStreaming());
+        }
+
+        if (speedSelect) {
+            speedSelect.addEventListener('change', (e) => {
+                this.streamSpeed = parseFloat(e.target.value);
+            });
+        }
+
+        // Content tab listeners
+        const blueprintTab = document.getElementById('blueprintTab');
+        const reasoningTab = document.getElementById('reasoningTab');
+        const sectionsTab = document.getElementById('sectionsTab');
+
+        if (blueprintTab) {
+            blueprintTab.addEventListener('click', () => this.showContentTab('blueprint'));
+        }
+
+        if (reasoningTab) {
+            reasoningTab.addEventListener('click', () => this.showContentTab('reasoning'));
+        }
+
+        if (sectionsTab) {
+            sectionsTab.addEventListener('click', () => this.showContentTab('sections'));
         }
     }
 
@@ -116,6 +189,9 @@ class MasterPromptGenerator {
         let buffer = '';
         let fullContent = '';
 
+        // Fetch RAG sources first
+        await this.fetchRAGSources(requestData.query, requestData.platform);
+        
         // Show result section and clear content
         this.showResultSection();
         const promptResult = document.getElementById('promptResult');
@@ -185,6 +261,8 @@ class MasterPromptGenerator {
         const promptResult = document.getElementById('promptResult');
         const streamingStats = document.getElementById('streamingStats');
         const streamingCursor = document.getElementById('streamingCursor');
+        const progressContainer = document.getElementById('progressContainer');
+        const pauseBtn = document.getElementById('pauseStream');
         
         if (resultSection) {
             resultSection.classList.remove('hidden');
@@ -203,43 +281,142 @@ class MasterPromptGenerator {
             streamingCursor.classList.remove('hidden');
         }
         
-        // Initialize streaming counters
+        if (progressContainer) {
+            progressContainer.classList.remove('hidden');
+        }
+        
+        if (pauseBtn) {
+            pauseBtn.classList.remove('hidden');
+        }
+
+        // Show content tabs
+        const contentTabs = document.getElementById('contentTabs');
+        if (contentTabs) {
+            contentTabs.classList.remove('hidden');
+        }
+        
+        // Initialize enhanced streaming counters
         this.tokenCounter = 0;
+        this.streamStartTime = Date.now();
+        this.lastTokenTime = Date.now();
+        this.tokenTimes = [];
+        this.estimatedTotal = 1000; // Initial estimate
+        this.ragSourceCount = 0;
+        this.contentSections = [];
+        this.qualityScore = 100;
+        
         this.streamingInterval = setInterval(() => {
             this.updateStreamingStats();
         }, 100);
     }
 
     onTokenReceived(token) {
+        if (this.isPaused) {
+            this.streamBuffer.push(token);
+            return;
+        }
+
         const promptResult = document.getElementById('promptResult');
         const streamingCursor = document.getElementById('streamingCursor');
         
         if (promptResult) {
-            promptResult.textContent += token;
-            this.tokenCounter++;
-            
-            // Move cursor to end of content
-            if (streamingCursor) {
-                promptResult.appendChild(streamingCursor);
-            }
-            
-            // Auto-scroll to bottom to follow the streaming content
-            const container = promptResult.parentElement;
-            if (container) {
-                container.scrollTop = container.scrollHeight;
-            }
-            
-            // Also scroll the result section if needed
-            const resultSection = document.getElementById('resultSection');
-            if (resultSection) {
-                resultSection.scrollTop = resultSection.scrollHeight;
-            }
+            // Apply speed control
+            setTimeout(() => {
+                promptResult.textContent += token;
+                this.tokenCounter++;
+                
+                // Track token timing for speed calculation
+                const now = Date.now();
+                this.tokenTimes.push(now);
+                if (this.tokenTimes.length > 20) {
+                    this.tokenTimes.shift(); // Keep last 20 for rolling average
+                }
+                
+                // Analyze content for quality and sections
+                this.analyzeToken(token, promptResult.textContent);
+                
+                // Move cursor to end of content
+                if (streamingCursor) {
+                    promptResult.appendChild(streamingCursor);
+                }
+                
+                // Auto-scroll to bottom
+                const container = promptResult.parentElement;
+                if (container) {
+                    container.scrollTop = container.scrollHeight;
+                }
+                
+                const resultSection = document.getElementById('resultSection');
+                if (resultSection) {
+                    resultSection.scrollTop = resultSection.scrollHeight;
+                }
+            }, Math.max(0, (1000 / this.streamSpeed) - 50));
         }
+    }
+
+    analyzeToken(token, fullContent) {
+        // Detect content sections
+        if (token.includes('#')) {
+            this.contentSections.push({
+                type: 'header',
+                position: this.tokenCounter,
+                content: token
+            });
+        }
+        
+        // Detect code blocks
+        if (token.includes('```')) {
+            this.contentSections.push({
+                type: 'code',
+                position: this.tokenCounter,
+                content: token
+            });
+        }
+        
+        // Estimate total length based on content patterns
+        if (this.tokenCounter > 50 && this.tokenCounter % 100 === 0) {
+            this.updateEstimatedTotal(fullContent);
+        }
+        
+        // Update quality score based on content richness
+        this.updateQualityScore(fullContent);
+    }
+
+    updateEstimatedTotal(content) {
+        // Simple heuristic: if we see section headers, estimate more content
+        const headerCount = (content.match(/#/g) || []).length;
+        const codeBlockCount = (content.match(/```/g) || []).length;
+        
+        // Base estimate plus additional content based on structure
+        this.estimatedTotal = 500 + (headerCount * 200) + (codeBlockCount * 300);
+    }
+
+    updateQualityScore(content) {
+        let score = 50; // Base score
+        
+        // Bonus for structure
+        if (content.includes('#')) score += 10;
+        if (content.includes('```')) score += 15;
+        if (content.includes('##')) score += 10;
+        if (content.includes('- ')) score += 5;
+        
+        // Bonus for comprehensive content
+        if (content.length > 1000) score += 10;
+        if (content.length > 2000) score += 10;
+        
+        this.qualityScore = Math.min(100, score);
     }
 
     updateStreamingStats() {
         const tokenCount = document.getElementById('tokenCount');
         const streamTime = document.getElementById('streamTime');
+        const tokenSpeed = document.getElementById('tokenSpeed');
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+        const qualityIndicator = document.getElementById('qualityIndicator');
+        const qualityText = document.getElementById('qualityText');
+        const ragSources = document.getElementById('ragSources');
+        const contentType = document.getElementById('contentType');
         
         if (tokenCount) {
             tokenCount.textContent = `Tokens: ${this.tokenCounter}`;
@@ -248,6 +425,46 @@ class MasterPromptGenerator {
         if (streamTime && this.streamStartTime) {
             const elapsed = Math.floor((Date.now() - this.streamStartTime) / 1000);
             streamTime.textContent = `Time: ${elapsed}s`;
+        }
+        
+        // Calculate and display token speed
+        if (tokenSpeed && this.tokenTimes.length > 1) {
+            const timeSpan = this.tokenTimes[this.tokenTimes.length - 1] - this.tokenTimes[0];
+            const speed = timeSpan > 0 ? Math.round((this.tokenTimes.length / timeSpan) * 1000) : 0;
+            tokenSpeed.textContent = `Speed: ${speed} t/s`;
+        }
+        
+        // Update progress bar
+        if (progressBar && progressPercent) {
+            const progress = Math.min(100, (this.tokenCounter / this.estimatedTotal) * 100);
+            progressBar.style.width = `${progress}%`;
+            progressPercent.textContent = `${Math.round(progress)}%`;
+        }
+        
+        // Update quality indicator
+        if (qualityIndicator && qualityText) {
+            if (this.qualityScore >= 80) {
+                qualityIndicator.className = 'w-2 h-2 bg-green-500 rounded-full mr-1';
+                qualityText.textContent = 'Excellent Quality';
+            } else if (this.qualityScore >= 60) {
+                qualityIndicator.className = 'w-2 h-2 bg-yellow-500 rounded-full mr-1';
+                qualityText.textContent = 'Good Quality';
+            } else {
+                qualityIndicator.className = 'w-2 h-2 bg-red-500 rounded-full mr-1';
+                qualityText.textContent = 'Basic Quality';
+            }
+        }
+        
+        // Update RAG sources and content type
+        if (ragSources) {
+            ragSources.textContent = `Sources: ${this.ragSourceCount}`;
+        }
+        
+        if (contentType) {
+            const sectionCount = this.contentSections.length;
+            const hasCode = this.contentSections.some(s => s.type === 'code');
+            const type = hasCode ? 'Blueprint + Code' : sectionCount > 3 ? 'Detailed Blueprint' : 'Blueprint';
+            contentType.textContent = `Content: ${type}`;
         }
     }
 
@@ -269,9 +486,52 @@ class MasterPromptGenerator {
         this.showSuccess('Master blueprint generated successfully');
     }
 
+    pauseStreaming() {
+        this.isPaused = true;
+        const pauseBtn = document.getElementById('pauseStream');
+        const resumeBtn = document.getElementById('resumeStream');
+        const streamStatus = document.getElementById('streamStatus');
+        
+        if (pauseBtn) pauseBtn.classList.add('hidden');
+        if (resumeBtn) resumeBtn.classList.remove('hidden');
+        if (streamStatus) streamStatus.textContent = 'Stream paused';
+    }
+
+    resumeStreaming() {
+        this.isPaused = false;
+        const pauseBtn = document.getElementById('pauseStream');
+        const resumeBtn = document.getElementById('resumeStream');
+        const streamStatus = document.getElementById('streamStatus');
+        
+        if (pauseBtn) pauseBtn.classList.remove('hidden');
+        if (resumeBtn) resumeBtn.classList.add('hidden');
+        if (streamStatus) streamStatus.textContent = 'Streaming live';
+        
+        // Process buffered tokens
+        this.processStreamBuffer();
+    }
+
+    processStreamBuffer() {
+        if (this.streamBuffer.length === 0) return;
+        
+        const tokens = [...this.streamBuffer];
+        this.streamBuffer = [];
+        
+        tokens.forEach((token, index) => {
+            setTimeout(() => {
+                if (!this.isPaused) {
+                    this.onTokenReceived(token);
+                }
+            }, index * (100 / this.streamSpeed));
+        });
+    }
+
     cleanupStreamingUI() {
         const streamingCursor = document.getElementById('streamingCursor');
         const streamingStats = document.getElementById('streamingStats');
+        const progressContainer = document.getElementById('progressContainer');
+        const pauseBtn = document.getElementById('pauseStream');
+        const resumeBtn = document.getElementById('resumeStream');
         
         if (streamingCursor) {
             streamingCursor.classList.add('hidden');
@@ -281,10 +541,75 @@ class MasterPromptGenerator {
             streamingStats.classList.add('hidden');
         }
         
+        if (progressContainer) {
+            progressContainer.classList.add('hidden');
+        }
+        
+        if (pauseBtn) {
+            pauseBtn.classList.add('hidden');
+        }
+        
+        if (resumeBtn) {
+            resumeBtn.classList.add('hidden');
+        }
+        
         if (this.streamingInterval) {
             clearInterval(this.streamingInterval);
             this.streamingInterval = null;
         }
+        
+        // Reset streaming state
+        this.isPaused = false;
+        this.streamBuffer = [];
+    }
+
+    showContentTab(tabType) {
+        // Update tab buttons
+        const tabs = ['blueprint', 'reasoning', 'sections'];
+        tabs.forEach(tab => {
+            const tabBtn = document.getElementById(`${tab}Tab`);
+            const content = document.getElementById(`${tab}Content`);
+            
+            if (tabBtn && content) {
+                if (tab === tabType) {
+                    tabBtn.className = 'px-3 py-1 text-xs bg-blue-600 text-white rounded';
+                    content.classList.remove('hidden');
+                } else {
+                    tabBtn.className = 'px-3 py-1 text-xs bg-gray-700 text-gray-300 rounded';
+                    content.classList.add('hidden');
+                }
+            }
+        });
+
+        // Update sections display if sections tab is active
+        if (tabType === 'sections') {
+            this.updateSectionsDisplay();
+        }
+    }
+
+    updateSectionsDisplay() {
+        const sectionsList = document.getElementById('sectionsList');
+        if (!sectionsList) return;
+
+        sectionsList.innerHTML = '';
+        
+        this.contentSections.forEach((section, index) => {
+            const sectionDiv = document.createElement('div');
+            sectionDiv.className = 'p-2 bg-gray-800 rounded text-xs';
+            
+            const typeColor = section.type === 'header' ? 'text-blue-400' : 
+                             section.type === 'code' ? 'text-green-400' : 'text-gray-400';
+            
+            sectionDiv.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <span class="${typeColor}">${section.type.toUpperCase()}</span>
+                    <span class="text-gray-500">Token ${section.position}</span>
+                </div>
+                <div class="mt-1 text-gray-300">${section.content.substring(0, 50)}...</div>
+            `;
+            
+            sectionsList.appendChild(sectionDiv);
+        });
     }
 
     getSelectedOptions() {

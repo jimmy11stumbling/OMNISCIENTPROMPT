@@ -96,16 +96,79 @@
                 </button>
             </div>
             <div class="bg-gray-900 p-4 rounded-md max-h-96 overflow-y-auto border border-gray-700 relative">
-                <pre id="promptResult" class="whitespace-pre-wrap text-sm text-gray-300"></pre>
-                <div id="streamingCursor" class="hidden inline-block w-2 h-4 bg-blue-500 animate-pulse"></div>
+                <!-- Content Type Tabs -->
+                <div id="contentTabs" class="hidden flex space-x-2 mb-3 border-b border-gray-700 pb-2">
+                    <button id="blueprintTab" class="px-3 py-1 text-xs bg-blue-600 text-white rounded">Blueprint</button>
+                    <button id="reasoningTab" class="px-3 py-1 text-xs bg-gray-700 text-gray-300 rounded">Reasoning</button>
+                    <button id="sectionsTab" class="px-3 py-1 text-xs bg-gray-700 text-gray-300 rounded">Sections</button>
+                </div>
+                
+                <!-- Main Content Display -->
+                <div id="blueprintContent" class="content-panel">
+                    <pre id="promptResult" class="whitespace-pre-wrap text-sm text-gray-300"></pre>
+                    <div id="streamingCursor" class="hidden inline-block w-2 h-4 bg-blue-500 animate-pulse"></div>
+                </div>
+                
+                <!-- Reasoning Display -->
+                <div id="reasoningContent" class="content-panel hidden">
+                    <div class="text-sm text-gray-400 mb-2">AI Reasoning Process:</div>
+                    <pre id="reasoningText" class="whitespace-pre-wrap text-sm text-blue-300"></pre>
+                </div>
+                
+                <!-- Sections Overview -->
+                <div id="sectionsContent" class="content-panel hidden">
+                    <div class="text-sm text-gray-400 mb-2">Content Structure:</div>
+                    <div id="sectionsList" class="space-y-2"></div>
+                </div>
             </div>
-            <div id="streamingStats" class="hidden mt-2 text-xs text-gray-500 flex items-center space-x-4">
-                <span id="tokenCount">Tokens: 0</span>
-                <span id="streamTime">Time: 0s</span>
-                <span class="flex items-center">
-                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-1"></div>
-                    Streaming live
-                </span>
+            <!-- Enhanced Progress Bar -->
+            <div id="progressContainer" class="hidden mt-3">
+                <div class="flex justify-between text-xs text-gray-400 mb-1">
+                    <span>Generation Progress</span>
+                    <span id="progressPercent">0%</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-2">
+                    <div id="progressBar" class="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Enhanced Streaming Stats -->
+            <div id="streamingStats" class="hidden mt-2 bg-gray-800 rounded-lg p-3 border border-gray-600">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4 text-xs">
+                        <span class="flex items-center">
+                            <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-1"></div>
+                            <span id="streamStatus">Streaming live</span>
+                        </span>
+                        <span id="tokenCount" class="text-blue-400">Tokens: 0</span>
+                        <span id="streamTime" class="text-purple-400">Time: 0s</span>
+                        <span id="tokenSpeed" class="text-green-400">Speed: 0 t/s</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button id="pauseStream" class="hidden bg-yellow-600 hover:bg-yellow-700 px-2 py-1 rounded text-xs">
+                            ⏸️ Pause
+                        </button>
+                        <button id="resumeStream" class="hidden bg-green-600 hover:bg-green-700 px-2 py-1 rounded text-xs">
+                            ▶️ Resume
+                        </button>
+                        <select id="streamSpeed" class="bg-gray-700 border border-gray-600 rounded px-2 py-1 text-xs">
+                            <option value="0.5">0.5x</option>
+                            <option value="1" selected>1x</option>
+                            <option value="1.5">1.5x</option>
+                            <option value="2">2x</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Quality Indicators -->
+                <div class="mt-2 flex items-center space-x-4 text-xs">
+                    <span class="flex items-center">
+                        <div id="qualityIndicator" class="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+                        <span id="qualityText">Excellent Quality</span>
+                    </span>
+                    <span id="ragSources" class="text-gray-400">Sources: 0</span>
+                    <span id="contentType" class="text-gray-400">Content: Blueprint</span>
+                </div>
             </div>
             <div class="mt-4 text-center">
                 <p class="text-sm text-gray-400">This master blueprint contains everything needed to build and deploy your application</p>
