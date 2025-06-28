@@ -520,7 +520,7 @@ app.post('/api/chat/stream', async (req, res) => {
       } catch (e) {
         // Connection already closed
       }
-    }, 300000); // 5 minute timeout for master blueprints (20,000+ characters)
+    }, 60000); // 60 second timeout for master blueprints
 
     // Use real DeepSeek API streaming
     try {
@@ -1428,15 +1428,9 @@ app.get('/api/templates', async (req, res) => {
 const ragSystem = new UnifiedRAGSystem(pool);
 const realTimeValidator = new RealTimeValidator();
 
-// Configure server timeouts for master blueprint generation
-server.timeout = 600000; // 10 minute request timeout
-server.keepAliveTimeout = 65000; // Keep alive timeout
-server.headersTimeout = 66000; // Headers timeout
-
 // Start server
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`[SERVER] DeepSeek AI Platform running on port ${PORT}`);
-  console.log(`[SERVER] Timeout configured for 10 minutes (master blueprints)`);
   console.log(`[SERVER] Health check: http://localhost:${PORT}/health`);
   console.log(`[SERVER] API status: http://localhost:${PORT}/api/status`);
 });

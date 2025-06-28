@@ -116,21 +116,15 @@ This is a comprehensive AI-powered prompt generation platform that leverages Dee
 
 ```
 Changelog:
-- June 28, 2025 - Fixed timeout issues for 5-minute master blueprint generation
-  - Extended server streaming timeout from 45 seconds to 5 minutes (300,000ms)
-  - Increased DeepSeek API max_tokens from 8,000 to 32,000 for complete blueprints
-  - Extended frontend inactivity timeout from 30 seconds to 5 minutes
-  - Added Express server timeout configuration (10 minutes) for long-form content
-  - Fixed all timeout configurations preventing 20,000+ character blueprint completion
-  - Master blueprints now have proper timeout allowance for 5-minute generation cycles
 - June 28, 2025 - Fixed all timeout and streaming issues for production deployment
   - Resolved unhandled promise rejection errors with comprehensive global error handling
-  - Optimized streaming performance with batch delivery (100 tokens per batch) for instant streaming
+  - Optimized streaming performance with chunked token delivery (20 tokens per chunk)
+  - Extended server timeout to 60 seconds for comprehensive blueprint generation
   - Fixed streaming completion signals to prevent hanging connections
   - Added robust error handling throughout the streaming pipeline
   - Verified streaming system works correctly with authentic token-by-token delivery
-  - System now generates and streams master blueprints consistently at 20,000+ characters
-  - Production-ready streaming with proper [DONE] signal completion and no cutoffs
+  - System now generates and streams master blueprints without timeout errors
+  - Production-ready streaming with proper [DONE] signal completion
 - June 27, 2025 - Master Blueprint Generator system completed with true 20,000+ character outputs
   - Fixed system prompt to generate comprehensive blueprints without asking questions
   - Implemented proper master blueprint structure with 8 required sections
