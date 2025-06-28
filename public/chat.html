@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeepSeek AI Chat - Real-time Conversation</title>
+    <link href="/css/tailwind.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/progress-indicator.css">
+    <script src="/js/realtime.js"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-xl font-bold">DeepSeek AI Platform</h1>
+                <div class="flex space-x-6">
+                    <a href="/" class="text-gray-300 hover:text-white">Master Generator</a>
+                    <a href="/saved-prompts.html" class="text-gray-300 hover:text-white">Saved Prompts</a>
+                    <a href="/dashboard.html" class="text-gray-300 hover:text-white">Dashboard</a>
+                    <a href="/chat.html" class="text-blue-400 font-medium">Chat</a>
+                    <a href="/docs.html" class="text-gray-300 hover:text-white">Documentation</a>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div id="connectionStatus" class="flex items-center space-x-2">
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span class="text-sm">Connected</span>
+                </div>
+                <div id="apiStatus" class="px-2 py-1 rounded bg-yellow-600 text-white text-xs">Checking API...</div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 py-6 max-w-6xl h-screen flex flex-col">
+        <header class="text-center mb-6">
+            <h1 class="text-3xl font-bold mb-2">DeepSeek AI Chat</h1>
+            <p class="text-gray-400">Real-time conversation with DeepSeek reasoning capabilities</p>
+        </header>
+
+        <div class="flex-1 flex gap-6 min-h-0">
+            <!-- Chat Interface -->
+            <div class="flex-1 bg-gray-800 rounded-lg flex flex-col">
+                <!-- Chat Header -->
+                <div class="p-4 border-b border-gray-700 flex items-center justify-between">
+                    <div>
+                        <h3 class="font-medium">DeepSeek Conversation</h3>
+                        <p class="text-sm text-gray-400">Ask questions, get detailed explanations, or brainstorm ideas</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="useReasoning" checked class="mr-2 bg-gray-700 border-gray-600 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm">Reasoning Mode</span>
+                        </label>
+                        <button id="clearChat" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm">Clear</button>
+                    </div>
+                </div>
+
+                <!-- Messages Container -->
+                <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+                    <div class="text-center text-gray-500 py-8">
+                        <div class="text-4xl mb-2">💬</div>
+                        <p>Start a conversation with DeepSeek AI</p>
+                        <p class="text-sm mt-1">Ask anything - from coding help to creative brainstorming</p>
+                    </div>
+                </div>
+
+                <!-- Streaming Indicator -->
+                <div id="streamingIndicator" class="hidden p-3 border-t border-gray-700 bg-gray-750">
+                    <div class="flex items-center space-x-3">
+                        <div class="flex space-x-1">
+                            <div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                            <div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                            <div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                        </div>
+                        <span class="text-sm text-gray-400">DeepSeek is thinking...</span>
+                        <div id="tokenCounter" class="text-xs text-gray-500"></div>
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="p-4 border-t border-gray-700">
+                    <form id="chatForm" class="flex space-x-3">
+                        <div class="flex-1">
+                            <textarea 
+                                id="messageInput" 
+                                placeholder="Type your message here... (Shift+Enter for new line, Enter to send)"
+                                class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md resize-none"
+                                rows="2"
+                                maxlength="4000"
+                            ></textarea>
+                            <div class="flex justify-between mt-1">
+                                <span class="text-xs text-gray-500">Shift+Enter for new line</span>
+                                <span id="charCounter" class="text-xs text-gray-500">0/4000</span>
+                            </div>
+                        </div>
+                        <button 
+                            type="submit" 
+                            id="sendBtn"
+                            class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-6 py-3 rounded-md font-medium self-start"
+                        >
+                            Send
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Side Panel -->
+            <div class="w-80 space-y-4">
+                <!-- Quick Actions -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="font-medium mb-3">Quick Actions</h3>
+                    <div class="space-y-2">
+                        <button class="quick-action w-full text-left p-2 bg-gray-700 hover:bg-gray-600 rounded text-sm" 
+                                data-prompt="Explain how to build a web application from scratch">
+                            🏗️ Web Development Guide
+                        </button>
+                        <button class="quick-action w-full text-left p-2 bg-gray-700 hover:bg-gray-600 rounded text-sm" 
+                                data-prompt="Help me debug this code issue">
+                            🐛 Debug Code
+                        </button>
+                        <button class="quick-action w-full text-left p-2 bg-gray-700 hover:bg-gray-600 rounded text-sm" 
+                                data-prompt="Suggest creative project ideas">
+                            💡 Project Ideas
+                        </button>
+                        <button class="quick-action w-full text-left p-2 bg-gray-700 hover:bg-gray-600 rounded text-sm" 
+                                data-prompt="Explain a complex concept simply">
+                            📚 Learn Something New
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chat Statistics -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="font-medium mb-3">Session Stats</h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Messages:</span>
+                            <span id="messageCount">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Tokens Used:</span>
+                            <span id="tokenCount">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Session Time:</span>
+                            <span id="sessionTime">0m</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Platform Selection -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="font-medium mb-3">Context Platform</h3>
+                    <select id="contextPlatform" class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-sm">
+                        <option value="">General Chat</option>
+                        <option value="replit">Replit Development</option>
+                        <option value="lovable">Lovable Platform</option>
+                        <option value="bolt">Bolt Framework</option>
+                        <option value="cursor">Cursor IDE</option>
+                        <option value="windsurf">Windsurf Environment</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Select platform for context-aware responses</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/chat-interface.js"></script>
+</body>
+</html>

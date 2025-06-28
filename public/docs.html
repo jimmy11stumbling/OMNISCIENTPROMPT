@@ -17,7 +17,7 @@
                     <a href="/dashboard.html" class="text-gray-300 hover:text-white">Dashboard</a>
                     <a href="/analytics.html" class="text-gray-300 hover:text-white">Analytics</a>
                     <a href="/rag-database.html" class="text-gray-300 hover:text-white">RAG Database</a>
-                    <a href="/chat.html" class="text-gray-300 hover:text-white">Chat</a>
+                    <a href="#" id="chatTab" class="text-gray-300 hover:text-white">Chat</a>
                     <a href="/docs.html" class="text-blue-400 font-medium">Docs</a>
                 </div>
             </div>
@@ -27,6 +27,102 @@
             </div>
         </div>
     </nav>
+
+    <!-- Chat Panel Overlay -->
+    <div id="chatPanel" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex h-full">
+            <!-- Chat Interface -->
+            <div class="w-2/3 bg-gray-900 flex flex-col">
+                <div class="bg-gray-800 border-b border-gray-700 p-4 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold">DeepSeek AI Chat</h2>
+                    <button id="closeChatPanel" class="text-gray-400 hover:text-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Messages Container -->
+                <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4">
+                    <div class="text-center text-gray-500 py-8">
+                        <div class="text-4xl mb-2">💬</div>
+                        <p>Start a conversation with DeepSeek AI</p>
+                        <p class="text-sm mt-1">Ask questions about the documentation or get help with development</p>
+                    </div>
+                </div>
+                
+                <!-- Streaming Indicator -->
+                <div id="chatStreamingIndicator" class="hidden p-3 border-t border-gray-700 bg-gray-800">
+                    <div class="flex items-center space-x-3">
+                        <div class="flex space-x-1">
+                            <div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                            <div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                            <div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                        </div>
+                        <span class="text-sm text-gray-400">DeepSeek is thinking...</span>
+                    </div>
+                </div>
+                
+                <!-- Input Area -->
+                <div class="bg-gray-800 border-t border-gray-700 p-4">
+                    <form id="chatInputForm" class="flex space-x-3">
+                        <textarea 
+                            id="chatInput" 
+                            placeholder="Ask about documentation, get coding help, or discuss ideas..."
+                            class="flex-1 p-3 bg-gray-700 border border-gray-600 rounded-md resize-none"
+                            rows="2"
+                        ></textarea>
+                        <button 
+                            type="submit" 
+                            id="chatSendBtn"
+                            class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-6 py-3 rounded-md font-medium"
+                        >
+                            Send
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Chat Sidebar -->
+            <div class="w-1/3 bg-gray-800 border-l border-gray-700 p-4 overflow-y-auto">
+                <h3 class="font-semibold mb-4">Quick Actions</h3>
+                <div class="space-y-2 mb-6">
+                    <button class="chat-quick-action w-full text-left p-2 bg-gray-700 hover:bg-gray-600 rounded text-sm" 
+                            data-prompt="Explain how to use the RAG database for my project">
+                        📚 RAG Database Help
+                    </button>
+                    <button class="chat-quick-action w-full text-left p-2 bg-gray-700 hover:bg-gray-600 rounded text-sm" 
+                            data-prompt="How do I integrate DeepSeek API into my application?">
+                        🔗 API Integration
+                    </button>
+                    <button class="chat-quick-action w-full text-left p-2 bg-gray-700 hover:bg-gray-600 rounded text-sm" 
+                            data-prompt="What are the best practices for prompt generation?">
+                        💡 Best Practices
+                    </button>
+                    <button class="chat-quick-action w-full text-left p-2 bg-gray-700 hover:bg-gray-600 rounded text-sm" 
+                            data-prompt="Help me debug an issue with streaming responses">
+                        🐛 Debug Help
+                    </button>
+                </div>
+                
+                <h3 class="font-semibold mb-4">Context</h3>
+                <div class="space-y-2">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="chatUseReasoning" checked class="mr-2">
+                        <span class="text-sm">Use Reasoning Mode</span>
+                    </label>
+                    <select id="chatPlatform" class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-sm">
+                        <option value="">General Chat</option>
+                        <option value="replit">Replit</option>
+                        <option value="lovable">Lovable</option>
+                        <option value="bolt">Bolt</option>
+                        <option value="cursor">Cursor</option>
+                        <option value="windsurf">Windsurf</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="flex h-screen">
         <!-- Sidebar -->
@@ -1060,6 +1156,223 @@ class MultiProtocolAIApp {
             sections.forEach(section => {
                 observer.observe(section);
             });
+
+            // Chat functionality
+            const chatTab = document.getElementById('chatTab');
+            const chatPanel = document.getElementById('chatPanel');
+            const closeChatPanel = document.getElementById('closeChatPanel');
+            const chatInputForm = document.getElementById('chatInputForm');
+            const chatInput = document.getElementById('chatInput');
+            const chatSendBtn = document.getElementById('chatSendBtn');
+            const chatMessages = document.getElementById('chatMessages');
+            const chatStreamingIndicator = document.getElementById('chatStreamingIndicator');
+            const chatUseReasoning = document.getElementById('chatUseReasoning');
+            const chatPlatform = document.getElementById('chatPlatform');
+
+            let isStreaming = false;
+            let currentStreamingMessage = null;
+
+            // Open chat panel
+            chatTab.addEventListener('click', (e) => {
+                e.preventDefault();
+                chatPanel.classList.remove('hidden');
+                chatInput.focus();
+            });
+
+            // Close chat panel
+            closeChatPanel.addEventListener('click', () => {
+                chatPanel.classList.add('hidden');
+            });
+
+            // Close panel when clicking outside
+            chatPanel.addEventListener('click', (e) => {
+                if (e.target === chatPanel) {
+                    chatPanel.classList.add('hidden');
+                }
+            });
+
+            // Quick action buttons
+            document.querySelectorAll('.chat-quick-action').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const prompt = e.target.dataset.prompt;
+                    chatInput.value = prompt;
+                    chatInput.focus();
+                });
+            });
+
+            // Handle form submission
+            chatInputForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (isStreaming) return;
+                
+                const message = chatInput.value.trim();
+                if (!message) return;
+                
+                // Add user message
+                addMessage('user', message);
+                chatInput.value = '';
+                
+                // Send message
+                await sendMessage(message);
+            });
+
+            // Handle Enter key
+            chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    chatInputForm.dispatchEvent(new Event('submit'));
+                }
+            });
+
+            async function sendMessage(message) {
+                isStreaming = true;
+                updateSendButton(true);
+                showStreamingIndicator();
+                
+                try {
+                    const platform = chatPlatform.value || null;
+                    const useReasoning = chatUseReasoning.checked;
+                    
+                    // Create assistant message placeholder
+                    const assistantMessage = addMessage('assistant', '');
+                    currentStreamingMessage = assistantMessage;
+                    
+                    const response = await fetch('/api/chat/stream', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            messages: [{ role: 'user', content: message }],
+                            platform: platform,
+                            reasoning: useReasoning
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    await handleStreamingResponse(response);
+                    
+                } catch (error) {
+                    console.error('Chat error:', error);
+                    addMessage('system', `Error: ${error.message}`);
+                } finally {
+                    isStreaming = false;
+                    updateSendButton(false);
+                    hideStreamingIndicator();
+                    currentStreamingMessage = null;
+                }
+            }
+
+            async function handleStreamingResponse(response) {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    
+                    if (done) break;
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            
+                            if (data === '[DONE]') {
+                                return;
+                            }
+                            
+                            try {
+                                const chunk = JSON.parse(data);
+                                if (chunk.choices?.[0]?.delta?.content) {
+                                    const content = chunk.choices[0].delta.content;
+                                    appendToCurrentMessage(content);
+                                }
+                            } catch (e) {
+                                // Handle non-JSON chunks
+                                if (data.trim()) {
+                                    appendToCurrentMessage(data);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            function addMessage(role, content) {
+                // Remove empty state if present
+                const emptyState = chatMessages.querySelector('.text-center');
+                if (emptyState) {
+                    emptyState.remove();
+                }
+
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${role}`;
+                
+                const roleColors = {
+                    user: 'bg-blue-900/30 border-blue-800',
+                    assistant: 'bg-gray-800 border-gray-700',
+                    system: 'bg-red-900/30 border-red-800'
+                };
+                
+                const roleIcons = {
+                    user: '👤',
+                    assistant: '🤖',
+                    system: '⚠️'
+                };
+                
+                messageDiv.innerHTML = `
+                    <div class="flex space-x-3 p-4 rounded-lg border ${roleColors[role]}">
+                        <div class="flex-shrink-0 text-lg">${roleIcons[role]}</div>
+                        <div class="flex-1">
+                            <div class="font-medium text-sm mb-1 capitalize">${role}</div>
+                            <div class="message-content text-gray-300 whitespace-pre-wrap">${escapeHtml(content)}</div>
+                            <div class="text-xs text-gray-500 mt-2">${new Date().toLocaleTimeString()}</div>
+                        </div>
+                    </div>
+                `;
+                
+                chatMessages.appendChild(messageDiv);
+                scrollToBottom();
+                
+                return messageDiv.querySelector('.message-content');
+            }
+
+            function appendToCurrentMessage(content) {
+                if (currentStreamingMessage) {
+                    currentStreamingMessage.textContent += content;
+                    scrollToBottom();
+                }
+            }
+
+            function showStreamingIndicator() {
+                chatStreamingIndicator.classList.remove('hidden');
+            }
+
+            function hideStreamingIndicator() {
+                chatStreamingIndicator.classList.add('hidden');
+            }
+
+            function updateSendButton(disabled) {
+                chatSendBtn.disabled = disabled;
+                chatSendBtn.textContent = disabled ? 'Sending...' : 'Send';
+            }
+
+            function scrollToBottom() {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
         });
     </script>
 </body>
