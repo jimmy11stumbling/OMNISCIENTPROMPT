@@ -1,300 +1,261 @@
 /**
- * Universal Settings Manager
- * Provides settings functionality across all pages
+ * Universal Settings Management System
+ * Handles all application configuration and user preferences
  */
 
 class UniversalSettings {
-    constructor() {
-        this.settings = this.loadSettings();
-        this.init();
+  constructor() {
+    this.settings = {
+      theme: 'dark',
+      language: 'en',
+      autoSave: true,
+      notifications: true,
+      apiTimeout: 30000,
+      maxTokens: 8192,
+      temperature: 0.7,
+      defaultPlatform: 'replit',
+      streamingEnabled: true,
+      reasoningEnabled: true,
+      ragSearchLimit: 10,
+      analyticsEnabled: true,
+      debugMode: false
+    };
+
+    this.observers = [];
+    this.init();
+  }
+
+  init() {
+    this.loadSettings();
+    this.setupEventListeners();
+    this.applySettings();
+  }
+
+  loadSettings() {
+    const saved = localStorage.getItem('deepseek_settings');
+    if (saved) {
+      try {
+        this.settings = { ...this.settings, ...JSON.parse(saved) };
+      } catch (error) {
+        console.warn('Failed to load settings:', error);
+      }
+    }
+  }
+
+  saveSettings() {
+    try {
+      localStorage.setItem('deepseek_settings', JSON.stringify(this.settings));
+      this.notifyObservers('settings_saved', this.settings);
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+    }
+  }
+
+  get(key) {
+    return this.settings[key];
+  }
+
+  set(key, value) {
+    const oldValue = this.settings[key];
+    this.settings[key] = value;
+    this.saveSettings();
+    this.applySettings();
+    this.notifyObservers('setting_changed', { key, value, oldValue });
+  }
+
+  update(updates) {
+    Object.assign(this.settings, updates);
+    this.saveSettings();
+    this.applySettings();
+    this.notifyObservers('settings_updated', updates);
+  }
+
+  reset() {
+    const defaults = {
+      theme: 'dark',
+      language: 'en',
+      autoSave: true,
+      notifications: true,
+      apiTimeout: 30000,
+      maxTokens: 8192,
+      temperature: 0.7,
+      defaultPlatform: 'replit',
+      streamingEnabled: true,
+      reasoningEnabled: true,
+      ragSearchLimit: 10,
+      analyticsEnabled: true,
+      debugMode: false
+    };
+
+    this.settings = { ...defaults };
+    this.saveSettings();
+    this.applySettings();
+    this.notifyObservers('settings_reset', this.settings);
+  }
+
+  applySettings() {
+    // Apply theme
+    document.documentElement.setAttribute('data-theme', this.settings.theme);
+
+    // Apply debug mode
+    if (this.settings.debugMode) {
+      window.debugMode = true;
+      console.log('[DEBUG] Debug mode enabled');
     }
 
-    init() {
-        this.createSettingsModal();
-        this.attachEventListeners();
-        this.applySettings();
-    }
+    // Update UI elements
+    this.updateUI();
+  }
 
-    createSettingsModal() {
-        // Check if modal already exists
-        if (document.getElementById('universalSettingsModal')) return;
+  updateUI() {
+    // Update settings controls if they exist
+    const controls = [
+      { id: 'theme-select', value: this.settings.theme },
+      { id: 'language-select', value: this.settings.language },
+      { id: 'auto-save-toggle', checked: this.settings.autoSave },
+      { id: 'notifications-toggle', checked: this.settings.notifications },
+      { id: 'streaming-toggle', checked: this.settings.streamingEnabled },
+      { id: 'reasoning-toggle', checked: this.settings.reasoningEnabled },
+      { id: 'analytics-toggle', checked: this.settings.analyticsEnabled },
+      { id: 'debug-toggle', checked: this.settings.debugMode },
+      { id: 'api-timeout-input', value: this.settings.apiTimeout },
+      { id: 'max-tokens-input', value: this.settings.maxTokens },
+      { id: 'temperature-input', value: this.settings.temperature },
+      { id: 'default-platform-select', value: this.settings.defaultPlatform },
+      { id: 'rag-search-limit-input', value: this.settings.ragSearchLimit }
+    ];
 
-        const modal = document.createElement('div');
-        modal.id = 'universalSettingsModal';
-        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 hidden';
-        modal.innerHTML = `
-            <div class="flex items-center justify-center min-h-screen px-4">
-                <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold">Platform Settings</h3>
-                        <button id="closeUniversalSettings" class="text-gray-400 hover:text-white">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
-                    </div>
-                    
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Default Platform</label>
-                            <select id="universalDefaultPlatform" class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
-                                <option value="">No Default</option>
-                                <option value="replit">Replit</option>
-                                <option value="lovable">Lovable</option>
-                                <option value="bolt">Bolt</option>
-                                <option value="cursor">Cursor</option>
-                                <option value="windsurf">Windsurf</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="flex items-center">
-                                <input type="checkbox" id="universalAutoSave" class="mr-2">
-                                <span class="text-sm">Auto-save generated content</span>
-                            </label>
-                        </div>
-                        
-                        <div>
-                            <label class="flex items-center">
-                                <input type="checkbox" id="universalNotifications" class="mr-2" checked>
-                                <span class="text-sm">Enable notifications</span>
-                            </label>
-                        </div>
-
-                        <div>
-                            <label class="flex items-center">
-                                <input type="checkbox" id="universalReasoning" class="mr-2" checked>
-                                <span class="text-sm">Enable reasoning mode by default</span>
-                            </label>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Interface Theme</label>
-                            <select id="universalTheme" class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
-                                <option value="dark">Dark Mode</option>
-                                <option value="light">Light Mode</option>
-                                <option value="auto">Auto (System)</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium mb-2">Streaming Speed</label>
-                            <select id="universalStreamSpeed" class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
-                                <option value="slow">Slow (Easy to read)</option>
-                                <option value="medium">Medium</option>
-                                <option value="fast">Fast</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="flex space-x-3 mt-6">
-                        <button id="saveUniversalSettings" class="flex-1 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">
-                            Save Settings
-                        </button>
-                        <button id="resetUniversalSettings" class="flex-1 bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded text-sm">
-                            Reset
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-    }
-
-    attachEventListeners() {
-        // Settings button click handler (works for any settings button on any page)
-        document.addEventListener('click', (e) => {
-            if (e.target.id === 'settingsBtn' || e.target.classList.contains('settings-btn')) {
-                this.openSettings();
-            }
-        });
-
-        // Modal event listeners
-        const closeBtn = document.getElementById('closeUniversalSettings');
-        const saveBtn = document.getElementById('saveUniversalSettings');
-        const resetBtn = document.getElementById('resetUniversalSettings');
-        const modal = document.getElementById('universalSettingsModal');
-
-        if (closeBtn) closeBtn.addEventListener('click', () => this.closeSettings());
-        if (saveBtn) saveBtn.addEventListener('click', () => this.saveSettings());
-        if (resetBtn) resetBtn.addEventListener('click', () => this.resetSettings());
-
-        if (modal) {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) this.closeSettings();
-            });
+    controls.forEach(control => {
+      const element = document.getElementById(control.id);
+      if (element) {
+        if (control.hasOwnProperty('checked')) {
+          element.checked = control.checked;
+        } else {
+          element.value = control.value;
         }
+      }
+    });
+  }
 
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                this.closeSettings();
-            }
-            if (e.ctrlKey && e.key === ',') {
-                e.preventDefault();
-                this.openSettings();
-            }
-        });
+  setupEventListeners() {
+    // Listen for settings changes from UI
+    document.addEventListener('change', (event) => {
+      const element = event.target;
+
+      if (element.id === 'theme-select') {
+        this.set('theme', element.value);
+      } else if (element.id === 'language-select') {
+        this.set('language', element.value);
+      } else if (element.id === 'auto-save-toggle') {
+        this.set('autoSave', element.checked);
+      } else if (element.id === 'notifications-toggle') {
+        this.set('notifications', element.checked);
+      } else if (element.id === 'streaming-toggle') {
+        this.set('streamingEnabled', element.checked);
+      } else if (element.id === 'reasoning-toggle') {
+        this.set('reasoningEnabled', element.checked);
+      } else if (element.id === 'analytics-toggle') {
+        this.set('analyticsEnabled', element.checked);
+      } else if (element.id === 'debug-toggle') {
+        this.set('debugMode', element.checked);
+      } else if (element.id === 'api-timeout-input') {
+        this.set('apiTimeout', parseInt(element.value));
+      } else if (element.id === 'max-tokens-input') {
+        this.set('maxTokens', parseInt(element.value));
+      } else if (element.id === 'temperature-input') {
+        this.set('temperature', parseFloat(element.value));
+      } else if (element.id === 'default-platform-select') {
+        this.set('defaultPlatform', element.value);
+      } else if (element.id === 'rag-search-limit-input') {
+        this.set('ragSearchLimit', parseInt(element.value));
+      }
+    });
+  }
+
+  // Observer pattern for settings changes
+  subscribe(callback) {
+    this.observers.push(callback);
+  }
+
+  unsubscribe(callback) {
+    this.observers = this.observers.filter(obs => obs !== callback);
+  }
+
+  notifyObservers(event, data) {
+    this.observers.forEach(callback => {
+      try {
+        callback(event, data);
+      } catch (error) {
+        console.error('Observer callback error:', error);
+      }
+    });
+  }
+
+  // Export/Import functionality
+  export() {
+    return JSON.stringify(this.settings, null, 2);
+  }
+
+  import(settingsJson) {
+    try {
+      const imported = JSON.parse(settingsJson);
+      this.update(imported);
+      return true;
+    } catch (error) {
+      console.error('Failed to import settings:', error);
+      return false;
+    }
+  }
+
+  // Advanced settings validation
+  validate() {
+    const issues = [];
+
+    if (this.settings.apiTimeout < 5000) {
+      issues.push('API timeout too low (minimum 5 seconds)');
     }
 
-    loadSettings() {
-        const defaultSettings = {
-            defaultPlatform: '',
-            autoSave: false,
-            notifications: true,
-            reasoning: true,
-            theme: 'dark',
-            streamSpeed: 'medium'
-        };
-
-        try {
-            const saved = localStorage.getItem('deepseek_universal_settings');
-            return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
-        } catch (error) {
-            console.warn('Failed to load settings:', error);
-            return defaultSettings;
-        }
+    if (this.settings.maxTokens < 100 || this.settings.maxTokens > 8192) {
+      issues.push('Max tokens must be between 100 and 8192');
     }
 
-    openSettings() {
-        const modal = document.getElementById('universalSettingsModal');
-        if (modal) {
-            this.populateForm();
-            modal.classList.remove('hidden');
-        }
+    if (this.settings.temperature < 0 || this.settings.temperature > 2) {
+      issues.push('Temperature must be between 0 and 2');
     }
 
-    closeSettings() {
-        const modal = document.getElementById('universalSettingsModal');
-        if (modal) {
-            modal.classList.add('hidden');
-        }
+    if (this.settings.ragSearchLimit < 1 || this.settings.ragSearchLimit > 50) {
+      issues.push('RAG search limit must be between 1 and 50');
     }
 
-    populateForm() {
-        const elements = {
-            defaultPlatform: document.getElementById('universalDefaultPlatform'),
-            autoSave: document.getElementById('universalAutoSave'),
-            notifications: document.getElementById('universalNotifications'),
-            reasoning: document.getElementById('universalReasoning'),
-            theme: document.getElementById('universalTheme'),
-            streamSpeed: document.getElementById('universalStreamSpeed')
-        };
+    return issues;
+  }
 
-        Object.keys(elements).forEach(key => {
-            const element = elements[key];
-            if (element) {
-                if (element.type === 'checkbox') {
-                    element.checked = this.settings[key];
-                } else {
-                    element.value = this.settings[key];
-                }
-            }
-        });
-    }
+  // Performance optimization settings
+  getPerformanceSettings() {
+    return {
+      streamingEnabled: this.settings.streamingEnabled,
+      ragSearchLimit: this.settings.ragSearchLimit,
+      analyticsEnabled: this.settings.analyticsEnabled,
+      debugMode: this.settings.debugMode
+    };
+  }
 
-    saveSettings() {
-        const elements = {
-            defaultPlatform: document.getElementById('universalDefaultPlatform'),
-            autoSave: document.getElementById('universalAutoSave'),
-            notifications: document.getElementById('universalNotifications'),
-            reasoning: document.getElementById('universalReasoning'),
-            theme: document.getElementById('universalTheme'),
-            streamSpeed: document.getElementById('universalStreamSpeed')
-        };
-
-        Object.keys(elements).forEach(key => {
-            const element = elements[key];
-            if (element) {
-                if (element.type === 'checkbox') {
-                    this.settings[key] = element.checked;
-                } else {
-                    this.settings[key] = element.value;
-                }
-            }
-        });
-
-        try {
-            localStorage.setItem('deepseek_universal_settings', JSON.stringify(this.settings));
-            this.applySettings();
-            this.showNotification('Settings saved successfully', 'success');
-            this.closeSettings();
-        } catch (error) {
-            console.error('Failed to save settings:', error);
-            this.showNotification('Failed to save settings', 'error');
-        }
-    }
-
-    resetSettings() {
-        this.settings = {
-            defaultPlatform: '',
-            autoSave: false,
-            notifications: true,
-            reasoning: true,
-            theme: 'dark',
-            streamSpeed: 'medium'
-        };
-
-        localStorage.removeItem('deepseek_universal_settings');
-        this.populateForm();
-        this.applySettings();
-        this.showNotification('Settings reset to defaults', 'info');
-    }
-
-    applySettings() {
-        // Apply default platform across all platform selectors
-        const platformSelectors = document.querySelectorAll('select[id*="platform"], select[id*="Platform"]');
-        platformSelectors.forEach(select => {
-            if (this.settings.defaultPlatform && select.value === '') {
-                select.value = this.settings.defaultPlatform;
-            }
-        });
-
-        // Apply reasoning mode to checkboxes
-        const reasoningCheckboxes = document.querySelectorAll('input[id*="reasoning"], input[id*="Reasoning"]');
-        reasoningCheckboxes.forEach(checkbox => {
-            checkbox.checked = this.settings.reasoning;
-        });
-
-        // Apply theme
-        document.body.setAttribute('data-theme', this.settings.theme);
-        
-        // Dispatch settings change event for other components
-        window.dispatchEvent(new CustomEvent('settingsChanged', { detail: this.settings }));
-    }
-
-    showNotification(message, type = 'info') {
-        const notification = document.createElement('div');
-        notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm transform transition-all duration-300 translate-x-full`;
-        
-        const colors = {
-            success: 'bg-green-600 text-white',
-            error: 'bg-red-600 text-white',
-            info: 'bg-blue-600 text-white'
-        };
-
-        notification.className += ` ${colors[type] || colors.info}`;
-        notification.textContent = message;
-
-        document.body.appendChild(notification);
-
-        setTimeout(() => notification.classList.remove('translate-x-full'), 100);
-        setTimeout(() => {
-            notification.classList.add('translate-x-full');
-            setTimeout(() => document.body.removeChild(notification), 300);
-        }, 3000);
-    }
-
-    getSettings() {
-        return this.settings;
-    }
+  // API configuration
+  getAPISettings() {
+    return {
+      timeout: this.settings.apiTimeout,
+      maxTokens: this.settings.maxTokens,
+      temperature: this.settings.temperature,
+      defaultPlatform: this.settings.defaultPlatform,
+      reasoningEnabled: this.settings.reasoningEnabled
+    };
+  }
 }
 
-// Auto-initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    window.universalSettings = new UniversalSettings();
-});
+// Global settings instance
+window.universalSettings = new UniversalSettings();
 
-// Export for global access
-window.UniversalSettings = UniversalSettings;
+// Export for module usage
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = UniversalSettings;
+}

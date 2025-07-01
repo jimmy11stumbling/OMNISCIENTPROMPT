@@ -25,7 +25,105 @@ const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'deepseek-ai-secret-key-change-in-production';
 const BCRYPT_ROUNDS = 12;
 
-// Initialize database connection
+// Initialize database connection with proper error handling
+let dbInitialized = false;
+
+async function initializeDatabase() {
+  try {
+    // Test PostgreSQL connection first
+    if (process.env.DATABASE_URL) {
+      const testResult = await pool.query('SELECT NOW()');
+      console.log('[DATABASE] PostgreSQL connected successfully');
+      dbInitialized = true;
+    }
+  } catch (pgError) {
+    console.warn('[DATABASE] PostgreSQL unavailable, using SQLite fallback');
+    // Ensure SQLite database exists and is initialized
+    const Database = require('better-sqlite3');
+    const path = require('path');
+    const dbPath = path.join(__dirname, 'app_database.sqlite');
+    
+    try {
+      const sqlite = new Database(dbPath);
+      sqlite.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          username TEXT UNIQUE NOT NULL,
+          email TEXT UNIQUE NOT NULL,
+          password_hash TEXT NOT NULL,
+          role TEXT DEFAULT 'user',
+          api_quota_daily INTEGER DEFAULT 100,
+          api_quota_used_today INTEGER DEFAULT 0,
+          api_quota_reset_date TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        CREATE TABLE IF NOT EXISTS rag_documents (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          content TEXT NOT NULL,
+          platform TEXT NOT NULL,
+          document_type TEXT,
+          keywords TEXT,
+          uploaded_by INTEGER,
+          is_active BOOLEAN DEFAULT 1,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        CREATE TABLE IF NOT EXISTS saved_prompts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          original_query TEXT NOT NULL,
+          platform TEXT NOT NULL,
+          generated_prompt TEXT NOT NULL,
+          reasoning TEXT,
+          rag_context TEXT,
+          tokens_used INTEGER DEFAULT 0,
+          response_time INTEGER DEFAULT 0,
+          user_id INTEGER,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        CREATE TABLE IF NOT EXISTS api_usage_logs (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER,
+          endpoint TEXT NOT NULL,
+          method TEXT NOT NULL,
+          status_code INTEGER,
+          response_time INTEGER,
+          tokens_used INTEGER DEFAULT 0,
+          ip_address TEXT,
+          user_agent TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        
+        CREATE TABLE IF NOT EXISTS notifications (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER,
+          title TEXT NOT NULL,
+          message TEXT NOT NULL,
+          type TEXT DEFAULT 'info',
+          is_read BOOLEAN DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      sqlite.close();
+      console.log('[DATABASE] SQLite database initialized successfully');
+      dbInitialized = true;
+    } catch (sqliteError) {
+      console.error('[DATABASE] SQLite initialization failed:', sqliteError);
+    }
+  }
+}
+
+// Initialize database before starting services
+initializeDatabase().then(() => {
+  console.log('[DATABASE] Database initialization completed');
+}).catch(error => {
+  console.error('[DATABASE] Database initialization failed:', error);
+});
 
 // Initialize services
 const WorkingDeepSeekService = require('./services/workingDeepSeekService');
@@ -1575,6 +1673,144 @@ app.post('/api/cleanup', (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin API endpoints
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    const users = await queryWithRetry(`
+      SELECT id, username, email, role, api_quota_daily, api_quota_used_today, 
+             created_at, updated_at 
+      FROM users 
+      ORDER BY created_at DESC
+    `);
+    
+    res.json(users || []);
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ error: 'Failed to get users' });
+  }
+});
+
+app.get('/api/admin/stats', async (req, res) => {
+  try {
+    const [userCount, promptCount, docCount, apiCount] = await Promise.all([
+      queryWithRetry('SELECT COUNT(*) as count FROM users'),
+      queryWithRetry('SELECT COUNT(*) as count FROM saved_prompts'),
+      queryWithRetry('SELECT COUNT(*) as count FROM rag_documents'),
+      queryWithRetry('SELECT COUNT(*) as count FROM api_usage_logs WHERE DATE(created_at) = DATE(CURRENT_TIMESTAMP)')
+    ]);
+
+    res.json({
+      totalUsers: userCount[0]?.count || 0,
+      totalPrompts: promptCount[0]?.count || 0,
+      totalDocuments: docCount[0]?.count || 0,
+      apiCallsToday: apiCount[0]?.count || 0,
+      systemStatus: 'operational',
+      uptime: process.uptime(),
+      memoryUsage: process.memoryUsage()
+    });
+  } catch (error) {
+    console.error('Get admin stats error:', error);
+    res.status(500).json({ error: 'Failed to get admin stats' });
+  }
+});
+
+app.delete('/api/admin/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Don't allow deleting admin user (id: 1)
+    if (parseInt(id) === 1) {
+      return res.status(403).json({ error: 'Cannot delete admin user' });
+    }
+    
+    await queryWithRetry('DELETE FROM users WHERE id = ?', [id]);
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
+app.get('/api/diagnostics', async (req, res) => {
+  try {
+    const diagnostics = {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      database: 'connected',
+      memory: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`,
+      uptime: `${Math.round(process.uptime())}s`,
+      nodeVersion: process.version,
+      platform: process.platform,
+      ragDocuments: ragDB.getTotalDocumentCount(),
+      activeConnections: wss ? wss.clients.size : 0,
+      services: {
+        deepSeek: global.deepSeekService ? 'active' : 'inactive',
+        mcp: global.mcpDocumentServer ? 'active' : 'inactive',
+        websocket: wss ? 'active' : 'inactive'
+      }
+    };
+
+    res.json(diagnostics);
+  } catch (error) {
+    console.error('Diagnostics error:', error);
+    res.status(500).json({ error: 'Failed to run diagnostics' });
+  }
+});
+
+app.get('/api/logs', async (req, res) => {
+  try {
+    const { limit = 100, level = 'all' } = req.query;
+    
+    // Get recent API usage logs as a proxy for system logs
+    let sql = 'SELECT * FROM api_usage_logs ORDER BY created_at DESC LIMIT ?';
+    const params = [parseInt(limit)];
+    
+    const logs = await queryWithRetry(sql, params);
+    
+    res.json({
+      logs: logs || [],
+      total: logs?.length || 0,
+      level,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Get logs error:', error);
+    res.status(500).json({ error: 'Failed to get logs' });
+  }
+});
+
+app.post('/api/admin/notifications', async (req, res) => {
+  try {
+    const { title, message, type = 'info', userId = null } = req.body;
+    
+    if (!title || !message) {
+      return res.status(400).json({ error: 'Title and message are required' });
+    }
+
+    const result = await queryWithRetry(`
+      INSERT INTO notifications (user_id, title, message, type) 
+      VALUES (?, ?, ?, ?)
+    `, [userId, title, message, type]);
+
+    // Broadcast to connected clients if WebSocket is available
+    if (wss) {
+      broadcastToClients({
+        type: 'notification',
+        data: { title, message, type },
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    res.json({ 
+      message: 'Notification sent successfully',
+      id: result.lastInsertRowid || result.insertId
+    });
+  } catch (error) {
+    console.error('Send notification error:', error);
+    res.status(500).json({ error: 'Failed to send notification' });
   }
 });
 
