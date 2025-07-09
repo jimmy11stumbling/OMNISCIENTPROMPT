@@ -19,6 +19,7 @@ class MasterPromptGenerator {
         this.ragSourceCount = 0;
         this.contentSections = [];
         this.qualityScore = 0;
+        this.autoScrollEnabled = true;
         
         this.init();
     }
@@ -96,6 +97,7 @@ class MasterPromptGenerator {
         const pauseBtn = document.getElementById('pauseStream');
         const resumeBtn = document.getElementById('resumeStream');
         const speedSelect = document.getElementById('streamSpeed');
+        const autoScrollToggle = document.getElementById('autoScrollToggle');
 
         if (form) {
             form.addEventListener('submit', (e) => {
@@ -128,6 +130,16 @@ class MasterPromptGenerator {
         if (speedSelect) {
             speedSelect.addEventListener('change', (e) => {
                 this.streamSpeed = parseFloat(e.target.value);
+                this.showInfo(`Stream speed set to ${this.streamSpeed}x`);
+            });
+        }
+
+        // Auto-scroll toggle
+        if (autoScrollToggle) {
+            autoScrollToggle.addEventListener('change', (e) => {
+                this.autoScrollEnabled = e.target.checked;
+                const status = this.autoScrollEnabled ? 'enabled' : 'disabled';
+                this.showInfo(`Auto-scroll ${status}`);
             });
         }
 
@@ -491,15 +503,26 @@ RULES:
                 promptResult.appendChild(streamingCursor);
             }
             
-            // Auto-scroll to bottom
-            const container = promptResult.parentElement;
-            if (container) {
-                container.scrollTop = container.scrollHeight;
-            }
-            
-            const resultSection = document.getElementById('resultSection');
-            if (resultSection) {
-                resultSection.scrollTop = resultSection.scrollHeight;
+            // Enhanced Auto-scroll to bottom
+            if (this.autoScrollEnabled) {
+                const container = promptResult.parentElement;
+                if (container) {
+                    container.scrollTop = container.scrollHeight;
+                }
+                
+                const resultSection = document.getElementById('resultSection');
+                if (resultSection) {
+                    resultSection.scrollTop = resultSection.scrollHeight;
+                }
+                
+                // Also scroll the window to keep output visible
+                const rect = promptResult.getBoundingClientRect();
+                if (rect.bottom > window.innerHeight) {
+                    window.scrollTo({
+                        top: window.scrollY + (rect.bottom - window.innerHeight) + 100,
+                        behavior: 'smooth'
+                    });
+                }
             }
         } catch (error) {
             console.warn('Token display error:', error);

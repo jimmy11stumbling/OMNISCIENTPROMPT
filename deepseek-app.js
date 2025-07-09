@@ -21,7 +21,7 @@ const pool = new Pool({
 
 const app = express();
 const server = http.createServer(app);
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 const JWT_SECRET = process.env.JWT_SECRET || 'deepseek-ai-secret-key-change-in-production';
 const BCRYPT_ROUNDS = 12;
 
