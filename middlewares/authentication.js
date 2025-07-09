@@ -1,188 +1,160 @@
-
 /**
- * Enhanced Authentication Middleware
- * Comprehensive security with JWT, password validation, and session management
+ * Authentication Middleware
+ * JWT-based authentication with session management
  */
 
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const rateLimit = require('express-rate-limit');
+const config = require('../config/environment');
+const database = require('../database');
 
 class AuthenticationManager {
   constructor() {
-    this.jwtSecret = process.env.JWT_SECRET || 'deepseek-ai-secret-key-change-in-production';
-    this.bcryptRounds = 12;
-    this.tokenExpiry = '24h';
-    this.refreshTokenExpiry = '7d';
-    this.activeSessions = new Map();
-    
-    // Rate limiting for auth endpoints
-    this.authLimiter = rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 5, // 5 attempts per window
-      message: { error: 'Too many authentication attempts. Please try again later.' },
-      standardHeaders: true,
-      legacyHeaders: false
-    });
-
-    this.loginLimiter = rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 3, // 3 login attempts per window
-      message: { error: 'Too many login attempts. Please try again later.' },
-      standardHeaders: true,
-      legacyHeaders: false
-    });
+    this.database = database;
   }
 
-  // Password utilities
-  async hashPassword(password) {
-    if (!this.validatePasswordStrength(password)) {
-      throw new Error('Password does not meet security requirements');
-    }
-    return await bcrypt.hash(password, this.bcryptRounds);
-  }
-
-  async verifyPassword(password, hash) {
-    return await bcrypt.compare(password, hash);
-  }
-
-  validatePasswordStrength(password) {
-    // Minimum 8 characters, at least one uppercase, lowercase, number, and special character
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    return passwordRegex.test(password);
-  }
-
-  // Email validation
-  validateEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  }
-
-  // Token management
-  generateToken(userId, options = {}) {
-    const payload = {
-      userId,
-      type: 'access',
-      iat: Math.floor(Date.now() / 1000)
-    };
-
-    const tokenOptions = {
-      expiresIn: options.expiresIn || this.tokenExpiry,
-      issuer: 'deepseek-ai-platform',
-      audience: 'deepseek-users'
-    };
-
-    const token = jwt.sign(payload, this.jwtSecret, tokenOptions);
-    
-    // Track active session
-    this.activeSessions.set(userId, {
-      tokenId: payload.iat,
-      createdAt: new Date(),
-      lastActivity: new Date(),
-      userAgent: options.userAgent || 'unknown',
-      ipAddress: options.ipAddress || 'unknown'
-    });
-
-    return token;
-  }
-
-  generateRefreshToken(userId) {
-    const payload = {
-      userId,
-      type: 'refresh',
-      iat: Math.floor(Date.now() / 1000)
-    };
-
-    return jwt.sign(payload, this.jwtSecret, {
-      expiresIn: this.refreshTokenExpiry,
-      issuer: 'deepseek-ai-platform',
-      audience: 'deepseek-users'
-    });
-  }
-
-  verifyToken(token) {
-    try {
-      const decoded = jwt.verify(token, this.jwtSecret, {
-        issuer: 'deepseek-ai-platform',
-        audience: 'deepseek-users'
-      });
-
-      // Update last activity for active sessions
-      if (this.activeSessions.has(decoded.userId)) {
-        const session = this.activeSessions.get(decoded.userId);
-        session.lastActivity = new Date();
-      }
-
-      return decoded;
-    } catch (error) {
-      throw new Error('Invalid or expired token');
-    }
-  }
-
-  // Middleware functions
-  authenticateToken() {
+  // JWT Token verification middleware
+  verifyToken() {
     return async (req, res, next) => {
-      const authHeader = req.headers['authorization'];
-      const token = authHeader && authHeader.split(' ')[1];
-
-      if (!token) {
-        return res.status(401).json({ 
-          error: 'Access token required',
-          code: 'MISSING_TOKEN'
-        });
-      }
-
       try {
-        const decoded = this.verifyToken(token);
-        
-        // Check if session is still active
-        if (!this.activeSessions.has(decoded.userId)) {
-          return res.status(403).json({ 
-            error: 'Session expired',
-            code: 'SESSION_EXPIRED'
+        const authHeader = req.headers.authorization;
+        const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+        if (!token) {
+          return res.status(401).json({ 
+            error: 'Access token required',
+            code: 'NO_TOKEN'
           });
         }
 
-        req.user = { id: decoded.userId };
-        req.tokenPayload = decoded;
+        const decoded = jwt.verify(token, config.JWT_SECRET);
+        
+        // Get user from database
+        const userResult = await this.database.queryAsync(
+          'SELECT * FROM users WHERE id = ? AND is_active = 1',
+          [decoded.userId]
+        );
+
+        if (!userResult.rows.length) {
+          return res.status(401).json({ 
+            error: 'Invalid token - user not found',
+            code: 'USER_NOT_FOUND'
+          });
+        }
+
+        const user = userResult.rows[0];
+        
+        // Check if account is locked
+        if (user.locked_until && new Date() < new Date(user.locked_until)) {
+          return res.status(423).json({ 
+            error: 'Account temporarily locked',
+            lockUntil: user.locked_until,
+            code: 'ACCOUNT_LOCKED'
+          });
+        }
+
+        req.user = user;
         next();
       } catch (error) {
-        return res.status(403).json({ 
-          error: 'Invalid token',
-          code: 'INVALID_TOKEN',
-          details: error.message
+        if (error.name === 'JsonWebTokenError') {
+          return res.status(401).json({ 
+            error: 'Invalid token',
+            code: 'INVALID_TOKEN'
+          });
+        }
+        
+        if (error.name === 'TokenExpiredError') {
+          return res.status(401).json({ 
+            error: 'Token expired',
+            code: 'TOKEN_EXPIRED'
+          });
+        }
+
+        console.error('Auth middleware error:', error);
+        return res.status(500).json({ 
+          error: 'Authentication service error',
+          code: 'AUTH_ERROR'
         });
       }
     };
   }
 
+  // Optional authentication - doesn't fail if no token
   optionalAuth() {
     return async (req, res, next) => {
-      const authHeader = req.headers['authorization'];
-      const token = authHeader && authHeader.split(' ')[1];
-
-      if (!token) {
-        req.user = null;
-        return next();
-      }
-
       try {
-        const decoded = this.verifyToken(token);
-        if (this.activeSessions.has(decoded.userId)) {
-          req.user = { id: decoded.userId };
-          req.tokenPayload = decoded;
-        } else {
+        const authHeader = req.headers.authorization;
+        const token = authHeader && authHeader.split(' ')[1];
+
+        if (!token) {
           req.user = null;
+          return next();
         }
+
+        const decoded = jwt.verify(token, config.JWT_SECRET);
+        const userResult = await this.database.queryAsync(
+          'SELECT * FROM users WHERE id = ? AND is_active = 1',
+          [decoded.userId]
+        );
+
+        req.user = userResult.rows.length ? userResult.rows[0] : null;
+        next();
       } catch (error) {
         req.user = null;
+        next();
+      }
+    };
+  }
+
+  // Role-based authorization
+  requireRole(role) {
+    return (req, res, next) => {
+      if (!req.user) {
+        return res.status(401).json({ 
+          error: 'Authentication required',
+          code: 'AUTH_REQUIRED'
+        });
+      }
+
+      if (req.user.role !== role) {
+        return res.status(403).json({ 
+          error: `${role} access required`,
+          code: 'INSUFFICIENT_PERMISSIONS'
+        });
       }
 
       next();
     };
   }
 
+  // Multiple roles authorization
+  requireAnyRole(roles) {
+    return (req, res, next) => {
+      if (!req.user) {
+        return res.status(401).json({ 
+          error: 'Authentication required',
+          code: 'AUTH_REQUIRED'
+        });
+      }
+
+      if (!roles.includes(req.user.role)) {
+        return res.status(403).json({ 
+          error: `Required roles: ${roles.join(', ')}`,
+          code: 'INSUFFICIENT_PERMISSIONS'
+        });
+      }
+
+      next();
+    };
+  }
+
+  // Admin authorization
   requireAdmin() {
+    return this.requireRole('admin');
+  }
+
+  // User owns resource or is admin
+  requireOwnership(resourceIdParam = 'id') {
     return async (req, res, next) => {
       if (!req.user) {
         return res.status(401).json({ 
@@ -191,69 +163,161 @@ class AuthenticationManager {
         });
       }
 
-      // For demo purposes, check if user ID is 1 (first user is admin)
-      // In production, this should check a proper role field
-      if (req.user.id !== 1) {
-        return res.status(403).json({ 
-          error: 'Admin access required',
-          code: 'ADMIN_REQUIRED'
-        });
+      const resourceId = req.params[resourceIdParam];
+      
+      // Admin can access any resource
+      if (req.user.role === 'admin') {
+        return next();
       }
 
-      next();
+      // Check if user owns the resource
+      if (req.user.id.toString() === resourceId) {
+        return next();
+      }
+
+      return res.status(403).json({ 
+        error: 'Access denied - not resource owner',
+        code: 'NOT_OWNER'
+      });
     };
   }
 
-  // Session management
-  invalidateSession(userId) {
-    this.activeSessions.delete(userId);
+  // Generate JWT token
+  generateToken(userId, options = {}) {
+    const payload = { userId };
+    const tokenOptions = {
+      expiresIn: options.expiresIn || config.VALIDATION.tokenExpiry,
+      ...options
+    };
+
+    return jwt.sign(payload, config.JWT_SECRET, tokenOptions);
   }
 
-  invalidateAllSessions() {
-    this.activeSessions.clear();
+  // Generate refresh token
+  generateRefreshToken(userId) {
+    return jwt.sign(
+      { userId, type: 'refresh' },
+      config.JWT_SECRET,
+      { expiresIn: '30d' }
+    );
   }
 
-  getActiveSessions() {
-    const sessions = [];
-    for (const [userId, session] of this.activeSessions.entries()) {
-      sessions.push({
-        userId,
-        ...session,
-        duration: Date.now() - session.createdAt.getTime()
-      });
+  // Verify refresh token
+  verifyRefreshToken(token) {
+    try {
+      const decoded = jwt.verify(token, config.JWT_SECRET);
+      if (decoded.type !== 'refresh') {
+        throw new Error('Invalid refresh token type');
+      }
+      return decoded;
+    } catch (error) {
+      throw new Error('Invalid refresh token');
     }
-    return sessions;
   }
 
-  // Permission system
+  // Hash password
+  async hashPassword(password) {
+    return bcrypt.hash(password, config.BCRYPT_ROUNDS);
+  }
+
+  // Verify password
+  async verifyPassword(password, hash) {
+    return bcrypt.compare(password, hash);
+  }
+
+  // Create session
+  async createSession(userId, req) {
+    const sessionToken = require('uuid').v4();
+    const expiresAt = new Date(Date.now() + config.SESSION_TIMEOUT);
+
+    await this.database.queryAsync(`
+      INSERT INTO user_sessions (user_id, session_token, expires_at, ip_address, user_agent)
+      VALUES (?, ?, ?, ?, ?)
+    `, [
+      userId,
+      sessionToken,
+      expiresAt.toISOString(),
+      req.ip,
+      req.get('User-Agent') || ''
+    ]);
+
+    return {
+      sessionToken,
+      expiresAt
+    };
+  }
+
+  // Validate session
+  async validateSession(sessionToken) {
+    const result = await this.database.queryAsync(`
+      SELECT s.*, u.* FROM user_sessions s
+      JOIN users u ON s.user_id = u.id
+      WHERE s.session_token = ? AND s.expires_at > datetime('now') AND u.is_active = 1
+    `, [sessionToken]);
+
+    return result.rows.length ? result.rows[0] : null;
+  }
+
+  // Revoke session
+  async revokeSession(sessionToken) {
+    await this.database.queryAsync(
+      'DELETE FROM user_sessions WHERE session_token = ?',
+      [sessionToken]
+    );
+  }
+
+  // Revoke all user sessions
+  async revokeAllUserSessions(userId) {
+    await this.database.queryAsync(
+      'DELETE FROM user_sessions WHERE user_id = ?',
+      [userId]
+    );
+  }
+
+  // Update login tracking
+  async updateLoginTracking(userId, success = true) {
+    if (success) {
+      await this.database.queryAsync(
+        'UPDATE users SET failed_login_attempts = 0, locked_until = NULL, last_login = CURRENT_TIMESTAMP WHERE id = ?',
+        [userId]
+      );
+    } else {
+      const user = await this.database.queryAsync(
+        'SELECT failed_login_attempts FROM users WHERE id = ?',
+        [userId]
+      );
+
+      if (user.rows.length) {
+        const attempts = (user.rows[0].failed_login_attempts || 0) + 1;
+        let lockUntil = null;
+
+        if (attempts >= config.VALIDATION.maxLoginAttempts) {
+          lockUntil = new Date(Date.now() + config.VALIDATION.lockoutDuration).toISOString();
+        }
+
+        await this.database.queryAsync(
+          'UPDATE users SET failed_login_attempts = ?, locked_until = ? WHERE id = ?',
+          [attempts, lockUntil, userId]
+        );
+      }
+    }
+  }
+
+  // Get user permissions
   getUserPermissions(user) {
-    const basePermissions = [
-      'read_own_data',
-      'create_prompts',
-      'use_api'
-    ];
+    const basePermissions = ['read_own_data', 'update_own_profile'];
+    
+    const rolePermissions = {
+      admin: [...basePermissions, 'read_all_data', 'manage_users', 'manage_system'],
+      moderator: [...basePermissions, 'manage_content', 'read_analytics'],
+      premium: [...basePermissions, 'unlimited_prompts', 'priority_support'],
+      user: basePermissions
+    };
 
-    const adminPermissions = [
-      ...basePermissions,
-      'read_all_data',
-      'manage_users',
-      'system_admin',
-      'delete_data'
-    ];
-
-    // Simple role-based permissions
-    if (user.role === 'admin' || user.id === 1) {
-      return adminPermissions;
-    }
-
-    return basePermissions;
+    return rolePermissions[user.role] || basePermissions;
   }
 
-  hasPermission(user, permission) {
-    const userPermissions = this.getUserPermissions(user);
-    return userPermissions.includes(permission);
-  }
-
+  // Permission check middleware
   requirePermission(permission) {
     return (req, res, next) => {
       if (!req.user) {
@@ -263,71 +327,40 @@ class AuthenticationManager {
         });
       }
 
-      if (!this.hasPermission(req.user, permission)) {
+      const userPermissions = this.getUserPermissions(req.user);
+      
+      if (!userPermissions.includes(permission)) {
         return res.status(403).json({ 
-          error: `Permission '${permission}' required`,
-          code: 'PERMISSION_DENIED'
+          error: `Permission required: ${permission}`,
+          code: 'INSUFFICIENT_PERMISSIONS'
         });
       }
 
       next();
     };
   }
-
-  // Security utilities
-  sanitizeInput(input) {
-    if (typeof input !== 'string') return input;
-    
-    // Remove potentially dangerous characters
-    return input
-      .replace(/[<>]/g, '') // Remove angle brackets
-      .replace(/javascript:/gi, '') // Remove javascript: protocol
-      .replace(/on\w+=/gi, '') // Remove event handlers
-      .trim();
-  }
-
-  generateSecureToken(length = 32) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  }
-
-  // Rate limiters
-  getAuthLimiter() {
-    return this.authLimiter;
-  }
-
-  getLoginLimiter() {
-    return this.loginLimiter;
-  }
-
-  // Cleanup expired sessions
-  cleanupExpiredSessions() {
-    const now = Date.now();
-    const sessionTimeout = 24 * 60 * 60 * 1000; // 24 hours
-
-    for (const [userId, session] of this.activeSessions.entries()) {
-      if (now - session.lastActivity.getTime() > sessionTimeout) {
-        this.activeSessions.delete(userId);
-      }
-    }
-  }
-
-  // Initialize periodic cleanup
-  startSessionCleanup() {
-    setInterval(() => {
-      this.cleanupExpiredSessions();
-    }, 60 * 60 * 1000); // Run every hour
-  }
 }
 
 // Create singleton instance
 const authManager = new AuthenticationManager();
 
-// Start session cleanup
-authManager.startSessionCleanup();
-
-module.exports = authManager;
+module.exports = {
+  authManager,
+  verifyToken: authManager.verifyToken.bind(authManager),
+  optionalAuth: authManager.optionalAuth.bind(authManager),
+  requireAdmin: authManager.requireAdmin.bind(authManager),
+  requireRole: (role) => authManager.requireRole(role),
+  requireAnyRole: (roles) => authManager.requireAnyRole(roles),
+  requireOwnership: (param) => authManager.requireOwnership(param),
+  requirePermission: (permission) => authManager.requirePermission(permission),
+  generateToken: (userId, options) => authManager.generateToken(userId, options),
+  generateRefreshToken: (userId) => authManager.generateRefreshToken(userId),
+  verifyRefreshToken: (token) => authManager.verifyRefreshToken(token),
+  hashPassword: (password) => authManager.hashPassword(password),
+  verifyPassword: (password, hash) => authManager.verifyPassword(password, hash),
+  createSession: (userId, req) => authManager.createSession(userId, req),
+  validateSession: (token) => authManager.validateSession(token),
+  revokeSession: (token) => authManager.revokeSession(token),
+  updateLoginTracking: (userId, success) => authManager.updateLoginTracking(userId, success),
+  getUserPermissions: (user) => authManager.getUserPermissions(user)
+};
