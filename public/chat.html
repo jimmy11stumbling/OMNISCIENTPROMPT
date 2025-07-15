@@ -1,13 +1,17 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeepSeek AI Chat - Real-time Conversation</title>
+    <title>DeepSeek AI Chat - Advanced Conversation Interface</title>
     <link href="/css/tailwind.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/progress-indicator.css">
     <script src="/js/realtime.js"></script>
     <script src="/js/universal-settings.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
     <!-- Navigation -->
@@ -19,8 +23,9 @@
                     <a href="/" class="text-gray-300 hover:text-white">Master Generator</a>
                     <a href="/saved-prompts.html" class="text-gray-300 hover:text-white">Saved Prompts</a>
                     <a href="/dashboard.html" class="text-gray-300 hover:text-white">Dashboard</a>
-                    <a href="/chat.html" class="text-blue-400 font-medium">Chat</a>
+                    <a href="/chat.html" class="text-blue-400 font-medium">Advanced Chat</a>
                     <a href="/docs.html" class="text-gray-300 hover:text-white">Documentation</a>
+                    <a href="/admin-portal.html" class="text-gray-300 hover:text-white">Admin Portal</a>
                 </div>
             </div>
             <div class="flex items-center space-x-4">
@@ -30,40 +35,62 @@
                 </div>
                 <div id="apiStatus" class="px-2 py-1 rounded bg-yellow-600 text-white text-xs">Checking API...</div>
                 <button id="settingsBtn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">Settings</button>
+                <button id="exportChatBtn" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-sm">Export Chat</button>
             </div>
         </div>
     </nav>
 
-    <div class="container mx-auto px-4 py-6 max-w-6xl h-screen flex flex-col">
+    <div class="container mx-auto px-4 py-6 max-w-7xl h-screen flex flex-col">
         <header class="text-center mb-6">
-            <h1 class="text-3xl font-bold mb-2">DeepSeek AI Chat</h1>
-            <p class="text-gray-400">Real-time conversation with DeepSeek reasoning capabilities</p>
+            <h1 class="text-3xl font-bold mb-2">DeepSeek AI Advanced Chat</h1>
+            <p class="text-gray-400">Professional-grade conversation with reasoning, code formatting, and comprehensive features</p>
         </header>
 
         <div class="flex-1 flex gap-6 min-h-0">
-            <!-- Chat Interface -->
+            <!-- Main Chat Interface -->
             <div class="flex-1 bg-gray-800 rounded-lg flex flex-col">
-                <!-- Chat Header -->
-                <div class="p-4 border-b border-gray-700 flex items-center justify-between">
-                    <div>
-                        <h3 class="font-medium">DeepSeek Conversation</h3>
-                        <p class="text-sm text-gray-400">Ask questions, get detailed explanations, or brainstorm ideas</p>
+                <!-- Chat Header with Advanced Controls -->
+                <div class="p-4 border-b border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="font-medium">DeepSeek Reasoning Chat</h3>
+                            <p class="text-sm text-gray-400">Advanced AI conversation with code formatting and copy functions</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <button id="toggleReasoningView" class="bg-purple-600 hover:bg-purple-700 px-3 py-1 rounded text-sm">
+                                Show Reasoning
+                            </button>
+                            <button id="clearChat" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm">Clear</button>
+                        </div>
                     </div>
-                    <div class="flex items-center space-x-2">
+                    
+                    <!-- Advanced Settings Row -->
+                    <div class="flex items-center space-x-4 text-sm">
                         <label class="flex items-center">
                             <input type="checkbox" id="useReasoning" checked class="mr-2 bg-gray-700 border-gray-600 text-blue-600 focus:ring-blue-500">
-                            <span class="text-sm">Reasoning Mode</span>
+                            <span>Reasoning Mode</span>
                         </label>
-                        <button id="clearChat" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm">Clear</button>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="autoFormatCode" checked class="mr-2 bg-gray-700 border-gray-600 text-green-600 focus:ring-green-500">
+                            <span>Auto-Format Code</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="enableSyntaxHighlight" checked class="mr-2 bg-gray-700 border-gray-600 text-yellow-600 focus:ring-yellow-500">
+                            <span>Syntax Highlighting</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="showTokenCount" checked class="mr-2 bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500">
+                            <span>Token Counter</span>
+                        </label>
                     </div>
                 </div>
 
                 <!-- Messages Container -->
                 <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                     <div class="text-center text-gray-500 py-8">
-                        <div class="text-4xl mb-2">💬</div>
-                        <p>Start a conversation with DeepSeek AI</p>
-                        <p class="text-sm mt-1">Ask anything - from coding help to creative brainstorming</p>
+                        <div class="text-4xl mb-2">🧠</div>
+                        <p>Start an advanced conversation with DeepSeek AI</p>
+                        <p class="text-sm mt-1">Features: Reasoning display, code formatting, copy functions, and more</p>
                     </div>
                 </div>
 
@@ -75,66 +102,121 @@
                             <div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
                             <div class="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
                         </div>
-                        <span class="text-sm text-gray-400">DeepSeek is thinking...</span>
+                        <span class="text-sm text-gray-400">DeepSeek is reasoning...</span>
                         <div id="tokenCounter" class="text-xs text-gray-500"></div>
+                        <div id="responseTimer" class="text-xs text-gray-500"></div>
                     </div>
                 </div>
 
-                <!-- Input Area -->
+                <!-- Advanced Input Area -->
                 <div class="p-4 border-t border-gray-700">
+                    <!-- Input Tools Bar -->
+                    <div class="flex items-center space-x-2 mb-3">
+                        <button id="insertCodeBlock" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-xs">
+                            📝 Code Block
+                        </button>
+                        <button id="insertQuote" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-xs">
+                            💬 Quote
+                        </button>
+                        <button id="insertList" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-xs">
+                            📋 List
+                        </button>
+                        <button id="voiceInput" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-xs">
+                            🎤 Voice
+                        </button>
+                        <div class="flex-1"></div>
+                        <span id="wordCounter" class="text-xs text-gray-500">0 words</span>
+                    </div>
+                    
                     <form id="chatForm" class="flex space-x-3">
                         <div class="flex-1">
                             <textarea 
                                 id="messageInput" 
-                                placeholder="Type your message here... (Shift+Enter for new line, Enter to send)"
+                                placeholder="Ask DeepSeek anything... (Shift+Enter for new line, Enter to send)"
                                 class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md resize-none"
-                                rows="2"
-                                maxlength="4000"
+                                rows="3"
+                                maxlength="8000"
                             ></textarea>
                             <div class="flex justify-between mt-1">
-                                <span class="text-xs text-gray-500">Shift+Enter for new line</span>
-                                <span id="charCounter" class="text-xs text-gray-500">0/4000</span>
+                                <span class="text-xs text-gray-500">Shift+Enter for new line | Tab for autocomplete</span>
+                                <span id="charCounter" class="text-xs text-gray-500">0/8000</span>
                             </div>
                         </div>
-                        <button 
-                            type="submit" 
-                            id="sendBtn"
-                            class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-6 py-3 rounded-md font-medium self-start"
-                        >
-                            Send
-                        </button>
+                        <div class="flex flex-col space-y-2">
+                            <button 
+                                type="submit" 
+                                id="sendBtn"
+                                class="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-6 py-3 rounded-md font-medium"
+                            >
+                                Send
+                            </button>
+                            <button 
+                                type="button" 
+                                id="stopBtn"
+                                class="hidden bg-red-600 hover:bg-red-700 px-6 py-1 rounded-md text-sm"
+                            >
+                                Stop
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
 
-            <!-- Side Panel -->
+            <!-- Enhanced Side Panel -->
             <div class="w-80 space-y-4">
                 <!-- Quick Actions -->
                 <div class="bg-gray-800 rounded-lg p-4">
                     <h3 class="font-medium mb-3">Quick Actions</h3>
                     <div class="space-y-2">
                         <button class="quick-action w-full text-left p-2 bg-gray-700 hover:bg-gray-600 rounded text-sm" 
-                                data-prompt="What is Lovable.dev and how do I use it?">
-                            🔥 Lovable.dev Guide
+                                data-prompt="Explain this code and provide optimizations:\n```javascript\n// Paste your code here\n```">
+                            🔍 Code Review & Optimization
                         </button>
                         <button class="quick-action w-full text-left p-2 bg-gray-700 hover:bg-gray-600 rounded text-sm" 
-                                data-prompt="How do I build a React app with Bolt.new?">
-                            ⚡ Bolt.new Tutorial
+                                data-prompt="Debug this error and provide a solution:\n```\n// Paste error message here\n```">
+                            🐛 Debug Error
                         </button>
                         <button class="quick-action w-full text-left p-2 bg-gray-700 hover:bg-gray-600 rounded text-sm" 
-                                data-prompt="Cursor AI features and setup guide">
-                            🎯 Cursor AI Setup
+                                data-prompt="Create a complete implementation for: [describe your feature]">
+                            ⚡ Feature Implementation
                         </button>
                         <button class="quick-action w-full text-left p-2 bg-gray-700 hover:bg-gray-600 rounded text-sm" 
-                                data-prompt="Windsurf development environment overview">
-                            🌊 Windsurf Guide
+                                data-prompt="Architectural analysis and recommendations for: [describe your system]">
+                            🏗️ Architecture Review
                         </button>
                     </div>
                 </div>
 
-                <!-- Chat Statistics -->
+                <!-- Platform Context -->
                 <div class="bg-gray-800 rounded-lg p-4">
-                    <h3 class="font-medium mb-3">Session Stats</h3>
+                    <h3 class="font-medium mb-3">Platform Context</h3>
+                    <select id="contextPlatform" class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-sm mb-3">
+                        <option value="">General Development</option>
+                        <option value="replit">Replit Platform</option>
+                        <option value="lovable">Lovable.dev</option>
+                        <option value="bolt">Bolt.new</option>
+                        <option value="cursor">Cursor IDE</option>
+                        <option value="windsurf">Windsurf Platform</option>
+                    </select>
+                    
+                    <!-- Language Selection -->
+                    <select id="preferredLanguage" class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-sm">
+                        <option value="">Auto-detect Language</option>
+                        <option value="javascript">JavaScript</option>
+                        <option value="python">Python</option>
+                        <option value="typescript">TypeScript</option>
+                        <option value="react">React/JSX</option>
+                        <option value="html">HTML</option>
+                        <option value="css">CSS</option>
+                        <option value="sql">SQL</option>
+                        <option value="bash">Bash/Shell</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Optimizes responses for your platform and language</p>
+                </div>
+
+                <!-- Session Statistics -->
+                <div class="bg-gray-800 rounded-lg p-4">
+                    <h3 class="font-medium mb-3">Session Analytics</h3>
                     <div class="space-y-2 text-sm">
                         <div class="flex justify-between">
                             <span class="text-gray-400">Messages:</span>
@@ -145,24 +227,78 @@
                             <span id="tokenCount">0</span>
                         </div>
                         <div class="flex justify-between">
+                            <span class="text-gray-400">Code Blocks:</span>
+                            <span id="codeBlockCount">0</span>
+                        </div>
+                        <div class="flex justify-between">
                             <span class="text-gray-400">Session Time:</span>
                             <span id="sessionTime">0m</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Avg Response:</span>
+                            <span id="avgResponseTime">0ms</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Platform Selection -->
+                <!-- Chat Management -->
                 <div class="bg-gray-800 rounded-lg p-4">
-                    <h3 class="font-medium mb-3">Context Platform</h3>
-                    <select id="contextPlatform" class="w-full p-2 bg-gray-700 border border-gray-600 rounded text-sm">
-                        <option value="">General Chat</option>
-                        <option value="replit">Replit Development</option>
-                        <option value="lovable">Lovable.dev Platform</option>
-                        <option value="bolt">Bolt.new AI Development</option>
-                        <option value="cursor">Cursor AI Editor</option>
-                        <option value="windsurf">Windsurf Platform</option>
+                    <h3 class="font-medium mb-3">Chat Management</h3>
+                    <div class="space-y-2">
+                        <button id="saveChatBtn" class="w-full bg-green-600 hover:bg-green-700 p-2 rounded text-sm">
+                            💾 Save Conversation
+                        </button>
+                        <button id="loadChatBtn" class="w-full bg-blue-600 hover:bg-blue-700 p-2 rounded text-sm">
+                            📂 Load Conversation
+                        </button>
+                        <button id="shareChatBtn" class="w-full bg-purple-600 hover:bg-purple-700 p-2 rounded text-sm">
+                            🔗 Share Link
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Reasoning Panel (Hidden by default) -->
+                <div id="reasoningPanel" class="hidden bg-gray-800 rounded-lg p-4">
+                    <h3 class="font-medium mb-3">AI Reasoning Process</h3>
+                    <div id="reasoningContent" class="text-sm text-gray-300 max-h-60 overflow-y-auto">
+                        <p class="text-gray-500 italic">Reasoning will appear here when available...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Copy Success Toast -->
+    <div id="copyToast" class="hidden fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+        ✅ Copied to clipboard!
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-gray-800 rounded-lg p-6 w-96 max-w-90vw">
+            <h3 class="text-lg font-medium mb-4">Chat Settings</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Response Style</label>
+                    <select id="responseStyle" class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
+                        <option value="detailed">Detailed & Comprehensive</option>
+                        <option value="concise">Concise & Direct</option>
+                        <option value="tutorial">Tutorial Style</option>
+                        <option value="professional">Professional Tone</option>
                     </select>
-                    <p class="text-xs text-gray-500 mt-1">Select platform for context-aware responses</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Code Style</label>
+                    <select id="codeStyle" class="w-full p-2 bg-gray-700 border border-gray-600 rounded">
+                        <option value="modern">Modern Best Practices</option>
+                        <option value="beginner">Beginner Friendly</option>
+                        <option value="performance">Performance Optimized</option>
+                        <option value="production">Production Ready</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button id="cancelSettings" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded">Cancel</button>
+                    <button id="saveSettings" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">Save</button>
                 </div>
             </div>
         </div>
